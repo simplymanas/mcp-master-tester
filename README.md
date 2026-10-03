@@ -4,6 +4,8 @@
 
 You point it at a server, either a local command over stdio or a remote URL over Streamable HTTP or SSE. It lists the server's tools, resources and prompts and gives each one a form, so you can call it and see exactly what comes back, down to every JSON-RPC message.
 
+> 🤝 **Open source and looking for collaborators.** Whether you build MCP servers, love clean UIs, or just found a bug, see [Contributing](#contributing). First-time contributors are welcome.
+
 ![MCP Master Tester](docs/screenshot.png)
 
 ---
@@ -111,6 +113,62 @@ All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on 
 
 - No browser login (OAuth) flow for remote servers. Use a Bearer token or custom headers instead.
 - Sampling (`sampling/createMessage`) and roots are not advertised to servers.
+
+## Contributing
+
+This project is better with more people testing more MCP servers. All contributions are welcome, from typo fixes to new features.
+
+### Ways to help
+
+- **Try it on your MCP server** and [open an issue](https://github.com/simplymanas/mcp-master-tester/issues) for anything that breaks or looks wrong. Real-world servers are the best test suite.
+- **Pick up a roadmap item** below. Comment on its issue first (or open one) so we don't duplicate work.
+- **Improve the lint rules:** suggest checks that catch tool definitions models struggle with.
+- **Improve the docs:** add examples of configs for popular servers, write guides, or add screenshots.
+- **Share it** with people building on MCP. ⭐ Stars help others find the project.
+
+### Roadmap: help wanted
+
+| Item | Difficulty |
+|---|---|
+| OAuth 2.1 sign-in for remote servers | Hard |
+| Sampling (`sampling/createMessage`) with a manual or LLM-backed responder | Medium |
+| Roots support | Easy |
+| Smoke-test mode: run every read-only tool with its default arguments and report the results | Medium |
+| Validate `structuredContent` against `outputSchema` | Easy |
+| Export and import a session (calls and results) as JSON | Easy |
+| Resource subscriptions (`resources/subscribe`) with live updates | Medium |
+| Automated tests and GitHub Actions CI | Medium |
+| Docker image | Easy |
+
+### Getting started
+
+```bash
+# 1. Fork the repo on GitHub, then:
+git clone https://github.com/<your-username>/mcp-master-tester.git
+cd mcp-master-tester
+npm install
+npm start                     # http://127.0.0.1:6280
+
+# 2. Create a branch
+git checkout -b feat/short-description
+
+# 3. Make your change, test it against a real server
+#    (the default "server-everything" profile exercises every feature)
+
+# 4. Commit and open a pull request
+git commit -m "Add short description of the change"
+git push origin feat/short-description
+```
+
+### Guidelines
+
+- **Keep it simple.** No build step, no frontend framework, and as few dependencies as possible.
+- **One clear way to do things.** Don't add hidden fallbacks or duplicate code paths.
+- **Fail fast with clear errors.** Show the user what went wrong rather than hiding it.
+- **Keep changes small and focused.** One pull request per change, with a short description of what changed and how you tested it.
+- **Be kind.** Reviews are about the code, not the person.
+
+Not sure where to start? Open an issue with your idea or question. Happy to help you get your first pull request merged.
 
 ## License
 
