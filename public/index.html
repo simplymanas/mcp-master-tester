@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MCP Master Tester</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M8 1l7 7-7 7-7-7z%27 fill=%27%234f9cf9%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">◆</span> MCP Master Tester <span class="credit">by @simplymanas</span></div>
+    <div id="status" class="status disconnected">disconnected</div>
+    <div id="serverMeta" class="server-meta"></div>
+    <div class="spacer"></div>
+    <button id="pingBtn" class="btn ghost" disabled>Ping</button>
+    <button id="disconnectBtn" class="btn ghost" disabled>Disconnect</button>
+  </header>
+
+  <div class="layout">
+    <!-- Connection -->
+    <aside class="sidebar">
+      <section class="card">
+        <h2>Connection</h2>
+        <div class="seg" id="transportSeg">
+          <button data-t="stdio" class="active">stdio</button>
+          <button data-t="http">Streamable HTTP</button>
+          <button data-t="sse">SSE</button>
+        </div>
+
+        <div id="stdioFields">
+          <label>Command <input id="command" placeholder="npx" spellcheck="false" /></label>
+          <label>Arguments <input id="args" placeholder="-y @modelcontextprotocol/server-everything" spellcheck="false" /></label>
+          <label>Working dir <input id="cwd" placeholder="(optional)" spellcheck="false" /></label>
+          <div class="kv-head"><span>Environment</span><button class="btn tiny" data-add="env">+ var</button></div>
+          <div id="envRows" class="kv"></div>
+        </div>
+
+        <div id="httpFields" hidden>
+          <label>URL <input id="url" placeholder="https://example.com/mcp" spellcheck="false" /></label>
+          <label>Bearer token <input id="bearer" type="password" placeholder="(optional)" spellcheck="false" autocomplete="off" /></label>
+          <div class="kv-head"><span>Headers</span><button class="btn tiny" data-add="headers">+ header</button></div>
+          <div id="headerRows" class="kv"></div>
+        </div>
+
+        <button id="connectBtn" class="btn primary block">Connect</button>
+        <div id="connectError" class="error-box" hidden></div>
+      </section>
+
+      <section class="card">
+        <div class="kv-head"><h2>Profiles</h2><button id="saveProfileBtn" class="btn tiny">Save current</button></div>
+        <p class="hint">Secrets are never stored — you'll be asked for them on load.</p>
+        <ul id="profiles" class="profiles"></ul>
+      </section>
+    </aside>
+
+    <!-- Workspace -->
+    <main class="main">
+      <nav class="tabs" id="tabs">
+        <button data-tab="tools" class="active">Tools <span class="count" id="cTools">0</span></button>
+        <button data-tab="resources">Resources <span class="count" id="cResources">0</span></button>
+        <button data-tab="prompts">Prompts <span class="count" id="cPrompts">0</span></button>
+        <button data-tab="lint">Lint <span class="count" id="cLint">0</span></button>
+        <button data-tab="info">Server</button>
+      </nav>
+
+      <div class="workspace">
+        <div class="list-pane">
+          <input id="search" class="search" placeholder="Filter…" spellcheck="false" />
+          <ul id="itemList" class="item-list"></ul>
+        </div>
+        <div class="detail-pane" id="detail">
+          <div class="empty">Connect to an MCP server to begin.</div>
+        </div>
+      </div>
+
+      <!-- Protocol log -->
+      <section class="logpanel" id="logPanel">
+        <div class="log-head">
+          <button id="logToggle" class="btn ghost tiny">▾ Protocol log</button>
+          <label class="chk"><input type="checkbox" data-f="rpc" checked /> JSON-RPC</label>
+          <label class="chk"><input type="checkbox" data-f="stderr" checked /> stderr</label>
+          <label class="chk"><input type="checkbox" data-f="log" checked /> server log</label>
+          <select id="logLevel" disabled title="logging/setLevel">
+            <option value="">level…</option>
+            <option>debug</option><option>info</option><option>notice</option><option>warning</option>
+            <option>error</option><option>critical</option><option>alert</option><option>emergency</option>
+          </select>
+          <div class="spacer"></div>
+          <button id="logClear" class="btn ghost tiny">Clear</button>
+        </div>
+        <div id="logBody" class="log-body"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="modal"><form method="dialog" id="modalForm"></form></dialog>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
