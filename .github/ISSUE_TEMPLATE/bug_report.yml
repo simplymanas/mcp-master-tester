@@ -1,0 +1,37 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: server
+    attributes:
+      label: MCP server under test
+      description: Package name or URL, if you can share it (e.g. `@modelcontextprotocol/server-filesystem`).
+  - type: dropdown
+    id: transport
+    attributes:
+      label: Transport
+      options: [stdio, Streamable HTTP, SSE]
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Protocol log or error output
+      description: Paste relevant JSON-RPC frames or stderr from the Protocol log panel. Remove any secrets.
+      render: shell
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node.js version, browser.
+      placeholder: macOS 15, Node 22.11, Chrome 140
+    validations:
+      required: true

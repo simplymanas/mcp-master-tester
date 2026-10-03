@@ -2,19 +2,17 @@
   "name": "mcp-master-tester",
   "version": "1.0.0",
   "description": "Local web UI to connect, inspect and test any MCP server — stdio, Streamable HTTP & SSE, with auth prompts, schema-driven tool forms, elicitation, linting and a live JSON-RPC log.",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "author": "@simplymanas",
-  "license": "MIT",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.0",
-    "express": "^5.2.1"
-  },
   "type": "module",
-  "engines": {
-    "node": ">=18"
+  "bin": {
+    "mcp-master-tester": "server.js"
+  },
+  "files": [
+    "server.js",
+    "public"
+  ],
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
   },
   "keywords": [
     "mcp",
@@ -26,9 +24,24 @@
     "json-rpc",
     "developer-tools"
   ],
+  "author": "@simplymanas",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/simplymanas/mcp-master-tester.git"
   },
-  "homepage": "https://github.com/simplymanas/mcp-master-tester#readme"
+  "homepage": "https://github.com/simplymanas/mcp-master-tester#readme",
+  "bugs": {
+    "url": "https://github.com/simplymanas/mcp-master-tester/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/server-everything": "^2026.8.31"
+  }
 }

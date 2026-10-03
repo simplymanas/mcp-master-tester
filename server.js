@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // MCP Master Tester — backend
 // Bridges the browser UI to any MCP server over stdio, Streamable HTTP or SSE.
 // Author: @simplymanas
@@ -185,6 +186,14 @@ const callOpts = (req) => {
 // ---------- app ----------
 
 const app = express();
+
+// Block DNS-rebinding: a hostile site resolving to 127.0.0.1 must not reach an API that spawns commands.
+const ALLOWED_HOSTS = new Set([`127.0.0.1:${PORT}`, `localhost:${PORT}`]);
+app.use((req, res, next) => {
+  if (!ALLOWED_HOSTS.has(req.headers.host)) return res.status(403).json({ ok: false, error: `Host not allowed: ${req.headers.host}` });
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), 'public')));
 

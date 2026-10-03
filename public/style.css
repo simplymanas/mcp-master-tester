@@ -75,6 +75,7 @@ code, pre { font-family: var(--mono); }
 .count { font: 10px var(--mono); background: var(--panel-2); border: 1px solid var(--border); border-radius: 99px; padding: 0 6px; margin-left: 4px; }
 
 .workspace { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+.list-pane[hidden] + .detail-pane { grid-column: 1 / -1; }
 .list-pane { border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
 .search { border-radius: 0; border: 0; border-bottom: 1px solid var(--border); padding: 10px 12px; }
 .item-list { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; }
