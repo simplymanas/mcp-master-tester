@@ -13,6 +13,8 @@ You point it at a server, either a local command over stdio or a remote URL over
 
 📖 **Tutorial:** [Testing any MCP server, step by step, with MCP Master Tester](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35) on Medium.
 
+🆕 **What's new in 1.1:** connection state in the sidebar, a reconnect fix, and lint rules for tool definitions that models struggle with. See the [CHANGELOG](CHANGELOG.md).
+
 > 🤝 **Open source and looking for collaborators.** Whether you build MCP servers, love clean UIs, or just found a bug, see [Contributing](#contributing). First-time contributors are welcome.
 
 ```bash
@@ -26,6 +28,12 @@ npx mcp-master-tester
 ## Features
 
 - **Every transport:** stdio, Streamable HTTP and SSE. The Node backend proxies all traffic, so remote servers don't hit browser CORS limits.
+- **Connection panel:** shows whether you're connected:
+  - Not connected, Connecting… or Connected
+  - when connected: the server's name and version, the transport, the command or URL, and the pid
+  - edit any field and click **Reconnect** to apply it
+  - one connection attempt runs at a time
+  - closing or reloading the tab ends the session and stops the server process
 - **Keys and auth:**
   - Environment variables for stdio servers. Headers or a Bearer token for remote ones.
   - Keys named like `*KEY*`, `*TOKEN*`, `*SECRET*` or `*PASSWORD*` are hidden automatically.
@@ -63,13 +71,24 @@ npx mcp-master-tester
   - **From real calls:**
     - a badge and a warning when a result is over ~10k tokens
     - a badge and a warning when an `isError` result has no useful message for the model to recover from
+  - **The tab count** shows errors + warnings, coloured by the worst one, followed by the info findings in muted text. For example, `2 · 14` means 2 errors or warnings and 14 info suggestions.
 - **Protocol log:** shows traffic and server output, newest at the bottom:
   - every JSON-RPC frame in both directions, with request → response time
   - the server's stderr
   - `notifications/message` log entries
-  - a `logging/setLevel` control
+  - a `logging/setLevel` control, available when the server declares the `logging` capability (otherwise it reads "no logging support")
 - **Profiles:** saved in your browser. Secrets are never stored, so the app asks for them when you connect.
-- **No build step:** Express on the backend and plain JavaScript in the browser. Light and dark themes follow your system setting.
+- **No build step:** Express on the backend and plain JavaScript in the browser. Light and dark themes follow your system setting, and the layout works on phone-sized screens.
+
+## Screenshots
+
+**Running a tool:** the form built from the tool's schema, the result, call history and the live protocol log.
+
+![Running the echo tool of the reference server: the connection panel shows Connected, the result shows the echoed text, and the protocol log lists every JSON-RPC frame](docs/screenshot-tool.png)
+
+**Lint report:** each finding links to its tool.
+
+![The lint report for the reference server: 0 errors, 0 warnings and 30 info findings, such as string parameters with no example and kebab-case tool names](docs/screenshot-lint.png)
 
 ## Quick start
 
@@ -140,6 +159,7 @@ All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on 
 - The backend listens on **`127.0.0.1` only**, because it can run any command you enter in the stdio form. Don't expose it on a network.
 - Requests with a `Host` header other than `127.0.0.1` or `localhost` are rejected, which blocks DNS-rebinding attacks from malicious websites.
 - Secrets stay in memory in the browser tab and backend process. Profiles save names only, never values.
+- Closing or reloading the tab ends the session, so stdio server processes don't keep running in the background.
 - Tools are only run when you click Run. Tools marked destructive ask for confirmation first.
 
 ## Limitations
@@ -155,7 +175,7 @@ This project is better with more people testing more MCP servers. All contributi
 
 - **Try it on your MCP server** and [open an issue](https://github.com/simplymanas/mcp-master-tester/issues) for anything that breaks or looks wrong. Real-world servers are the best test suite.
 - **Pick up a roadmap item** below. Comment on its issue first (or open one) so we don't duplicate work.
-- **Improve the lint rules:** suggest checks that catch tool definitions models struggle with.
+- **Improve the lint rules:** suggest checks that catch tool definitions models struggle with. The rules live in [`public/lint.js`](public/lint.js), each with a case it must flag and a near-miss it must not flag in [`test/lint.test.js`](test/lint.test.js). Open an issue with the idea, or a PR with the rule and its tests.
 - **Improve the docs:** add examples of configs for popular servers, write guides, or add screenshots.
 - **Share it** with people building on MCP. ⭐ Stars help others find the project.
 
@@ -163,10 +183,11 @@ This project is better with more people testing more MCP servers. All contributi
 
 | Item | Difficulty |
 |---|---|
+| CLI lint mode for CI: `npx mcp-master-tester lint -- <server command>` runs the lint rules and exits non-zero on errors or warnings | Medium |
+| Smoke-test mode: run every read-only tool with its default arguments and report the results | Medium |
 | OAuth 2.1 sign-in for remote servers | Hard |
 | Sampling (`sampling/createMessage`) with a manual or LLM-backed responder | Medium |
 | Roots support | Easy |
-| Smoke-test mode: run every read-only tool with its default arguments and report the results | Medium |
 | Validate `structuredContent` against `outputSchema` | Easy |
 | Export and import a session (calls and results) as JSON | Easy |
 | Resource subscriptions (`resources/subscribe`) with live updates | Medium |
@@ -179,6 +200,10 @@ Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, the project layout, runni
 Not sure where to start? Open an issue with your idea or question. Happy to help you get your first pull request merged.
 
 Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). To report a security issue, see [SECURITY.md](SECURITY.md).
+
+## Changelog
+
+Release notes for every version are in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
