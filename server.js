@@ -7,6 +7,7 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -18,6 +19,9 @@ import {
   ResourceListChangedNotificationSchema,
   PromptListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+
+// Report our real version to servers in the initialize handshake (clientInfo).
+const VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 
 const PORT = Number(process.env.PORT ?? 6280);
 const HOST = '127.0.0.1'; // local only: this process can spawn commands
@@ -92,7 +96,7 @@ class Session {
 
   async connect() {
     this.client = new Client(
-      { name: 'mcp-master-tester', version: '1.0.0' },
+      { name: 'mcp-master-tester', version: VERSION },
       { capabilities: { elicitation: {} } },
     );
     this.registerHandlers();
