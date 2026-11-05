@@ -50,6 +50,30 @@ code, pre { font-family: var(--mono); }
 .sidebar { border-right: 1px solid var(--border); overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
 
+/* Connection card reflects the session: disconnected → connecting → connected */
+.conn-card { transition: border-color .15s, box-shadow .15s; }
+.conn-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.conn-head h2 { margin: 0; }
+.conn-pill { display: inline-flex; align-items: center; gap: 6px; font: 600 11px var(--sans); color: var(--muted); }
+.conn-pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .6; }
+.conn-card[data-state="connecting"] { border-color: var(--warn); }
+.conn-card[data-state="connecting"] .conn-pill { color: var(--warn); }
+.conn-card[data-state="connecting"] .conn-pill::before { opacity: 1; animation: conn-pulse 1s ease-in-out infinite; }
+.conn-card[data-state="connected"] { border-color: var(--ok); box-shadow: inset 3px 0 0 var(--ok); }
+.conn-card[data-state="connected"] .conn-pill { color: var(--ok); }
+.conn-card[data-state="connected"] .conn-pill::before { opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+@keyframes conn-pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .conn-card[data-state="connecting"] .conn-pill::before { animation: none; } }
+.conn-summary { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: grid; gap: 2px; }
+.conn-summary .cs-name { font-weight: 700; overflow-wrap: anywhere; }
+.conn-summary .cs-name .hint { font-weight: 400; margin: 0; }
+.conn-summary .cs-line { font: 11px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conn-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.conn-fields:disabled { opacity: .6; }
+.conn-edit-hint { margin: 2px 0 0; }
+.conn-actions { display: flex; gap: 6px; margin-top: 6px; }
+.conn-actions .btn { flex: 1; }
+
 .seg { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
 .seg button { flex: 1; background: transparent; color: var(--muted); border: 0; padding: 6px 4px; font: 600 11px var(--sans); cursor: pointer; }
 .seg button.active { background: var(--accent); color: var(--accent-ink); }

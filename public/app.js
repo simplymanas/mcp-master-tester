@@ -19,6 +19,7 @@ const state = {
   draft: null,            // argument values shown in the current form
   results: {},            // itemKey -> last response
   history: {},            // itemKey -> [{args, ok, ms, ts}]
+  bigResults: {},         // tool name -> largest oversized result seen this session (chars), for lint
   pending: new Map(),     // rpc correlation for latency
   logFilters: { rpc: true, stderr: true, log: true },
 };
@@ -36,7 +37,10 @@ async function api(path, body, method = 'POST') {
   return json;
 }
 
-const sessionApi = (path, body) => api(`/sessions/${state.session.id}${path}`, body ?? {});
+function sessionApi(path, body) {
+  if (!state.session) return Promise.reject(Object.assign(new Error('Not connected'), { ok: false, ms: 0 }));
+  return api(`/sessions/${state.session.id}${path}`, body ?? {});
+}
 
 async function listAll(path, key) {
   const items = [];
@@ -112,22 +116,38 @@ async function ensureSecrets() {
   });
 }
 
+// Only one connect runs at a time; a second click while one is in flight is ignored,
+// otherwise both POSTs spawn a server and the first session is orphaned (process left running).
+let connecting = false;
+
 async function connect() {
-  if (state.session) await disconnect();
-  if (!(await ensureSecrets())) return;
-  const config = buildConfig();
-  setStatus('connecting');
-  $('#connectError').hidden = true;
+  if (connecting) return;
+  connecting = true;
   try {
-    const { result } = await api('/sessions', config);
-    state.session = result;
-    onConnected();
-  } catch (err) {
-    setStatus('disconnected');
-    if (err.authRequired && config.transport !== 'stdio') return askForToken(err.error);
-    showConnectError(err);
+    if (!(await ensureSecrets())) return;
+    if (state.session) await disconnect();
+    const config = buildConfig();
+    setStatus('connecting');
+    $('#connectError').hidden = true;
+    try {
+      const { result } = await api('/sessions', config);
+      state.session = { ...result, config };
+    } catch (err) {
+      setStatus('disconnected');
+      if (err.authRequired && config.transport !== 'stdio') return askForToken(err.error);
+      return showConnectError(err);
+    }
+  } finally {
+    connecting = false;
   }
+  await onConnected();
 }
+
+// Close the server session when the tab goes away, so reloading and reconnecting
+// doesn't leave the old server process running (and holding ports or locks).
+window.addEventListener('pagehide', () => {
+  if (state.session) fetch(`/api/sessions/${state.session.id}`, { method: 'DELETE', keepalive: true });
+});
 
 function askForToken(message) {
   openModal(`
@@ -174,7 +194,7 @@ async function disconnect() {
   state.events?.close();
   state.events = null;
   if (s) await api(`/sessions/${s.id}`, undefined, 'DELETE').catch(() => {});
-  Object.assign(state, { tools: [], resources: [], templates: [], prompts: [], lint: [], selected: null, results: {}, history: {} });
+  Object.assign(state, { tools: [], resources: [], templates: [], prompts: [], lint: [], selected: null, results: {}, history: {}, bigResults: {} });
   setStatus('disconnected');
   render();
 }
@@ -189,6 +209,30 @@ function setStatus(s) {
   $('#logLevel').disabled = !(on && state.session?.capabilities?.logging);
   const si = state.session?.serverInfo;
   $('#serverMeta').textContent = on && si ? `${si.name} v${si.version}${state.session.protocolVersion ? ` · protocol ${state.session.protocolVersion}` : ''}` : '';
+  renderConnCard(s);
+}
+
+// Sidebar connection card: pill, live-session summary, and button labels follow the state.
+function renderConnCard(s) {
+  $('#connCard').dataset.state = s;
+  $('#connPill').textContent = { disconnected: 'Not connected', connecting: 'Connecting…', connected: 'Connected' }[s];
+  $('#connFields').disabled = s === 'connecting';
+  const btn = $('#connectBtn');
+  btn.disabled = s === 'connecting';
+  btn.textContent = { disconnected: 'Connect', connecting: 'Connecting…', connected: 'Reconnect' }[s];
+  $('#sideDisconnectBtn').hidden = s !== 'connected';
+  $('#connEditHint').hidden = s !== 'connected';
+  const box = $('#connSummary');
+  const ss = state.session;
+  box.hidden = !(s === 'connected' && ss);
+  if (box.hidden) return void (box.innerHTML = '');
+  const c = ss.config ?? {};
+  const target = c.transport === 'stdio' ? [c.command, ...(c.args ?? [])].join(' ') : c.url;
+  const transport = { stdio: 'stdio', http: 'Streamable HTTP', sse: 'SSE' }[c.transport] ?? c.transport;
+  box.innerHTML = `
+    <div class="cs-name">${esc(ss.serverInfo?.title || ss.serverInfo?.name || 'MCP server')} <span class="hint">v${esc(ss.serverInfo?.version)}</span></div>
+    <div class="cs-line" title="${esc(target)}">${esc(transport)} · ${esc(target)}</div>
+    <div class="cs-line">${[ss.pid && `pid ${ss.pid}`, ss.protocolVersion && `protocol ${esc(ss.protocolVersion)}`].filter(Boolean).join(' · ')}</div>`;
 }
 
 async function onConnected() {
@@ -199,6 +243,8 @@ async function onConnected() {
 }
 
 async function refreshLists(only) {
+  if (!state.session) return;
+  const sid = state.session.id;
   const caps = state.session.capabilities ?? {};
   const jobs = [];
   if (caps.tools && (!only || only === 'tools')) jobs.push(listAll('/tools/list', 'tools').then((v) => { state.tools = v; }));
@@ -208,6 +254,7 @@ async function refreshLists(only) {
   }
   if (caps.prompts && (!only || only === 'prompts')) jobs.push(listAll('/prompts/list', 'prompts').then((v) => { state.prompts = v; }));
   const failures = (await Promise.allSettled(jobs)).filter((r) => r.status === 'rejected');
+  if (state.session?.id !== sid) return; // disconnected or reconnected meanwhile: results belong to an old session
   failures.forEach((f) => addLogRow({ ts: Date.now(), type: 'error', message: `list failed: ${f.reason.message}` }));
   state.lint = lintServer();
   render();
@@ -224,7 +271,19 @@ function onEvent(e) {
     return;
   }
   if (e.type === 'list_changed') { addLogRow({ ...e, type: 'log', params: { level: 'notice', data: `${e.kind}/list_changed` } }); return refreshLists(e.kind); }
-  if (e.type === 'closed') { addLogRow({ ...e, type: 'error', message: 'connection closed by server' }); if (state.session) { state.session = null; setStatus('disconnected'); } return; }
+  if (e.type === 'closed') {
+    addLogRow({ ...e, type: 'error', message: 'connection closed by server' });
+    const s = state.session;
+    if (s) {
+      // Keep the lists and results on screen for debugging, but release the dead session on the backend.
+      state.session = null;
+      state.events?.close();
+      state.events = null;
+      api(`/sessions/${s.id}`, undefined, 'DELETE').catch(() => {});
+      setStatus('disconnected');
+    }
+    return;
+  }
   addLogRow(e);
 }
 
@@ -589,6 +648,8 @@ function resultHtml(key) {
     const res = r.result;
     const warnings = [];
     if (tool?.outputSchema && res.structuredContent === undefined && !res.isError) warnings.push('<span class="badge warn">outputSchema declared but no structuredContent</span>');
+    const chars = resultChars(res);
+    if (chars > BIG_RESULT_CHARS) warnings.push(`<span class="badge warn" title="${chars.toLocaleString()} characters. Large results crowd out the client's context window.">~${approxTokens(chars)} tokens: very large</span>`);
     status = `<span class="badge ${res.isError ? 'err' : 'ok'}">${res.isError ? 'tool error (isError)' : 'success'}</span>${warnings.join('')}`;
     const parts = [];
     (res.content ?? []).forEach((c) => parts.push(contentHtml(c)));
@@ -650,12 +711,104 @@ function lintServer() {
     for (const [n, p] of Object.entries(props)) {
       if (!p.type && !p.enum && !p.anyOf && !p.oneOf && !p.$ref) add('warn', t.name, `property "${n}" has no type`);
       if (!p.description) add('info', t.name, `property "${n}" has no description`);
+      const missing = missingExample(p);
+      if (missing === 'enum') add('info', t.name, `enum "${n}" has no description or default — say what the values mean and which to pick when unsure`);
+      else if (missing) add('info', t.name, `string param "${n}" has no example — add "examples", a default, or an "e.g." in its description`);
     }
     if (!t.annotations) add('info', t.name, 'no annotations (readOnly/destructive hints)');
     if (t.outputSchema && t.outputSchema.type !== 'object') add('error', t.name, 'outputSchema.type must be "object"');
+    if (isListish(t.name) && !Object.keys(props).some((n) => LIMIT_RE.test(n)))
+      add('info', t.name, 'list/search-style tool with no limit or pagination parameter — output may be unbounded and flood the client\'s context');
   }
+
+  // Tools whose names overlap so much that a model may pick the wrong one.
+  const similar = new Map();
+  for (const [a, b] of similarNamePairs(state.tools)) {
+    add('warn', b, `name is very close to "${a}" — models may confuse them; make the names and descriptions say how they differ`);
+    similar.set(a, b).set(b, a);
+  }
+
+  // Descriptions that never say when NOT to use the tool. More important when a look-alike tool exists.
+  for (const t of state.tools) {
+    if (!t.description || t.description.length < 20 || NEGATIVE_GUIDANCE_RE.test(t.description)) continue;
+    const twin = similar.get(t.name);
+    add(twin ? 'warn' : 'info', t.name, twin
+      ? `description doesn't say when not to use it (vs "${twin}") — e.g. "Use ${twin} instead when …"`
+      : 'description doesn\'t say when not to use it — add a "Don\'t use for …" or "Use X instead when …" line');
+  }
+
+  // Runtime: results seen in this session that were large enough to eat a client's context window.
+  for (const [name, chars] of Object.entries(state.bigResults)) {
+    add('warn', name, `a call returned ~${approxTokens(chars)} tokens of output — cap it, paginate, or summarize (threshold ~${approxTokens(BIG_RESULT_CHARS)})`);
+  }
+
   const order = { error: 0, warn: 1, info: 2 };
-  return out.sort((a, b) => order[a.sev] - order[b.sev]);
+  const toolOrder = new Map(state.tools.map((t, i) => [t.name, i]));
+  return out.sort((a, b) => order[a.sev] - order[b.sev] || (toolOrder.get(a.target) ?? 0) - (toolOrder.get(b.target) ?? 0));
+}
+
+const NEGATIVE_GUIDANCE_RE = /\b(do not|don'?t|never|avoid|not (for|to be used|intended|suitable|meant)|instead|rather than|unless|only (use|when|for|if)|prefer\b)/i;
+// Split snake_case, kebab-case, dotted and camelCase names into lowercase words.
+const nameWords = (name) => String(name).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+const LIST_VERBS = new Set(['list', 'search', 'query', 'find', 'browse', 'scan', 'dump', 'export', 'grep', 'tail']);
+const LIST_NOUNS = new Set(['logs', 'history', 'all']);
+// Tools that return a collection: the leading verb lists/searches (search_logs, listUsers), or the
+// name asks for everything (get_all_users, read_logs). "simulate-research-query" is not one.
+function isListish(name) {
+  const w = nameWords(name);
+  return LIST_VERBS.has(w[0]) || w.some((x) => LIST_NOUNS.has(x));
+}
+const LIMIT_RE = /^(limit|max|max_?(results|items|count|tokens|length|lines|rows)|page|page_?size|per_?page|cursor|offset|top_?k|count|first|last|size|n)$/i;
+const BIG_RESULT_CHARS = 40000; // ≈10k tokens
+const approxTokens = (chars) => Math.round(chars / 4).toLocaleString();
+
+// "enum" or "string" when a string-ish parameter gives the model nothing concrete to imitate, else null.
+function missingExample(p) {
+  const s = p.type === 'array' && p.items ? p.items : p;
+  const hasEnum = Array.isArray(s.enum);
+  const isString = s.type === 'string' || (Array.isArray(s.type) && s.type.includes('string'));
+  if (!hasEnum && !isString) return null;
+  if (s.const !== undefined || (!hasEnum && (s.format || s.pattern))) return null; // shape already pinned down
+  if (p.examples?.length || s.examples?.length || p.default !== undefined || s.default !== undefined) return null;
+  const desc = `${p.description ?? ''} ${s === p ? '' : s.description ?? ''}`;
+  if (/\b(e\.g\.|eg:|example|for instance|such as|like ["'`])|["'`][^"'`]+["'`]/i.test(desc)) return null;
+  if (hasEnum) return s.enum.length > 1 && !desc.trim() ? 'enum' : null; // an enum with a description explaining it is fine
+  return 'string';
+}
+
+// Pairs of tools a model could mix up: names with the same words once plurals, word order, casing
+// and filler words are ignored (get_user / getUsers / user_get), or names sharing a word whose
+// descriptions are nearly the same.
+function similarNamePairs(tools) {
+  const stem = (w) => w.replace(/ies$/, 'y').replace(/(?<=[^s])s$/, '');
+  const words = (text, stop) => new Set(nameWords(text ?? '').filter((w) => !stop.has(w)).map(stem));
+  const FILLER = new Set(['get', 'the', 'a', 'an', 'all', 'by', 'of', 'for', 'tool', 'do', 'run']);
+  const STOP = new Set([...FILLER, 'and', 'or', 'to', 'in', 'on', 'with', 'from', 'is', 'it', 'this', 'that', 'be', 'as', 'at', 'use', 'return', 'given']);
+  const jaccard = (a, b) => { const shared = [...a].filter((w) => b.has(w)).length; const union = new Set([...a, ...b]).size; return union ? shared / union : 0; };
+  const info = tools.map((t) => ({ name: t.name, nw: words(t.name, FILLER), dw: words(t.description, STOP) }));
+  const pairs = [];
+  for (let i = 0; i < info.length; i++) {
+    for (let j = i + 1; j < info.length; j++) {
+      const [a, b] = [info[i], info[j]];
+      const sameWords = a.nw.size > 0 && jaccard(a.nw, b.nw) === 1;
+      const twinDescs = jaccard(a.nw, b.nw) > 0 && a.dw.size >= 4 && jaccard(a.dw, b.dw) >= 0.6;
+      if (sameWords || twinDescs) pairs.push([a.name, b.name]);
+    }
+  }
+  return pairs;
+}
+
+// Characters a tool result puts into a model's context. structuredContent usually repeats the text
+// content (the spec asks servers to send both), so count whichever is larger rather than the sum.
+function resultChars(res) {
+  if (!res) return 0;
+  let text = 0;
+  for (const c of res.content ?? []) {
+    if (c.type === 'text') text += c.text?.length ?? 0;
+    else if (c.type === 'resource') text += c.resource?.text?.length ?? 0;
+  }
+  const structured = res.structuredContent === undefined ? 0 : JSON.stringify(res.structuredContent).length;
+  return Math.max(text, structured);
 }
 
 function lintSummaryHtml() {
@@ -716,8 +869,17 @@ async function execute() {
   const btn = document.querySelector('[data-act="run"],[data-act="read"]');
   btn.disabled = true; btn.textContent = 'Running…';
   let res;
+  const sid = state.session.id;
   try { res = await sessionApi(path, body); } catch (err) { res = err; res.ms = err.ms ?? 0; }
+  if (state.session?.id !== sid) return; // session was replaced while the call ran
   state.results[key] = res;
+  if (path === '/tools/call' && res.ok) {
+    const chars = resultChars(res.result);
+    if (chars > BIG_RESULT_CHARS && chars > (state.bigResults[body.name] ?? 0)) {
+      state.bigResults[body.name] = chars;
+      state.lint = lintServer();
+    }
+  }
   state.draft = args;
   (state.history[key] ??= []).unshift({ args, ok: res.ok && !res.result?.isError, ms: res.ms, ts: Date.now() });
   state.history[key].length = Math.min(state.history[key].length, 20);
@@ -767,6 +929,7 @@ function applyProfile(p) {
 $('#transportSeg').addEventListener('click', (e) => { const t = e.target.dataset.t; if (t) setTransport(t); });
 $('#connectBtn').addEventListener('click', connect);
 $('#disconnectBtn').addEventListener('click', disconnect);
+$('#sideDisconnectBtn').addEventListener('click', disconnect);
 $('#pingBtn').addEventListener('click', async () => {
   const b = $('#pingBtn');
   try { const r = await sessionApi('/ping'); b.textContent = `Ping ${r.ms} ms`; } catch (e) { b.textContent = 'Ping failed'; addLogRow({ ts: Date.now(), type: 'error', message: e.message }); }
