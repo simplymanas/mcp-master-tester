@@ -47,16 +47,22 @@ npx mcp-master-tester
 - **Resources:** static resources and URI templates (fill in the variables, then read). Both text and blob contents display.
 - **Prompts:** fill in the arguments and see the messages the prompt returns.
 - **Elicitation:** if a server sends `elicitation/create` to ask the user for input, a form built from its `requestedSchema` appears. URL-mode requests are supported too.
-- **Lint:** static checks of each tool definition against the spec and good practice:
-  - `inputSchema` and `outputSchema` must be of type object
-  - required fields must be defined
-  - flags missing types and descriptions
-  - checks name format and duplicates
-  - flags missing annotations
-  - flags tools whose names overlap so much that a model may pick the wrong one (`get_user` vs `getUsers`)
-  - flags descriptions that never say when *not* to use the tool
-  - flags enums and string parameters that give no example, default or explanation
-  - flags list/search tools with no limit or pagination parameter, and warns when a call returns more than ~10k tokens of output, since that fills the client's context fast
+- **Lint:** checks each tool definition against the spec and against what models handle well:
+  - **Spec:** `inputSchema` and `outputSchema` must be of type object, required fields must be defined, names must be valid and unique
+  - **Confusable tools:** names that overlap so much a model may pick the wrong one (`get_user` vs `getUsers`), and near-identical descriptions
+  - **Descriptions:** missing, very short, never saying when *not* to use the tool, or so long they eat context (it's sent with every request); also flags a whole tool list that is too big
+  - **Parameters:**
+    - missing types or descriptions
+    - no `required` list when a parameter has no default
+    - free-form strings that list fixed values (should be an enum)
+    - strings that should be typed (booleans, numbers, dates, URLs, emails)
+    - enums and strings that give no example
+  - **Naming:** non-snake_case names, and names that break the server's own convention
+  - **Annotations:** missing readOnly/destructive hints
+  - **Output size:** list/search tools with no limit or pagination parameter
+  - **From real calls:**
+    - a badge and a warning when a result is over ~10k tokens
+    - a badge and a warning when an `isError` result has no useful message for the model to recover from
 - **Protocol log:** shows traffic and server output, newest at the bottom:
   - every JSON-RPC frame in both directions, with request → response time
   - the server's stderr
@@ -106,10 +112,12 @@ Browser UI ──REST──▶ Express backend ──MCP──▶ your server (s
 | File | Responsibility |
 |---|---|
 | `server.js` | Session lifecycle, transports, JSON-RPC tap, elicitation bridge, REST API |
-| `public/app.js` | Connection form, schema forms, result rendering, lint, protocol log |
+| `public/app.js` | Connection form, schema forms, result rendering, protocol log |
+| `public/lint.js` | Lint rules (pure functions, shared by the UI and the unit tests) |
 | `public/style.css` | Theme tokens (light/dark) and layout |
 | `public/index.html` | Page shell |
 | `test/api.test.js` | Integration tests against the reference server (`npm test`) |
+| `test/lint.test.js` | Unit tests for every lint rule (`npm test`) |
 
 ### REST API
 
