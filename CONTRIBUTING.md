@@ -26,15 +26,17 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | File | What lives there |
 |---|---|
 | `server.js` | Backend: sessions, transports, REST API, event stream |
-| `public/app.js` | UI logic: connection form, schema forms, results, lint, log |
+| `public/app.js` | UI logic: connection form, schema forms, results, log |
+| `public/lint.js` | Lint rules as pure functions, with no DOM access |
 | `public/style.css` | Theme and layout |
 | `test/api.test.js` | Integration tests (Node's built-in test runner) |
+| `test/lint.test.js` | Unit tests for the lint rules |
 
 ## Make a change
 
 1. Create a branch: `git checkout -b feat/short-description` (or `fix/…`, `docs/…`).
 2. Make your change. Test it in the browser against a real server. The default profile launches `server-everything`, which exercises every feature.
-3. Add or update tests in `test/` for backend changes. Run `npm test`.
+3. Add or update tests in `test/` for backend changes. For a new lint rule, add a case it must flag and a near-miss it must not flag to `test/lint.test.js`. Run `npm test`.
 4. Update the README if behavior or setup changed.
 5. Commit with a short, imperative message: `Add smoke-test mode`, `Fix SSE header handling`.
 6. Push and open a pull request. Fill in the template.

@@ -1,6 +1,8 @@
 // MCP Master Tester — UI
 // Author: @simplymanas
 
+import { lintTools, resultChars, unhelpfulError, BIG_RESULT_CHARS, approxTokens } from './lint.js';
+
 const $ = (sel) => document.querySelector(sel);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SECRET_RE = /key|token|secret|pass(word)?|auth|credential|bearer|cookie/i;
@@ -20,6 +22,7 @@ const state = {
   results: {},            // itemKey -> last response
   history: {},            // itemKey -> [{args, ok, ms, ts}]
   bigResults: {},         // tool name -> largest oversized result seen this session (chars), for lint
+  badErrors: {},          // tool name -> text of an isError result with no useful message, for lint
   pending: new Map(),     // rpc correlation for latency
   logFilters: { rpc: true, stderr: true, log: true },
 };
@@ -194,7 +197,7 @@ async function disconnect() {
   state.events?.close();
   state.events = null;
   if (s) await api(`/sessions/${s.id}`, undefined, 'DELETE').catch(() => {});
-  Object.assign(state, { tools: [], resources: [], templates: [], prompts: [], lint: [], selected: null, results: {}, history: {}, bigResults: {} });
+  Object.assign(state, { tools: [], resources: [], templates: [], prompts: [], lint: [], selected: null, results: {}, history: {}, bigResults: {}, badErrors: {} });
   setStatus('disconnected');
   render();
 }
@@ -649,6 +652,7 @@ function resultHtml(key) {
     const warnings = [];
     if (tool?.outputSchema && res.structuredContent === undefined && !res.isError) warnings.push('<span class="badge warn">outputSchema declared but no structuredContent</span>');
     const chars = resultChars(res);
+    if (unhelpfulError(res) !== null) warnings.push('<span class="badge warn" title="A model can\'t recover from this: say what went wrong and how to fix the call.">error message not actionable</span>');
     if (chars > BIG_RESULT_CHARS) warnings.push(`<span class="badge warn" title="${chars.toLocaleString()} characters. Large results crowd out the client's context window.">~${approxTokens(chars)} tokens: very large</span>`);
     status = `<span class="badge ${res.isError ? 'err' : 'ok'}">${res.isError ? 'tool error (isError)' : 'success'}</span>${warnings.join('')}`;
     const parts = [];
@@ -694,122 +698,7 @@ function infoHtml() {
 
 // ---------------------------------------------------------------- lint
 
-function lintServer() {
-  const out = [];
-  const add = (sev, target, msg) => out.push({ sev, target, msg });
-  const seen = new Set();
-  for (const t of state.tools) {
-    if (seen.has(t.name)) add('error', t.name, 'duplicate tool name');
-    seen.add(t.name);
-    if (!/^[A-Za-z0-9_.-]{1,128}$/.test(t.name)) add('warn', t.name, 'name should match [A-Za-z0-9_.-]{1,128}');
-    if (!t.description) add('warn', t.name, 'missing description — models cannot tell when to use it');
-    else if (t.description.length < 20) add('info', t.name, 'very short description');
-    const s = t.inputSchema;
-    if (!s || s.type !== 'object') { add('error', t.name, 'inputSchema.type must be "object"'); continue; }
-    const props = s.properties ?? {};
-    for (const r of s.required ?? []) if (!(r in props)) add('error', t.name, `required "${r}" is not defined in properties`);
-    for (const [n, p] of Object.entries(props)) {
-      if (!p.type && !p.enum && !p.anyOf && !p.oneOf && !p.$ref) add('warn', t.name, `property "${n}" has no type`);
-      if (!p.description) add('info', t.name, `property "${n}" has no description`);
-      const missing = missingExample(p);
-      if (missing === 'enum') add('info', t.name, `enum "${n}" has no description or default — say what the values mean and which to pick when unsure`);
-      else if (missing) add('info', t.name, `string param "${n}" has no example — add "examples", a default, or an "e.g." in its description`);
-    }
-    if (!t.annotations) add('info', t.name, 'no annotations (readOnly/destructive hints)');
-    if (t.outputSchema && t.outputSchema.type !== 'object') add('error', t.name, 'outputSchema.type must be "object"');
-    if (isListish(t.name) && !Object.keys(props).some((n) => LIMIT_RE.test(n)))
-      add('info', t.name, 'list/search-style tool with no limit or pagination parameter — output may be unbounded and flood the client\'s context');
-  }
-
-  // Tools whose names overlap so much that a model may pick the wrong one.
-  const similar = new Map();
-  for (const [a, b] of similarNamePairs(state.tools)) {
-    add('warn', b, `name is very close to "${a}" — models may confuse them; make the names and descriptions say how they differ`);
-    similar.set(a, b).set(b, a);
-  }
-
-  // Descriptions that never say when NOT to use the tool. More important when a look-alike tool exists.
-  for (const t of state.tools) {
-    if (!t.description || t.description.length < 20 || NEGATIVE_GUIDANCE_RE.test(t.description)) continue;
-    const twin = similar.get(t.name);
-    add(twin ? 'warn' : 'info', t.name, twin
-      ? `description doesn't say when not to use it (vs "${twin}") — e.g. "Use ${twin} instead when …"`
-      : 'description doesn\'t say when not to use it — add a "Don\'t use for …" or "Use X instead when …" line');
-  }
-
-  // Runtime: results seen in this session that were large enough to eat a client's context window.
-  for (const [name, chars] of Object.entries(state.bigResults)) {
-    add('warn', name, `a call returned ~${approxTokens(chars)} tokens of output — cap it, paginate, or summarize (threshold ~${approxTokens(BIG_RESULT_CHARS)})`);
-  }
-
-  const order = { error: 0, warn: 1, info: 2 };
-  const toolOrder = new Map(state.tools.map((t, i) => [t.name, i]));
-  return out.sort((a, b) => order[a.sev] - order[b.sev] || (toolOrder.get(a.target) ?? 0) - (toolOrder.get(b.target) ?? 0));
-}
-
-const NEGATIVE_GUIDANCE_RE = /\b(do not|don'?t|never|avoid|not (for|to be used|intended|suitable|meant)|instead|rather than|unless|only (use|when|for|if)|prefer\b)/i;
-// Split snake_case, kebab-case, dotted and camelCase names into lowercase words.
-const nameWords = (name) => String(name).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-const LIST_VERBS = new Set(['list', 'search', 'query', 'find', 'browse', 'scan', 'dump', 'export', 'grep', 'tail']);
-const LIST_NOUNS = new Set(['logs', 'history', 'all']);
-// Tools that return a collection: the leading verb lists/searches (search_logs, listUsers), or the
-// name asks for everything (get_all_users, read_logs). "simulate-research-query" is not one.
-function isListish(name) {
-  const w = nameWords(name);
-  return LIST_VERBS.has(w[0]) || w.some((x) => LIST_NOUNS.has(x));
-}
-const LIMIT_RE = /^(limit|max|max_?(results|items|count|tokens|length|lines|rows)|page|page_?size|per_?page|cursor|offset|top_?k|count|first|last|size|n)$/i;
-const BIG_RESULT_CHARS = 40000; // ≈10k tokens
-const approxTokens = (chars) => Math.round(chars / 4).toLocaleString();
-
-// "enum" or "string" when a string-ish parameter gives the model nothing concrete to imitate, else null.
-function missingExample(p) {
-  const s = p.type === 'array' && p.items ? p.items : p;
-  const hasEnum = Array.isArray(s.enum);
-  const isString = s.type === 'string' || (Array.isArray(s.type) && s.type.includes('string'));
-  if (!hasEnum && !isString) return null;
-  if (s.const !== undefined || (!hasEnum && (s.format || s.pattern))) return null; // shape already pinned down
-  if (p.examples?.length || s.examples?.length || p.default !== undefined || s.default !== undefined) return null;
-  const desc = `${p.description ?? ''} ${s === p ? '' : s.description ?? ''}`;
-  if (/\b(e\.g\.|eg:|example|for instance|such as|like ["'`])|["'`][^"'`]+["'`]/i.test(desc)) return null;
-  if (hasEnum) return s.enum.length > 1 && !desc.trim() ? 'enum' : null; // an enum with a description explaining it is fine
-  return 'string';
-}
-
-// Pairs of tools a model could mix up: names with the same words once plurals, word order, casing
-// and filler words are ignored (get_user / getUsers / user_get), or names sharing a word whose
-// descriptions are nearly the same.
-function similarNamePairs(tools) {
-  const stem = (w) => w.replace(/ies$/, 'y').replace(/(?<=[^s])s$/, '');
-  const words = (text, stop) => new Set(nameWords(text ?? '').filter((w) => !stop.has(w)).map(stem));
-  const FILLER = new Set(['get', 'the', 'a', 'an', 'all', 'by', 'of', 'for', 'tool', 'do', 'run']);
-  const STOP = new Set([...FILLER, 'and', 'or', 'to', 'in', 'on', 'with', 'from', 'is', 'it', 'this', 'that', 'be', 'as', 'at', 'use', 'return', 'given']);
-  const jaccard = (a, b) => { const shared = [...a].filter((w) => b.has(w)).length; const union = new Set([...a, ...b]).size; return union ? shared / union : 0; };
-  const info = tools.map((t) => ({ name: t.name, nw: words(t.name, FILLER), dw: words(t.description, STOP) }));
-  const pairs = [];
-  for (let i = 0; i < info.length; i++) {
-    for (let j = i + 1; j < info.length; j++) {
-      const [a, b] = [info[i], info[j]];
-      const sameWords = a.nw.size > 0 && jaccard(a.nw, b.nw) === 1;
-      const twinDescs = jaccard(a.nw, b.nw) > 0 && a.dw.size >= 4 && jaccard(a.dw, b.dw) >= 0.6;
-      if (sameWords || twinDescs) pairs.push([a.name, b.name]);
-    }
-  }
-  return pairs;
-}
-
-// Characters a tool result puts into a model's context. structuredContent usually repeats the text
-// content (the spec asks servers to send both), so count whichever is larger rather than the sum.
-function resultChars(res) {
-  if (!res) return 0;
-  let text = 0;
-  for (const c of res.content ?? []) {
-    if (c.type === 'text') text += c.text?.length ?? 0;
-    else if (c.type === 'resource') text += c.resource?.text?.length ?? 0;
-  }
-  const structured = res.structuredContent === undefined ? 0 : JSON.stringify(res.structuredContent).length;
-  return Math.max(text, structured);
-}
+const lintServer = () => lintTools(state.tools, { bigResults: state.bigResults, badErrors: state.badErrors });
 
 function lintSummaryHtml() {
   if (!state.session) return '<div class="empty">Not connected.</div>';
@@ -875,10 +764,10 @@ async function execute() {
   state.results[key] = res;
   if (path === '/tools/call' && res.ok) {
     const chars = resultChars(res.result);
-    if (chars > BIG_RESULT_CHARS && chars > (state.bigResults[body.name] ?? 0)) {
-      state.bigResults[body.name] = chars;
-      state.lint = lintServer();
-    }
+    if (chars > BIG_RESULT_CHARS && chars > (state.bigResults[body.name] ?? 0)) state.bigResults[body.name] = chars;
+    const vague = unhelpfulError(res.result);
+    if (vague !== null) state.badErrors[body.name] = vague;
+    state.lint = lintServer();
   }
   state.draft = args;
   (state.history[key] ??= []).unshift({ args, ok: res.ok && !res.result?.isError, ms: res.ms, ts: Date.now() });
