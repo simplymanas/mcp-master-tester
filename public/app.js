@@ -209,7 +209,17 @@ function setStatus(s) {
   const on = s === 'connected';
   $('#pingBtn').disabled = !on;
   $('#disconnectBtn').disabled = !on;
-  $('#logLevel').disabled = !(on && state.session?.capabilities?.logging);
+  // logging/setLevel is only allowed when the server declares the logging capability; say so
+  // instead of leaving a silently disabled dropdown.
+  const canLog = on && !!state.session?.capabilities?.logging;
+  const level = $('#logLevel');
+  level.disabled = !canLog;
+  if (!canLog) level.value = '';
+  level.options[0].textContent = on && !canLog ? 'no logging support' : 'level…';
+  level.title = !on ? 'Connect to set the server\'s log level'
+    : canLog ? 'Ask the server to send log messages at this level and above (logging/setLevel)'
+    : 'This server doesn\'t declare the "logging" capability, so its log level can\'t be changed';
+  $('#logLevelWrap').title = level.title; // disabled controls don't show their own tooltip in every browser
   const si = state.session?.serverInfo;
   $('#serverMeta').textContent = on && si ? `${si.name} v${si.version}${state.session.protocolVersion ? ` · protocol ${state.session.protocolVersion}` : ''}` : '';
   renderConnCard(s);
@@ -520,7 +530,7 @@ function render() {
   $('#cTools').textContent = state.tools.length;
   $('#cResources').textContent = state.resources.length + state.templates.length;
   $('#cPrompts').textContent = state.prompts.length;
-  $('#cLint').textContent = state.lint.filter((l) => l.sev !== 'info').length;
+  renderLintCount();
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === state.tab));
   $('.list-pane').hidden = state.tab === 'info';
 
@@ -699,6 +709,17 @@ function infoHtml() {
 // ---------------------------------------------------------------- lint
 
 const lintServer = () => lintTools(state.tools, { bigResults: state.bigResults, badErrors: state.badErrors });
+
+// Tab count: errors + warnings, coloured by the worst one, then the info findings muted ("0 · 30"),
+// so a clean count never hides that there are suggestions to read.
+function renderLintCount() {
+  const n = { error: 0, warn: 0, info: 0 };
+  for (const l of state.lint) n[l.sev]++;
+  const el = $('#cLint');
+  el.className = `count${n.error ? ' has-err' : n.warn ? ' has-warn' : ''}`;
+  el.innerHTML = `${n.error + n.warn}${n.info ? `<span class="count-sub"> · ${n.info}</span>` : ''}`;
+  el.title = `${n.error} error${n.error === 1 ? '' : 's'}, ${n.warn} warning${n.warn === 1 ? '' : 's'}, ${n.info} info`;
+}
 
 function lintSummaryHtml() {
   if (!state.session) return '<div class="empty">Not connected.</div>';
