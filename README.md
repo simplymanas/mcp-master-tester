@@ -53,6 +53,10 @@ npx mcp-master-tester
   - flags missing types and descriptions
   - checks name format and duplicates
   - flags missing annotations
+  - flags tools whose names overlap so much that a model may pick the wrong one (`get_user` vs `getUsers`)
+  - flags descriptions that never say when *not* to use the tool
+  - flags enums and string parameters that give no example, default or explanation
+  - flags list/search tools with no limit or pagination parameter, and warns when a call returns more than ~10k tokens of output, since that fills the client's context fast
 - **Protocol log:** shows traffic and server output, newest at the bottom:
   - every JSON-RPC frame in both directions, with request → response time
   - the server's stderr

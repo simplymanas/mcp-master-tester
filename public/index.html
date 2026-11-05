@@ -20,8 +20,10 @@
   <div class="layout">
     <!-- Connection -->
     <aside class="sidebar">
-      <section class="card">
-        <h2>Connection</h2>
+      <section class="card conn-card" id="connCard" data-state="disconnected">
+        <div class="conn-head"><h2>Connection</h2><span class="conn-pill" id="connPill">Not connected</span></div>
+        <div class="conn-summary" id="connSummary" hidden></div>
+        <fieldset id="connFields" class="conn-fields">
         <div class="seg" id="transportSeg">
           <button data-t="stdio" class="active">stdio</button>
           <button data-t="http">Streamable HTTP</button>
@@ -43,7 +45,12 @@
           <div id="headerRows" class="kv"></div>
         </div>
 
-        <button id="connectBtn" class="btn primary block">Connect</button>
+        </fieldset>
+        <p class="hint conn-edit-hint" id="connEditHint" hidden>Edit the fields above and click Reconnect to apply them.</p>
+        <div class="conn-actions">
+          <button id="connectBtn" class="btn primary">Connect</button>
+          <button id="sideDisconnectBtn" class="btn" hidden>Disconnect</button>
+        </div>
         <div id="connectError" class="error-box" hidden></div>
       </section>
 
