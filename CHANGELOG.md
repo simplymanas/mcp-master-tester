@@ -2,6 +2,14 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Phone layout.** On narrow screens the page scrolled sideways and the tool list was squeezed under the detail pane, so tools couldn't be tapped. The layout now stacks and scrolls normally.
+- **The Lint tab count no longer reads 0 when there are findings.** It shows errors + warnings, coloured by the worst, then info findings muted (`0 · 30`), with the breakdown in a tooltip.
+- **The log-level dropdown explains itself.** When a server doesn't declare the `logging` capability, the dropdown says "no logging support" and its tooltip explains why, instead of being silently disabled.
+
 ## [1.1.0] - 2026-11-05
 
 ### Added
