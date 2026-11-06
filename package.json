@@ -1,6 +1,6 @@
 {
   "name": "mcp-master-tester",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Local web UI to connect, inspect and test any MCP server — stdio, Streamable HTTP & SSE, with auth prompts, schema-driven tool forms, elicitation, linting and a live JSON-RPC log.",
   "type": "module",
   "bin": {

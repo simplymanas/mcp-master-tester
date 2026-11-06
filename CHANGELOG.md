@@ -2,13 +2,19 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.1] - 2026-11-06
 
 ### Fixed
 
 - **Phone layout.** On narrow screens the page scrolled sideways and the tool list was squeezed under the detail pane, so tools couldn't be tapped. The layout now stacks and scrolls normally.
 - **The Lint tab count no longer reads 0 when there are findings.** It shows errors + warnings, coloured by the worst, then info findings muted (`0 · 30`), with the breakdown in a tooltip.
 - **The log-level dropdown explains itself.** When a server doesn't declare the `logging` capability, the dropdown says "no logging support" and its tooltip explains why, instead of being silently disabled.
+
+These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/6).
+
+### Docs
+
+- The README covers the connection panel, how to read the Lint count, when the log level can be set, phone support, and that closing the tab stops the server. It also adds screenshots and an updated roadmap ([#7](https://github.com/simplymanas/mcp-master-tester/pull/7)).
 
 ## [1.1.0] - 2026-11-05
 
@@ -42,5 +48,6 @@ All notable changes to MCP Master Tester. The format follows [Keep a Changelog](
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.1.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/simplymanas/mcp-master-tester/releases/tag/v1.0.0
