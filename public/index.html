@@ -88,11 +88,13 @@
           <label class="chk"><input type="checkbox" data-f="rpc" checked /> JSON-RPC</label>
           <label class="chk"><input type="checkbox" data-f="stderr" checked /> stderr</label>
           <label class="chk"><input type="checkbox" data-f="log" checked /> server log</label>
-          <select id="logLevel" disabled title="logging/setLevel">
-            <option value="">level…</option>
-            <option>debug</option><option>info</option><option>notice</option><option>warning</option>
-            <option>error</option><option>critical</option><option>alert</option><option>emergency</option>
-          </select>
+          <span id="logLevelWrap" title="Connect to set the server's log level">
+            <select id="logLevel" disabled title="Connect to set the server's log level">
+              <option value="">level…</option>
+              <option>debug</option><option>info</option><option>notice</option><option>warning</option>
+              <option>error</option><option>critical</option><option>alert</option><option>emergency</option>
+            </select>
+          </span>
           <div class="spacer"></div>
           <button id="logClear" class="btn ghost tiny">Clear</button>
         </div>
