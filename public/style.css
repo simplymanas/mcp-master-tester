@@ -146,6 +146,7 @@ pre.json { margin: 0; padding: 10px; background: var(--bg); border: 1px solid va
 .content-item .ctype { font: 10px var(--mono); color: var(--muted); margin-bottom: 3px; }
 .content-item img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; }
 .j-key { color: var(--accent); } .j-str { color: var(--ok); } .j-num { color: var(--warn); } .j-bool, .j-null { color: var(--info); }
+.j-esc { color: var(--muted); }
 .history { list-style: none; padding: 0; margin: 0; }
 .history li { display: flex; gap: 8px; align-items: center; font: 11px var(--mono); padding: 4px 0; border-bottom: 1px dashed var(--border); }
 .history li code { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
