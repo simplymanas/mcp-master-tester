@@ -4,15 +4,16 @@
   "description": "Local web UI to connect, inspect and test any MCP server — stdio, Streamable HTTP & SSE, with auth prompts, schema-driven tool forms, elicitation, linting and a live JSON-RPC log.",
   "type": "module",
   "bin": {
-    "mcp-master-tester": "server.js"
+    "mcp-master-tester": "cli.js"
   },
   "files": [
+    "cli.js",
     "server.js",
     "public"
   ],
   "scripts": {
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "mcp",

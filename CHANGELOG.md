@@ -4,6 +4,10 @@ All notable changes to MCP Master Tester. The format follows [Keep a Changelog](
 
 ## [Unreleased]
 
+### Added
+
+- **Lint from the command line, for CI.** `npx mcp-master-tester lint -- <server command>` (or `--url` for Streamable HTTP and SSE) runs the same lint rules as the Lint tab and exits 1 when there are findings at the `--fail-on` level (`error` by default, or `warn`, `info`, `never`). Output can be text, JSON, or GitHub Actions annotations (`--format github`). A server that fails to start exits 2 and has its stderr printed. Running `mcp-master-tester` with no arguments still starts the web UI.
+
 ### Docs
 
 - Re-recorded the README demo GIF on 1.1.1. It now shows the connection panel and the new Lint count, and is about 650 KB instead of 4.2 MB. The "What's new" line now covers 1.1.1.

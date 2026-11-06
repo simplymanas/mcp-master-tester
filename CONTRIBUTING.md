@@ -25,12 +25,15 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 
 | File | What lives there |
 |---|---|
+| `cli.js` | Command line: starts the UI, or runs `lint` |
 | `server.js` | Backend: sessions, transports, REST API, event stream |
 | `public/app.js` | UI logic: connection form, schema forms, results, log |
 | `public/lint.js` | Lint rules as pure functions, with no DOM access |
 | `public/style.css` | Theme and layout |
 | `test/api.test.js` | Integration tests (Node's built-in test runner) |
 | `test/lint.test.js` | Unit tests for the lint rules |
+| `test/cli.test.js` | Tests for `lint` from the command line |
+| `test/fixtures/` | Small MCP servers the tests run against (not test files themselves) |
 
 ## Make a change
 
