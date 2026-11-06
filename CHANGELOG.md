@@ -4,6 +4,11 @@ All notable changes to MCP Master Tester. The format follows [Keep a Changelog](
 
 ## [Unreleased]
 
+### Added
+
+- **Light/dark theme button** at the top right. The theme still follows your system setting until you pick one; your choice is remembered across reloads and wins over later system changes.
+- **About panel** (the ⓘ button next to it): the version, who built it, and links to the source, npm package, release notes, issues and tutorial. It reads the version from the new `GET /api/info` endpoint.
+
 ### Docs
 
 - Re-recorded the README demo GIF on 1.1.1. It now shows the connection panel and the new Lint count, and is about 650 KB instead of 4.2 MB. The "What's new" line now covers 1.1.1.
