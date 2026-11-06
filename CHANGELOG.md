@@ -2,6 +2,12 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Docs
+
+- Re-recorded the README demo GIF on 1.1.1. It now shows the connection panel and the new Lint count, and is about 650 KB instead of 4.2 MB. The "What's new" line now covers 1.1.1.
+
 ## [1.1.1] - 2026-11-06
 
 ### Fixed

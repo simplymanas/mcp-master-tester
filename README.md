@@ -13,7 +13,7 @@ You point it at a server, either a local command over stdio or a remote URL over
 
 📖 **Tutorial:** [Testing any MCP server, step by step, with MCP Master Tester](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35) on Medium.
 
-🆕 **What's new in 1.1:** connection state in the sidebar, a reconnect fix, and lint rules for tool definitions that models struggle with. See the [CHANGELOG](CHANGELOG.md).
+🆕 **What's new in 1.1:** connection state in the sidebar, a reconnect fix, and lint rules for tool definitions that models struggle with. **1.1.1** adds a phone layout and a clearer Lint count, and the log-level control now tells you when a server doesn't support logging. See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
 
 > 🤝 **Open source and looking for collaborators.** Whether you build MCP servers, love clean UIs, or just found a bug, see [Contributing](#contributing). First-time contributors are welcome.
 
@@ -21,7 +21,7 @@ You point it at a server, either a local command over stdio or a remote URL over
 npx mcp-master-tester
 ```
 
-![MCP Master Tester demo: connecting to a server, running tools, viewing results, the protocol log and the lint report](docs/demo.gif)
+![MCP Master Tester demo: connecting to the reference server, the sidebar switching to Connected, running the echo and get-sum tools, the protocol log, a resource, the lint report and the server info](docs/demo.gif)
 
 ---
 
