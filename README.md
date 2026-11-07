@@ -198,6 +198,7 @@ All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on 
 | `/api/sessions/:id/prompts/list` · `prompts/get` | `prompts/*` |
 | `/api/sessions/:id/logging/level` | `logging/setLevel` |
 | `/api/sessions/:id/elicit/:reqId` | answer to `elicitation/create` |
+| `GET /api/info` | none: returns `{ name, version }` of this app, unwrapped |
 
 ## Security
 
