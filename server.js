@@ -201,6 +201,8 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), 'public')));
 
+app.get('/api/info', (req, res) => res.json({ name: 'mcp-master-tester', version: VERSION }));
+
 app.post('/api/sessions', route(async (req) => {
   const session = new Session(req.body);
   try {

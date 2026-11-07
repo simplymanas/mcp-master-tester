@@ -1,4 +1,5 @@
 // Integration tests: drive the tester's REST API against the reference "everything" MCP server.
+import { readFileSync } from 'node:fs';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -45,6 +46,13 @@ before(async () => {
 });
 
 after(() => children.forEach((c) => c.kill()));
+
+test('GET /api/info reports the package version', async () => {
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const res = await fetch(`${BASE}/info`);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { name: 'mcp-master-tester', version: pkg.version });
+});
 
 test('stdio: connects and reports server info and capabilities', async () => {
   const { status, json } = await api('/sessions', stdioConfig);

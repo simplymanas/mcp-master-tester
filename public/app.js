@@ -851,6 +851,13 @@ function applyProfile(p) {
 
 // ---------------------------------------------------------------- wiring
 
+$('#aboutBtn').addEventListener('click', () => {
+  const d = $('#aboutDialog');
+  d.showModal();
+  if (!$('#aboutVersion').textContent) fetch('/api/info').then((r) => r.json()).then((i) => { $('#aboutVersion').textContent = `v${i.version}`; }).catch(() => {});
+});
+$('#aboutDialog').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); }); // backdrop click
+
 $('#transportSeg').addEventListener('click', (e) => { const t = e.target.dataset.t; if (t) setTransport(t); });
 $('#connectBtn').addEventListener('click', connect);
 $('#disconnectBtn').addEventListener('click', disconnect);
