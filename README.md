@@ -49,7 +49,7 @@ npx mcp-master-tester
 - **Running tools:** set a timeout per call. Progress shows live from `notifications/progress`. Tools marked destructive ask for confirmation, and each tool keeps a call history.
 - **Result viewer:** shows the result in readable form:
   - text (JSON is pretty-printed), images, audio, resource links and embedded resources
-  - `structuredContent`
+  - `structuredContent`, with multi-line strings broken at each `\n` so text blocks stay readable, and a hint when it only wraps the text output in one string (as Python FastMCP does when a tool returns a `str`)
   - an `isError` tool result shown separately from a protocol error
   - how long the call took
 - **Resources:** static resources and URI templates (fill in the variables, then read). Both text and blob contents display.
@@ -78,7 +78,7 @@ npx mcp-master-tester
   - `notifications/message` log entries
   - a `logging/setLevel` control, available when the server declares the `logging` capability (otherwise it reads "no logging support")
 - **Profiles:** saved in your browser. Secrets are never stored, so the app asks for them when you connect.
-- **No build step:** Express on the backend and plain JavaScript in the browser. Light and dark themes follow your system setting, and the layout works on phone-sized screens.
+- **No build step:** Express on the backend and plain JavaScript in the browser. Light and dark themes follow your system setting, or pick one with the button at the top right; the choice is remembered. The ⓘ button next to it shows the version and project links, and the layout works on phone-sized screens.
 
 ## Screenshots
 
@@ -175,6 +175,7 @@ Browser UI ──REST──▶ Express backend ──MCP──▶ your server (s
 | `cli.js` | Command-line entry point: starts the web UI, or runs `lint` for CI |
 | `server.js` | Session lifecycle, transports, JSON-RPC tap, elicitation bridge, REST API |
 | `public/app.js` | Connection form, schema forms, result rendering, protocol log |
+| `public/theme.js` | Light/dark theme toggle (loaded in `<head>` so there's no flash of the wrong theme) |
 | `public/lint.js` | Lint rules (pure functions, shared by the UI, the CLI and the unit tests) |
 | `public/style.css` | Theme tokens (light/dark) and layout |
 | `public/index.html` | Page shell |

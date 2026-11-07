@@ -1,7 +1,7 @@
 // MCP Master Tester — UI
 // Author: @simplymanas
 
-import { lintTools, resultChars, unhelpfulError, BIG_RESULT_CHARS, approxTokens } from './lint.js';
+import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 
 const $ = (sel) => document.querySelector(sel);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -497,10 +497,22 @@ function collectArgs(container, schema) {
 
 // ---------------------------------------------------------------- rendering
 
+// Multi-line string values (text blocks, tables, logs) wrap into one unreadable line as JSON. Break the
+// display after each \n escape and line the next line up under the opening quote. The escape stays
+// visible, and Copy JSON still copies the exact JSON.
+function multilineStr(str, json, offset) {
+  if (!str.includes('\\n')) return str;
+  const lineStart = json.lastIndexOf('\n', offset) + 1;
+  const col = json.slice(lineStart, offset).replace(/&(?:[a-z]+|#\d+);/g, ' ').length;
+  const lineIndent = json.slice(lineStart).match(/^ */)[0].length;
+  const pad = ' '.repeat(col + 1 <= 40 ? col + 1 : lineIndent + 4);
+  return str.replace(/\\./g, (e) => (e === '\\n' ? `<span class="j-esc">\\n</span>\n${pad}` : e));
+}
+
 function highlight(value) {
   const json = esc(JSON.stringify(value, null, 2));
-  return json.replace(/(&quot;(?:\\.|[^&]|&(?!quot;))*?&quot;)(\s*:)?|\b(true|false)\b|\bnull\b|-?\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b/gi, (m, str, colon, bool) => {
-    if (str) return colon ? `<span class="j-key">${str}</span>${colon}` : `<span class="j-str">${str}</span>`;
+  return json.replace(/(&quot;(?:\\.|[^&]|&(?!quot;))*?&quot;)(\s*:)?|\b(true|false)\b|\bnull\b|-?\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b/gi, (m, str, colon, bool, offset) => {
+    if (str) return colon ? `<span class="j-key">${str}</span>${colon}` : `<span class="j-str">${multilineStr(str, json, offset)}</span>`;
     if (bool) return `<span class="j-bool">${m}</span>`;
     if (m === 'null') return `<span class="j-null">${m}</span>`;
     return `<span class="j-num">${m}</span>`;
@@ -669,7 +681,10 @@ function resultHtml(key) {
     (res.content ?? []).forEach((c) => parts.push(contentHtml(c)));
     (res.contents ?? []).forEach((c) => parts.push(`<div class="content-item">${resourceContentsHtml(c)}</div>`));
     (res.messages ?? []).forEach((m) => parts.push(`<div class="content-item"><div class="ctype">role: ${esc(m.role)}</div>${contentHtml(m.content)}</div>`));
-    if (res.structuredContent !== undefined) parts.push(`<div class="content-item"><div class="ctype">structuredContent</div><pre class="json">${highlight(res.structuredContent)}</pre></div>`);
+    if (res.structuredContent !== undefined) {
+      const hint = wrapsTextOnly(res) ? ` <span class="badge info" title="structuredContent is a single string that repeats the text output, so clients get no fields to work with. Python FastMCP does this when a tool returns a str: return a dict or a model instead.">only wraps the text output</span>` : '';
+      parts.push(`<div class="content-item"><div class="ctype">structuredContent${hint}</div><pre class="json">${highlight(res.structuredContent)}</pre></div>`);
+    }
     body = parts.join('') || '<p class="hint">Empty result.</p>';
   }
   return `<div class="section">
@@ -835,6 +850,13 @@ function applyProfile(p) {
 }
 
 // ---------------------------------------------------------------- wiring
+
+$('#aboutBtn').addEventListener('click', () => {
+  const d = $('#aboutDialog');
+  d.showModal();
+  if (!$('#aboutVersion').textContent) fetch('/api/info').then((r) => r.json()).then((i) => { $('#aboutVersion').textContent = `v${i.version}`; }).catch(() => {});
+});
+$('#aboutDialog').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); }); // backdrop click
 
 $('#transportSeg').addEventListener('click', (e) => { const t = e.target.dataset.t; if (t) setTransport(t); });
 $('#connectBtn').addEventListener('click', connect);

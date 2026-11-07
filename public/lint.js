@@ -136,6 +136,18 @@ export function unhelpfulError(res) {
   return null;
 }
 
+// True when structuredContent is one string field that just repeats the text output, e.g. {"result": "<text>"}.
+// That gives clients no fields to work with; Python FastMCP produces it when a tool returns a str.
+export function wrapsTextOnly(res) {
+  const sc = res?.structuredContent;
+  if (!sc || typeof sc !== 'object' || Array.isArray(sc)) return false;
+  const vals = Object.values(sc);
+  if (vals.length !== 1 || typeof vals[0] !== 'string') return false;
+  const norm = (t) => t.replace(/\s+/g, ' ').trim();
+  const text = norm((res.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n'));
+  return text !== '' && norm(vals[0]) === text;
+}
+
 // ---------------------------------------------------------------- helpers
 
 const NEGATIVE_GUIDANCE_RE = /\b(do not|don'?t|never|avoid|not (for|to be used|intended|suitable|meant)|instead|rather than|unless|only (use|when|for|if)|prefer\b)/i;

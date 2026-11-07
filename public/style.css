@@ -6,8 +6,15 @@
   --sans: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color-scheme: dark;
 }
+/* Light: chosen with the theme button (data-theme="light"), or the OS preference when nothing is chosen. */
+:root[data-theme="light"] {
+  --bg: #f6f8fa; --panel: #fff; --panel-2: #f0f3f6; --border: #d0d7de;
+  --text: #1f2328; --muted: #59636e; --accent: #0969da;
+  --ok: #1a7f37; --warn: #9a6700; --err: #cf222e; --info: #8250df;
+  color-scheme: light;
+}
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     --bg: #f6f8fa; --panel: #fff; --panel-2: #f0f3f6; --border: #d0d7de;
     --text: #1f2328; --muted: #59636e; --accent: #0969da;
     --ok: #1a7f37; --warn: #9a6700; --err: #cf222e; --info: #8250df;
@@ -146,6 +153,7 @@ pre.json { margin: 0; padding: 10px; background: var(--bg); border: 1px solid va
 .content-item .ctype { font: 10px var(--mono); color: var(--muted); margin-bottom: 3px; }
 .content-item img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; }
 .j-key { color: var(--accent); } .j-str { color: var(--ok); } .j-num { color: var(--warn); } .j-bool, .j-null { color: var(--info); }
+.j-esc { color: var(--muted); }
 .history { list-style: none; padding: 0; margin: 0; }
 .history li { display: flex; gap: 8px; align-items: center; font: 11px var(--mono); padding: 4px 0; border-bottom: 1px dashed var(--border); }
 .history li code { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
@@ -176,7 +184,14 @@ dialog { background: var(--panel); color: var(--text); border: 1px solid var(--b
 dialog::backdrop { background: rgba(0,0,0,.5); }
 dialog form { padding: 18px; }
 dialog h3 { margin: 0 0 6px; font-size: 15px; }
+.about p { margin: 0 0 10px; }
+.about h4 { margin: 14px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.about-links { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.about a { color: var(--accent); }
+.about .logo { color: var(--accent); }
 dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 30px; padding: 0; }
+.icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .credit { font-size: 10px; color: var(--muted); font-weight: 400; margin-left: 6px; }
 
 @media (max-width: 900px) {
@@ -187,6 +202,10 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
   .brand { white-space: nowrap; }
   .credit { display: none; }
   .server-meta { order: 10; flex-basis: 100%; }
+  /* Row 1: brand and the theme button (top right). Row 2: status and Ping. Row 3: server info. */
+  .status, #pingBtn { order: 5; }
+  #pingBtn { margin-left: auto; }
+  .topbar::after { content: ''; order: 4; flex-basis: 100%; margin-top: -6px; } /* line break before row 2 */
   #disconnectBtn { display: none; } /* the connection card has its own Disconnect */
   .layout { display: block; }
   .sidebar { overflow: visible; border-right: 0; border-bottom: 1px solid var(--border); padding: 12px 16px; }

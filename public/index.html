@@ -6,6 +6,7 @@
   <title>MCP Master Tester</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M8 1l7 7-7 7-7-7z%27 fill=%27%234f9cf9%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -15,6 +16,8 @@
     <div class="spacer"></div>
     <button id="pingBtn" class="btn ghost" disabled>Ping</button>
     <button id="disconnectBtn" class="btn ghost" disabled>Disconnect</button>
+    <button id="aboutBtn" class="btn ghost icon-btn" type="button" title="About" aria-label="About MCP Master Tester"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.9v.1"/></svg></button>
+    <button id="themeBtn" class="btn ghost icon-btn" type="button" title="Switch theme" aria-label="Switch theme"></button>
   </header>
 
   <div class="layout">
@@ -104,6 +107,28 @@
   </div>
 
   <dialog id="modal"><form method="dialog" id="modalForm"></form></dialog>
+  <dialog id="aboutDialog" aria-labelledby="aboutTitle">
+    <form method="dialog" class="about">
+      <h3 id="aboutTitle"><span class="logo">◆</span> MCP Master Tester <span class="hint" id="aboutVersion"></span></h3>
+      <p>A local web UI to connect to, inspect and test any Model Context Protocol server over stdio, Streamable HTTP or SSE.</p>
+      <h4>About me</h4>
+      <p>Built by <strong>Manas Dash</strong> (<a href="https://github.com/simplymanas" target="_blank" rel="noopener">@simplymanas</a>). It's open source, and contributions and feedback are welcome.</p>
+      <ul class="about-links">
+        <li><a href="https://github.com/simplymanas" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://medium.com/simplymanas" target="_blank" rel="noopener">Medium</a></li>
+      </ul>
+      <h4>Project</h4>
+      <ul class="about-links">
+        <li><a href="https://github.com/simplymanas/mcp-master-tester" target="_blank" rel="noopener">Source code</a></li>
+        <li><a href="https://www.npmjs.com/package/mcp-master-tester" target="_blank" rel="noopener">npm package</a></li>
+        <li><a href="https://github.com/simplymanas/mcp-master-tester/releases" target="_blank" rel="noopener">Release notes</a></li>
+        <li><a href="https://github.com/simplymanas/mcp-master-tester/issues" target="_blank" rel="noopener">Report an issue</a></li>
+        <li><a href="https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35" target="_blank" rel="noopener">Tutorial</a></li>
+      </ul>
+      <p class="hint">MIT License · © 2026 Manas Dash</p>
+      <div class="actions"><button class="btn primary" value="close">Close</button></div>
+    </form>
+  </dialog>
   <script type="module" src="app.js"></script>
 </body>
 </html>

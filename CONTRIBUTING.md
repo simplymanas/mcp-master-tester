@@ -28,6 +28,7 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | `cli.js` | Command line: starts the UI, or runs `lint` |
 | `server.js` | Backend: sessions, transports, REST API, event stream |
 | `public/app.js` | UI logic: connection form, schema forms, results, log |
+| `public/theme.js` | Light/dark theme toggle |
 | `public/lint.js` | Lint rules as pure functions, with no DOM access |
 | `public/style.css` | Theme and layout |
 | `test/api.test.js` | Integration tests (Node's built-in test runner) |
