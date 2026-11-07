@@ -4,6 +4,14 @@ All notable changes to MCP Master Tester. The format follows [Keep a Changelog](
 
 ## [Unreleased]
 
+### Fixed
+
+- **Multi-line strings in JSON results are readable.** A string with newlines, such as a text table returned in `structuredContent`, used to wrap into one long line of `\n` escapes. The display now breaks after each `\n` and lines the text up under the opening quote, with the escapes kept and dimmed. Copy JSON still copies the exact JSON.
+
+### Added
+
+- **A hint when `structuredContent` only wraps the text output.** When it's a single string field that repeats the text content (for example `{"result": "..."}`, which Python FastMCP produces when a tool returns a `str`), the result shows an *only wraps the text output* badge, because clients get no fields to work with.
+
 ### Docs
 
 - Re-recorded the README demo GIF on 1.1.1. It now shows the connection panel and the new Lint count, and is about 650 KB instead of 4.2 MB. The "What's new" line now covers 1.1.1.

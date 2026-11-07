@@ -49,7 +49,7 @@ npx mcp-master-tester
 - **Running tools:** set a timeout per call. Progress shows live from `notifications/progress`. Tools marked destructive ask for confirmation, and each tool keeps a call history.
 - **Result viewer:** shows the result in readable form:
   - text (JSON is pretty-printed), images, audio, resource links and embedded resources
-  - `structuredContent`
+  - `structuredContent`, with multi-line strings broken at each `\n` so text blocks stay readable, and a hint when it only wraps the text output in one string (as Python FastMCP does when a tool returns a `str`)
   - an `isError` tool result shown separately from a protocol error
   - how long the call took
 - **Resources:** static resources and URI templates (fill in the variables, then read). Both text and blob contents display.

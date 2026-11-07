@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  lintTools, resultChars, unhelpfulError, fixedValues, betterType, nameStyle, isListish, confusablePairs,
+  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs,
   BIG_RESULT_CHARS,
 } from '../public/lint.js';
 
@@ -155,6 +155,18 @@ test('runtime: isError results with no actionable message', () => {
   assert.equal(unhelpfulError({ content: [{ type: 'text', text: 'Error' }] }), null); // not an isError result
   const f = findings([clean()], { badErrors: { read_note: 'Error' } });
   assert.equal(sevOf(f, 'read_note', /isError with no useful message \("Error"\)/), 'warn');
+});
+
+test('runtime: structuredContent that only wraps the text output', () => {
+  const text = 'id     : req-1\nstatus : DONE';
+  const res = (sc, t = text) => ({ content: [{ type: 'text', text: t }], structuredContent: sc });
+  assert.equal(wrapsTextOnly(res({ result: text })), true);
+  assert.equal(wrapsTextOnly(res({ result: `${text}\n` })), true); // whitespace differences don't matter
+  assert.equal(wrapsTextOnly(res({ id: 'req-1', status: 'DONE' })), false); // real fields
+  assert.equal(wrapsTextOnly(res({ result: 'something else' })), false); // a string, but not the text
+  assert.equal(wrapsTextOnly(res({ result: text, extra: 1 })), false);
+  assert.equal(wrapsTextOnly(res({ count: 3 }, '3')), false); // not a string
+  assert.equal(wrapsTextOnly({ content: [{ type: 'text', text }] }), false); // no structuredContent
 });
 
 test('findings are sorted by severity, then by tool order', () => {
