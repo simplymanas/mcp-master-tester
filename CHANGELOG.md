@@ -2,22 +2,22 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] - 2026-11-07
 
 ### Added
 
-- **Lint from the command line, for CI.** `npx mcp-master-tester lint -- <server command>` (or `--url` for Streamable HTTP and SSE) runs the same lint rules as the Lint tab and exits 1 when there are findings at the `--fail-on` level (`error` by default, or `warn`, `info`, `never`). Output can be text, JSON, or GitHub Actions annotations (`--format github`). A server that fails to start exits 2 and has its stderr printed. Running `mcp-master-tester` with no arguments still starts the web UI.
+- **Lint from the command line, for CI.** `npx mcp-master-tester lint -- <server command>` (or `--url` for Streamable HTTP and SSE) runs the same lint rules as the Lint tab and exits 1 when there are findings at the `--fail-on` level (`error` by default, or `warn`, `info`, `never`). Output can be text, JSON, or GitHub Actions annotations (`--format github`). A server that fails to start exits 2 and has its stderr printed. Running `mcp-master-tester` with no arguments still starts the web UI. ([#12](https://github.com/simplymanas/mcp-master-tester/pull/12))
 - **Light/dark theme button** at the top right. The theme still follows your system setting until you pick one; your choice is remembered across reloads and wins over later system changes.
-- **About panel** (the ⓘ button next to it): the version, who built it, and links to the source, npm package, release notes, issues and tutorial. It reads the version from the new `GET /api/info` endpoint.
-- **A hint when `structuredContent` only wraps the text output.** When it's a single string field that repeats the text content (for example `{"result": "..."}`, which Python FastMCP produces when a tool returns a `str`), the result shows an *only wraps the text output* badge, because clients get no fields to work with.
+- **About panel** (the ⓘ button next to it): the version, who built it, and links to the source, npm package, release notes, issues and tutorial. It reads the version from the new `GET /api/info` endpoint. ([#11](https://github.com/simplymanas/mcp-master-tester/pull/11))
+- **A hint when `structuredContent` only wraps the text output.** When it's a single string field that repeats the text content (for example `{"result": "..."}`, which Python FastMCP produces when a tool returns a `str`), the result shows an *only wraps the text output* badge, because clients get no fields to work with. ([#10](https://github.com/simplymanas/mcp-master-tester/pull/10))
 
 ### Fixed
 
-- **Multi-line strings in JSON results are readable.** A string with newlines, such as a text table returned in `structuredContent`, used to wrap into one long line of `\n` escapes. The display now breaks after each `\n` and lines the text up under the opening quote, with the escapes kept and dimmed. Copy JSON still copies the exact JSON.
+- **Multi-line strings in JSON results are readable.** A string with newlines, such as a text table returned in `structuredContent`, used to wrap into one long line of `\n` escapes. The display now breaks after each `\n` and lines the text up under the opening quote, with the escapes kept and dimmed. Copy JSON still copies the exact JSON. ([#10](https://github.com/simplymanas/mcp-master-tester/pull/10))
 
 ### Docs
 
-- Re-recorded the README demo GIF on 1.1.1. It now shows the connection panel and the new Lint count, and is about 650 KB instead of 4.2 MB. The "What's new" line now covers 1.1.1.
+- Re-recorded the README demo GIF on 1.1.1. It now shows the connection panel and the new Lint count, and is about 650 KB instead of 4.2 MB. The "What's new" line now covers 1.1.1. ([#9](https://github.com/simplymanas/mcp-master-tester/pull/9))
 
 ## [1.1.1] - 2026-11-06
 
@@ -65,6 +65,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.2.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/simplymanas/mcp-master-tester/releases/tag/v1.0.0
