@@ -8,6 +8,11 @@ All notable changes to MCP Master Tester. The format follows [Keep a Changelog](
 
 - **Light/dark theme button** at the top right. The theme still follows your system setting until you pick one; your choice is remembered across reloads and wins over later system changes.
 - **About panel** (the ⓘ button next to it): the version, who built it, and links to the source, npm package, release notes, issues and tutorial. It reads the version from the new `GET /api/info` endpoint.
+- **A hint when `structuredContent` only wraps the text output.** When it's a single string field that repeats the text content (for example `{"result": "..."}`, which Python FastMCP produces when a tool returns a `str`), the result shows an *only wraps the text output* badge, because clients get no fields to work with.
+
+### Fixed
+
+- **Multi-line strings in JSON results are readable.** A string with newlines, such as a text table returned in `structuredContent`, used to wrap into one long line of `\n` escapes. The display now breaks after each `\n` and lines the text up under the opening quote, with the escapes kept and dimmed. Copy JSON still copies the exact JSON.
 
 ### Docs
 
