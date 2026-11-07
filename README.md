@@ -109,6 +109,48 @@ Open **http://127.0.0.1:6280** and click **Connect**. The default fields launch 
 
 Requires **Node.js 20+**. To use a different port, set `PORT`, for example `PORT=7000 npx mcp-master-tester`.
 
+## Lint in CI
+
+The same lint rules run from the command line, so you can check your server's tool definitions on every commit. The command connects to the server, lists its tools, prints the findings and exits non-zero when there are any at your chosen level.
+
+```bash
+# stdio: put the server command after --
+npx mcp-master-tester lint -- node dist/index.js
+
+# Streamable HTTP (add --sse for the legacy SSE transport)
+npx mcp-master-tester lint --url https://example.com/mcp --header "Authorization: Bearer $TOKEN"
+```
+
+```text
+mcp-master-tester lint · my-server v1.4.0 · 12 tools · stdio
+
+  error  send_mail    required "subject" is not defined in properties
+  warn   get_user     name is very close to "getUsers" — models may confuse them; …
+  warn   send_mail    missing description — models cannot tell when to use it
+
+✖ failed: 1 error, 2 warnings, 9 info (add --show-info to list the info findings). Failing on: error.
+```
+
+| Option | What it does |
+|---|---|
+| `--fail-on <level>` | Exit 1 at `error` (default), `warn` or `info` findings, or `never` |
+| `--format <format>` | `text` (default), `json`, or `github` for GitHub Actions annotations |
+| `--show-info` | List info findings too (they're always counted) |
+| `--env KEY=VALUE`, `--cwd <dir>` | Environment and working directory for a stdio server |
+| `--url <url>`, `--sse`, `--header "Name: value"` | Connect to a remote server |
+| `--timeout <ms>` | Give up after this long (default 30000) |
+
+Exit codes: `0` passed, `1` findings at or above `--fail-on`, `2` the server couldn't be started or reached, or the options were wrong. If a stdio server crashes on start, its stderr is printed.
+
+**GitHub Actions:**
+
+```yaml
+- run: npm ci && npm run build
+- run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
+```
+
+With `--format github`, each finding shows up as an annotation on the workflow run.
+
 ## Connecting to servers
 
 | Server type | Settings |
@@ -130,14 +172,16 @@ Browser UI ──REST──▶ Express backend ──MCP──▶ your server (s
 
 | File | Responsibility |
 |---|---|
+| `cli.js` | Command-line entry point: starts the web UI, or runs `lint` for CI |
 | `server.js` | Session lifecycle, transports, JSON-RPC tap, elicitation bridge, REST API |
 | `public/app.js` | Connection form, schema forms, result rendering, protocol log |
 | `public/theme.js` | Light/dark theme toggle (loaded in `<head>` so there's no flash of the wrong theme) |
-| `public/lint.js` | Lint rules (pure functions, shared by the UI and the unit tests) |
+| `public/lint.js` | Lint rules (pure functions, shared by the UI, the CLI and the unit tests) |
 | `public/style.css` | Theme tokens (light/dark) and layout |
 | `public/index.html` | Page shell |
 | `test/api.test.js` | Integration tests against the reference server (`npm test`) |
 | `test/lint.test.js` | Unit tests for every lint rule (`npm test`) |
+| `test/cli.test.js` | Tests for `lint` from the command line, using a fixture server in `test/fixtures/` |
 
 ### REST API
 
@@ -154,6 +198,7 @@ All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on 
 | `/api/sessions/:id/prompts/list` · `prompts/get` | `prompts/*` |
 | `/api/sessions/:id/logging/level` | `logging/setLevel` |
 | `/api/sessions/:id/elicit/:reqId` | answer to `elicitation/create` |
+| `GET /api/info` | none: returns `{ name, version }` of this app, unwrapped |
 
 ## Security
 
@@ -184,7 +229,6 @@ This project is better with more people testing more MCP servers. All contributi
 
 | Item | Difficulty |
 |---|---|
-| CLI lint mode for CI: `npx mcp-master-tester lint -- <server command>` runs the lint rules and exits non-zero on errors or warnings | Medium |
 | Smoke-test mode: run every read-only tool with its default arguments and report the results | Medium |
 | OAuth 2.1 sign-in for remote servers | Hard |
 | Sampling (`sampling/createMessage`) with a manual or LLM-backed responder | Medium |

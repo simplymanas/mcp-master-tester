@@ -6,6 +6,7 @@ All notable changes to MCP Master Tester. The format follows [Keep a Changelog](
 
 ### Added
 
+- **Lint from the command line, for CI.** `npx mcp-master-tester lint -- <server command>` (or `--url` for Streamable HTTP and SSE) runs the same lint rules as the Lint tab and exits 1 when there are findings at the `--fail-on` level (`error` by default, or `warn`, `info`, `never`). Output can be text, JSON, or GitHub Actions annotations (`--format github`). A server that fails to start exits 2 and has its stderr printed. Running `mcp-master-tester` with no arguments still starts the web UI.
 - **Light/dark theme button** at the top right. The theme still follows your system setting until you pick one; your choice is remembered across reloads and wins over later system changes.
 - **About panel** (the ⓘ button next to it): the version, who built it, and links to the source, npm package, release notes, issues and tutorial. It reads the version from the new `GET /api/info` endpoint.
 - **A hint when `structuredContent` only wraps the text output.** When it's a single string field that repeats the text content (for example `{"result": "..."}`, which Python FastMCP produces when a tool returns a `str`), the result shows an *only wraps the text output* badge, because clients get no fields to work with.
