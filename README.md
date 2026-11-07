@@ -13,7 +13,7 @@ You point it at a server, either a local command over stdio or a remote URL over
 
 📖 **Tutorial:** [Testing any MCP server, step by step, with MCP Master Tester](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35) on Medium.
 
-🆕 **What's new in 1.1:** connection state in the sidebar, a reconnect fix, and lint rules for tool definitions that models struggle with. **1.1.1** adds a phone layout and a clearer Lint count, and the log-level control now tells you when a server doesn't support logging. See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
+🆕 **What's new in 1.2:** lint your server's tools in CI with `npx mcp-master-tester lint -- <server command>` (see [Lint in CI](#lint-in-ci)), a light/dark theme button, and readable multi-line strings in JSON results. See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
 
 > 🤝 **Open source and looking for collaborators.** Whether you build MCP servers, love clean UIs, or just found a bug, see [Contributing](#contributing). First-time contributors are welcome.
 
