@@ -82,6 +82,24 @@ npx mcp-master-tester
 - **Profiles:** saved in your browser. Secrets are never stored, so the app asks for them when you connect.
 - **No build step:** Express on the backend and plain JavaScript in the browser. Light and dark themes follow your system setting, or pick one with the button at the top right; the choice is remembered. The ⓘ button next to it shows the version and project links, and the layout works on phone-sized screens.
 
+## Lightweight
+
+Staying small is a goal of this project, and the test suite enforces it.
+
+| | MCP Master Tester 1.2.1 | MCP Inspector 2.15.0 |
+|---|---|---|
+| Runtime dependencies | 2 | 22 |
+| Packages installed | 96 | 121 |
+| Size on disk after install | 27 MB | 100 MB |
+| The package itself, unpacked | 134 kB | 6.6 MB |
+
+Measured on 2026-11-12 with `npm install <package>` in an empty folder on macOS. The two tools differ in scope, so this compares install weight only.
+
+- **Two dependencies:** the official MCP SDK and Express. Nearly all of the 27 MB is the SDK's own dependency tree; this project's code is a 43 kB download.
+- **No build step, no frontend framework, no install scripts.**
+- **Nothing loads from the internet:** no CDN, fonts or analytics. The page's Content-Security-Policy blocks it.
+- **A weight budget in the tests** (`test/package.test.js`): a pull request that adds a dependency or pushes the package past its size limit fails CI.
+
 ## Screenshots
 
 **Running a tool:** the form built from the tool's schema, the result, call history and the live protocol log.
@@ -185,6 +203,7 @@ Browser UI ──REST──▶ Express backend ──MCP──▶ your server (s
 | `test/api.test.js` | Integration tests against the reference server (`npm test`) |
 | `test/lint.test.js` | Unit tests for every lint rule (`npm test`) |
 | `test/forms.test.js` | Unit tests that hostile schema text never becomes markup in a form |
+| `test/package.test.js` | Weight budget: dependency list, package size and published files |
 | `test/cli.test.js` | Tests for `lint` from the command line, using a fixture server in `test/fixtures/` |
 
 ### REST API

@@ -2,6 +2,19 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Internal
+
+- **A weight budget in the tests.** `test/package.test.js` fails if a runtime dependency is added, the published package passes 60 kB (it is 43 kB), install scripts appear, files other than the app get published, or the page loads anything from another host.
+- **Dependencies updated** in the lockfile (MCP SDK 1.32.2, Express 5.3.0 and their trees), which clears the 5 advisories `npm audit` reported for the repo. Installs from npm already resolved the fixed versions.
+- **Dependabot** opens one grouped pull request a week for npm packages and one for GitHub Actions.
+- **CI also runs on Node 26**, the current LTS line, next to 20, 22 and 24.
+
+### Docs
+
+- The README has a **Lightweight** section with the measured install size next to the official inspector's.
+
 ## [1.2.1] - 2026-11-12
 
 ### Security
@@ -84,6 +97,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[Unreleased]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.1...HEAD
 [1.2.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.0...v1.1.1
