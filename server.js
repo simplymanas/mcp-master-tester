@@ -190,11 +190,35 @@ const callOpts = (req) => {
 // ---------- app ----------
 
 const app = express();
+app.disable('x-powered-by');
 
-// Block DNS-rebinding: a hostile site resolving to 127.0.0.1 must not reach an API that spawns commands.
+// This API can spawn commands, so only this app's own page may call it.
+// - Host check: blocks DNS rebinding (a hostile site resolving to 127.0.0.1).
+// - Origin check: blocks requests sent by any other website. Browsers add Origin to every cross-site
+//   POST and DELETE; requests without one (curl, same-origin GET) are local.
 const ALLOWED_HOSTS = new Set([`127.0.0.1:${PORT}`, `localhost:${PORT}`]);
+const ALLOWED_ORIGINS = new Set([...ALLOWED_HOSTS].map((host) => `http://${host}`));
+
+// Everything a server sends (names, descriptions, schemas, results) is untrusted and is escaped before
+// display. This policy is the second line of defence: script and event handlers injected into the page
+// don't run, and the page can't load or send anything outside this app.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'none'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  'media-src data:',
+  "connect-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+].join('; ');
+
 app.use((req, res, next) => {
   if (!ALLOWED_HOSTS.has(req.headers.host)) return res.status(403).json({ ok: false, error: `Host not allowed: ${req.headers.host}` });
+  const { origin } = req.headers;
+  if (origin !== undefined && !ALLOWED_ORIGINS.has(origin)) return res.status(403).json({ ok: false, error: `Origin not allowed: ${origin}` });
+  res.set({ 'Content-Security-Policy': CONTENT_SECURITY_POLICY, 'X-Content-Type-Options': 'nosniff' });
   next();
 });
 
@@ -252,7 +276,17 @@ app.post('/api/sessions/:id/prompts/get', route((req) =>
   getSession(req).client.getPrompt({ name: req.body.name, arguments: req.body.arguments ?? {} }, callOpts(req))));
 app.post('/api/sessions/:id/logging/level', route((req) => getSession(req).client.setLoggingLevel(req.body.level)));
 
-app.listen(PORT, HOST, () => console.log(`MCP Master Tester → http://${HOST}:${PORT}`));
+// Express passes a listen failure to this callback, so check it: otherwise a second instance on a busy
+// port prints the URL, exits quietly, and leaves you looking at the instance that was already running.
+app.listen(PORT, HOST, (err) => {
+  if (err) {
+    console.error(err.code === 'EADDRINUSE'
+      ? `Port ${PORT} is already in use. MCP Master Tester may already be running at http://${HOST}:${PORT}.\nStop that process, or choose another port: PORT=${PORT + 1} npx mcp-master-tester`
+      : `Could not start on http://${HOST}:${PORT}: ${err.message}`);
+    process.exit(1);
+  }
+  console.log(`MCP Master Tester → http://${HOST}:${PORT}`);
+});
 
 process.on('SIGINT', async () => {
   await Promise.all([...sessions.values()].map((s) => s.close().catch(() => {})));

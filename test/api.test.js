@@ -143,6 +143,57 @@ test('rejects requests with a foreign Host header (DNS rebinding)', async () => 
   assert.equal(status, 403);
 });
 
+test('rejects requests sent by another website (foreign Origin), and accepts its own', async () => {
+  const post = (origin) => fetch(`${BASE}/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: origin },
+    body: JSON.stringify(stdioConfig),
+  });
+
+  for (const origin of ['https://evil.example', `http://evil.example:${PORT}`, `https://127.0.0.1:${PORT}`, 'null']) {
+    const res = await post(origin);
+    assert.equal(res.status, 403, `Origin ${origin} must be rejected`);
+    assert.match((await res.json()).error, /Origin not allowed/);
+  }
+
+  for (const origin of [`http://127.0.0.1:${PORT}`, `http://localhost:${PORT}`]) {
+    const res = await post(origin);
+    assert.equal(res.status, 200, `Origin ${origin} is this app`);
+    await api(`/sessions/${(await res.json()).result.id}`, undefined, 'DELETE');
+  }
+});
+
+test('the page is served with a Content-Security-Policy that stops injected script', async () => {
+  const res = await fetch(`http://127.0.0.1:${PORT}/`);
+  assert.equal(res.status, 200);
+  const directives = Object.fromEntries(res.headers.get('content-security-policy').split('; ').map((d) => {
+    const [name, ...sources] = d.split(' ');
+    return [name, sources];
+  }));
+  assert.deepEqual(directives['script-src'], ["'self'"], 'no inline script or event handlers, no other hosts');
+  assert.deepEqual(directives['default-src'], ["'none'"]);
+  assert.deepEqual(directives['connect-src'], ["'self'"]);
+  assert.deepEqual(directives['form-action'], ["'none'"]);
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(res.headers.get('x-powered-by'), null);
+  // The policy only works while the page has no inline script or handlers of its own.
+  const html = await res.text();
+  assert.doesNotMatch(html, /<script(?![^>]*\ssrc=)/i, 'index.html must not contain inline <script>');
+  assert.doesNotMatch(html, /<[^>]+\son[a-z]+\s*=/i, 'index.html must not contain inline event handlers');
+});
+
+test('a second instance on a busy port fails with a clear error instead of exiting quietly', async () => {
+  const child = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(PORT) } });
+  let stdout = '';
+  let stderr = '';
+  child.stdout.on('data', (d) => { stdout += d; });
+  child.stderr.on('data', (d) => { stderr += d; });
+  const code = await new Promise((resolve) => child.on('exit', resolve));
+  assert.equal(code, 1);
+  assert.match(stderr, new RegExp(`Port ${PORT} is already in use`));
+  assert.doesNotMatch(stdout, /MCP Master Tester →/, 'must not print the "running" line');
+});
+
 test('rejects invalid requests', async () => {
   const noCommand = await api('/sessions', { transport: 'stdio' });
   assert.equal(noCommand.status, 400);

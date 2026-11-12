@@ -2,6 +2,25 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] - 2026-11-12
+
+### Security
+
+- **A server could run script in the tester's page through a tool schema.** The `minimum` and `maximum` of a number parameter went into the argument form unescaped, so a server could put HTML there and have it run when you opened the tool. The page can ask the backend to start commands, so a hostile server you connected to, including a remote one, could have run commands on your machine. Affects every version up to 1.2.0; please update. Now only real numbers become `min`/`max`, and every other value a server sends was checked and is escaped.
+- **Content-Security-Policy.** The page is served with a policy that stops inline script and event handlers from running, and stops the page from loading or sending anything outside the app. This is a second line of defence if an escaping mistake is ever made again.
+- **Requests from other websites are rejected.** The backend now refuses any request whose `Origin` isn't the app itself. Before, only the browser's own cross-origin rules stood between another website and the backend.
+
+### Fixed
+
+- **Starting on a busy port now fails with a clear error.** A second instance used to print the "running at" address and exit quietly with code 0, leaving you looking at the instance that was already running, possibly an older version. It now says the port is in use, suggests `PORT=…`, and exits 1.
+- A schema with a non-array `default` on a multi-select field, or a non-array `required`, no longer breaks the form.
+
+### Docs
+
+- The README said URL-mode elicitation was supported. It isn't: the tester doesn't advertise it, so servers can't use it. The README now says so, and it's on the roadmap. The dormant code for it now only links `http` and `https` addresses.
+
+These changes are from [#14](https://github.com/simplymanas/mcp-master-tester/pull/14).
+
 ## [1.2.0] - 2026-11-07
 
 ### Added
@@ -65,6 +84,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.2.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.0.0...v1.1.0

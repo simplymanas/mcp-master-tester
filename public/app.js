@@ -2,10 +2,9 @@
 // Author: @simplymanas
 
 import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, BIG_RESULT_CHARS, approxTokens } from './lint.js';
+import { esc, SECRET_RE, formFields } from './forms.js';
 
 const $ = (sel) => document.querySelector(sel);
-const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const SECRET_RE = /key|token|secret|pass(word)?|auth|credential|bearer|cookie/i;
 
 const state = {
   transport: 'stdio',
@@ -354,10 +353,14 @@ function handleElicitation(e) {
   const answer = (body) => api(`/sessions/${state.session.id}/elicit/${e.reqId}`, body);
 
   if (p.mode === 'url') {
+    // The URL comes from the server: only a web address becomes a link (never javascript: or data:).
+    const link = /^https?:\/\//i.test(p.url)
+      ? `<a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.url)}</a>`
+      : `<code>${esc(p.url)}</code> <span class="hint">(not a web address, so it isn't a link)</span>`;
     return openModal(`
       <h3>Server requests you visit a URL</h3>
       <p>${esc(p.message)}</p>
-      <p><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a></p>
+      <p>${link}</p>
       <div class="actions"><button class="btn" value="decline">Decline</button><button class="btn primary" value="accept">Done</button></div>`,
     (action) => { answer({ action: action === 'accept' ? 'accept' : 'decline' }); return true; });
   }
@@ -403,67 +406,6 @@ function openModal(html, onAction) {
 }
 
 // ---------------------------------------------------------------- schema forms
-
-const primaryType = (s) => (Array.isArray(s.type) ? s.type.find((t) => t !== 'null') : s.type);
-
-// Enum options from `enum` (+ legacy `enumNames`) or a oneOf/anyOf of `const` values.
-function enumOptions(s) {
-  if (Array.isArray(s.enum)) return s.enum.map((value, i) => ({ value, label: s.enumNames?.[i] ?? value }));
-  const alts = s.oneOf ?? s.anyOf;
-  if (alts?.length && alts.every((a) => 'const' in a)) return alts.map((a) => ({ value: a.const, label: a.title ?? a.const }));
-  return null;
-}
-
-function fieldKind(s) {
-  if (enumOptions(s)) return 'enum';
-  const t = primaryType(s);
-  if (t === 'array' && s.items && enumOptions(s.items)) return 'multi';
-  if (t === 'boolean') return 'bool';
-  if (t === 'integer') return 'int';
-  if (t === 'number') return 'num';
-  if (t === 'string' && !s.anyOf && !s.oneOf) return 'str';
-  return 'json';
-}
-
-function fieldHtml(name, s, required, value) {
-  const kind = fieldKind(s);
-  const v = value !== undefined ? value : s.default;
-  const typeLabel = Array.isArray(s.type) ? s.type.join('|') : (s.type ?? (s.anyOf || s.oneOf ? 'union' : 'any'));
-  let input;
-  if (kind === 'enum') {
-    const opts = enumOptions(s).map((o) => `<option value="${esc(JSON.stringify(o.value))}" ${JSON.stringify(o.value) === JSON.stringify(v) ? 'selected' : ''}>${esc(o.label)}</option>`);
-    input = `<select><option value="">${required ? '— choose —' : '(unset)'}</option>${opts.join('')}</select>`;
-  } else if (kind === 'multi') {
-    const opts = enumOptions(s.items);
-    const chosen = new Set((v ?? []).map((x) => JSON.stringify(x)));
-    input = `<select multiple size="${Math.min(opts.length, 6)}">${opts.map((o) => `<option value="${esc(JSON.stringify(o.value))}" ${chosen.has(JSON.stringify(o.value)) ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
-  } else if (kind === 'bool') {
-    input = `<select><option value="">(unset)</option><option value="true" ${v === true ? 'selected' : ''}>true</option><option value="false" ${v === false ? 'selected' : ''}>false</option></select>`;
-  } else if (kind === 'int' || kind === 'num') {
-    input = `<input type="number" step="${kind === 'int' ? 1 : 'any'}" value="${esc(v ?? '')}" ${s.minimum !== undefined ? `min="${s.minimum}"` : ''} ${s.maximum !== undefined ? `max="${s.maximum}"` : ''} />`;
-  } else if (kind === 'str') {
-    const secret = SECRET_RE.test(name) || s.format === 'password' || s.writeOnly;
-    const long = (s.maxLength ?? 0) > 200 || /content|body|text|code|script|markdown|query/i.test(name);
-    if (secret) input = `<div class="secret-wrap"><input type="password" value="${esc(v ?? '')}" autocomplete="off" spellcheck="false" /><button type="button" class="btn tiny" data-act="reveal">show</button></div>`;
-    else if (long) input = `<textarea spellcheck="false">${esc(v ?? '')}</textarea>`;
-    else input = `<input value="${esc(v ?? '')}" spellcheck="false" placeholder="${esc(s.format ? `format: ${s.format}` : s.pattern ?? '')}" />`;
-  } else {
-    input = `<textarea spellcheck="false" placeholder="JSON">${v === undefined ? '' : esc(JSON.stringify(v, null, 2))}</textarea>`;
-  }
-  return `<div class="field" data-name="${esc(name)}" data-kind="${kind}">
-    <div class="fl">${esc(name)} <span class="ft">${esc(typeLabel)}</span>${required ? '<span class="req">*</span>' : ''}</div>
-    ${s.description ? `<div class="fd">${esc(s.description)}</div>` : ''}
-    ${input}
-  </div>`;
-}
-
-function formFields(schema, values = {}) {
-  const props = schema?.properties ?? {};
-  const req = new Set(schema?.required ?? []);
-  const names = Object.keys(props);
-  if (!names.length) return '<p class="hint">No arguments.</p>';
-  return names.map((n) => fieldHtml(n, props[n], req.has(n), values[n])).join('');
-}
 
 // Fail fast: every invalid field is flagged and nothing is sent.
 function collectArgs(container, schema) {
