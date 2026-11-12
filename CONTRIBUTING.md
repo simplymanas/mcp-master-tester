@@ -29,10 +29,12 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | `server.js` | Backend: sessions, transports, REST API, event stream |
 | `public/app.js` | UI logic: connection form, schema forms, results, log |
 | `public/theme.js` | Light/dark theme toggle |
+| `public/forms.js` | Argument forms built from a JSON Schema, as pure functions with no DOM access |
 | `public/lint.js` | Lint rules as pure functions, with no DOM access |
 | `public/style.css` | Theme and layout |
 | `test/api.test.js` | Integration tests (Node's built-in test runner) |
 | `test/lint.test.js` | Unit tests for the lint rules |
+| `test/forms.test.js` | Unit tests that hostile schema text never becomes markup |
 | `test/cli.test.js` | Tests for `lint` from the command line |
 | `test/fixtures/` | Small MCP servers the tests run against (not test files themselves) |
 
@@ -55,6 +57,7 @@ CI runs `npm test` on Node 20, 22 and 24 for every pull request.
 - **One function, one job.** Keep functions focused and named for what they do.
 - **Small, focused pull requests.** One change per pull request is easier to review and merge.
 - **Never log or store secrets.** API keys and tokens stay in memory only.
+- **Treat everything a server sends as untrusted.** Pass it through `esc()` before it goes into HTML, and never add inline `<script>` or `on…=` handlers: the Content-Security-Policy blocks them.
 
 ## Code of conduct
 

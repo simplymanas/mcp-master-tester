@@ -13,6 +13,8 @@ You point it at a server, either a local command over stdio or a remote URL over
 
 📖 **Tutorial:** [Testing any MCP server, step by step, with MCP Master Tester](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35) on Medium.
 
+🔒 **1.2.1 is a security fix:** a server could run script in the tester's page through a tool schema. Please update; `npx mcp-master-tester@latest` gets it. Details are in the [CHANGELOG](CHANGELOG.md#121---2026-11-12).
+
 🆕 **What's new in 1.2:** lint your server's tools in CI with `npx mcp-master-tester lint -- <server command>` (see [Lint in CI](#lint-in-ci)), a light/dark theme button, and readable multi-line strings in JSON results. See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
 
 > 🤝 **Open source and looking for collaborators.** Whether you build MCP servers, love clean UIs, or just found a bug, see [Contributing](#contributing). First-time contributors are welcome.
@@ -54,7 +56,7 @@ npx mcp-master-tester
   - how long the call took
 - **Resources:** static resources and URI templates (fill in the variables, then read). Both text and blob contents display.
 - **Prompts:** fill in the arguments and see the messages the prompt returns.
-- **Elicitation:** if a server sends `elicitation/create` to ask the user for input, a form built from its `requestedSchema` appears. URL-mode requests are supported too.
+- **Elicitation:** if a server sends `elicitation/create` to ask the user for input, a form built from its `requestedSchema` appears. (URL-mode requests aren't supported yet; see [Limitations](#limitations).)
 - **Lint:** checks each tool definition against the spec and against what models handle well:
   - **Spec:** `inputSchema` and `outputSchema` must be of type object, required fields must be defined, names must be valid and unique
   - **Confusable tools:** names that overlap so much a model may pick the wrong one (`get_user` vs `getUsers`), and near-identical descriptions
@@ -107,7 +109,7 @@ npm start
 
 Open **http://127.0.0.1:6280** and click **Connect**. The default fields launch the reference server (`npx -y @modelcontextprotocol/server-everything`), which uses every feature above.
 
-Requires **Node.js 20+**. To use a different port, set `PORT`, for example `PORT=7000 npx mcp-master-tester`.
+Requires **Node.js 20+**. To use a different port, set `PORT`, for example `PORT=7000 npx mcp-master-tester`. If the port is already taken, it says so and exits instead of starting.
 
 ## Lint in CI
 
@@ -176,11 +178,13 @@ Browser UI ──REST──▶ Express backend ──MCP──▶ your server (s
 | `server.js` | Session lifecycle, transports, JSON-RPC tap, elicitation bridge, REST API |
 | `public/app.js` | Connection form, schema forms, result rendering, protocol log |
 | `public/theme.js` | Light/dark theme toggle (loaded in `<head>` so there's no flash of the wrong theme) |
+| `public/forms.js` | Argument forms built from a JSON Schema (pure functions that escape everything the server sends) |
 | `public/lint.js` | Lint rules (pure functions, shared by the UI, the CLI and the unit tests) |
 | `public/style.css` | Theme tokens (light/dark) and layout |
 | `public/index.html` | Page shell |
 | `test/api.test.js` | Integration tests against the reference server (`npm test`) |
 | `test/lint.test.js` | Unit tests for every lint rule (`npm test`) |
+| `test/forms.test.js` | Unit tests that hostile schema text never becomes markup in a form |
 | `test/cli.test.js` | Tests for `lint` from the command line, using a fixture server in `test/fixtures/` |
 
 ### REST API
@@ -204,6 +208,8 @@ All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on 
 
 - The backend listens on **`127.0.0.1` only**, because it can run any command you enter in the stdio form. Don't expose it on a network.
 - Requests with a `Host` header other than `127.0.0.1` or `localhost` are rejected, which blocks DNS-rebinding attacks from malicious websites.
+- Requests with an `Origin` other than the app itself are rejected, so another website open in your browser can't call the backend.
+- Everything a server sends (names, descriptions, schemas, results, logs) is treated as untrusted and escaped before display. A Content-Security-Policy backs that up: injected script and event handlers don't run, and the page can't load or send anything outside the app.
 - Secrets stay in memory in the browser tab and backend process. Profiles save names only, never values.
 - Closing or reloading the tab ends the session, so stdio server processes don't keep running in the background.
 - Tools are only run when you click Run. Tools marked destructive ask for confirmation first.
@@ -212,6 +218,7 @@ All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on 
 
 - No browser login (OAuth) flow for remote servers. Use a Bearer token or custom headers instead.
 - Sampling (`sampling/createMessage`) and roots are not advertised to servers.
+- URL-mode elicitation is not advertised to servers, so they can only ask for input with a form.
 
 ## Contributing
 
@@ -233,6 +240,7 @@ This project is better with more people testing more MCP servers. All contributi
 | OAuth 2.1 sign-in for remote servers | Hard |
 | Sampling (`sampling/createMessage`) with a manual or LLM-backed responder | Medium |
 | Roots support | Easy |
+| URL-mode elicitation: advertise it and show the link (http and https only) | Easy |
 | Validate `structuredContent` against `outputSchema` | Easy |
 | Export and import a session (calls and results) as JSON | Easy |
 | Resource subscriptions (`resources/subscribe`) with live updates | Medium |
