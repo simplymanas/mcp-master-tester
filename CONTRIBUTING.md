@@ -35,6 +35,7 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | `test/api.test.js` | Integration tests (Node's built-in test runner) |
 | `test/lint.test.js` | Unit tests for the lint rules |
 | `test/forms.test.js` | Unit tests that hostile schema text never becomes markup |
+| `test/package.test.js` | Weight budget: dependency list, package size and published files |
 | `test/cli.test.js` | Tests for `lint` from the command line |
 | `test/fixtures/` | Small MCP servers the tests run against (not test files themselves) |
 
@@ -47,11 +48,12 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 5. Commit with a short, imperative message: `Add smoke-test mode`, `Fix SSE header handling`.
 6. Push and open a pull request. Fill in the template.
 
-CI runs `npm test` on Node 20, 22 and 24 for every pull request.
+CI runs `npm test` on Node 20, 22, 24 and 26 for every pull request. Dependabot opens one grouped pull request a week for dependency updates.
 
 ## Guidelines
 
 - **Keep it simple.** No build step, no frontend framework, and as few dependencies as possible. Plain JavaScript in the browser, Express on the backend.
+- **Keep it light.** `test/package.test.js` fails if a runtime dependency is added or the published package passes its size budget. If your change really needs more, raise the limit in the same pull request and explain why.
 - **One clear way to do things.** Don't add hidden fallbacks or duplicate code paths.
 - **Fail fast with clear errors.** Show the user what went wrong rather than hiding it.
 - **One function, one job.** Keep functions focused and named for what they do.
