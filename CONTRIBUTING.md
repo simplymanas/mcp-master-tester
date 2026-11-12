@@ -25,18 +25,20 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 
 | File | What lives there |
 |---|---|
-| `cli.js` | Command line: starts the UI, or runs `lint` |
+| `cli.js` | Command line: starts the UI, or runs `lint` or `smoke` |
 | `server.js` | Backend: sessions, transports, REST API, event stream |
 | `public/app.js` | UI logic: connection form, schema forms, results, log |
 | `public/theme.js` | Light/dark theme toggle |
 | `public/forms.js` | Argument forms built from a JSON Schema, as pure functions with no DOM access |
 | `public/lint.js` | Lint rules as pure functions, with no DOM access |
+| `public/smoke.js` | Smoke test logic as pure functions: what runs, what is sent, how answers are judged |
 | `public/style.css` | Theme and layout |
 | `test/api.test.js` | Integration tests (Node's built-in test runner) |
 | `test/lint.test.js` | Unit tests for the lint rules |
+| `test/smoke.test.js` | Unit tests for the smoke test logic |
 | `test/forms.test.js` | Unit tests that hostile schema text never becomes markup |
 | `test/package.test.js` | Weight budget: dependency list, package size and published files |
-| `test/cli.test.js` | Tests for `lint` from the command line |
+| `test/cli.test.js` | Tests for `lint` and `smoke` from the command line |
 | `test/fixtures/` | Small MCP servers the tests run against (not test files themselves) |
 
 ## Make a change

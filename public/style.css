@@ -169,6 +169,14 @@ table.grid th { color: var(--muted); font-weight: 600; font-size: 11px; }
 .log-head select { width: auto; min-width: 110px; padding: 2px 4px; }
 .chk { display: flex; gap: 4px; align-items: center; margin: 0; font-size: 11px; }
 .chk input { width: auto; }
+.smoke-all { margin: 10px 0 14px; }
+.smoke-foot { margin-top: 10px; }
+.table-wrap { overflow-x: auto; }
+.smoke-table { min-width: 560px; }
+.smoke-table th:nth-child(-n+3) { width: 1%; }
+.smoke-table th:nth-child(5) { width: 34%; }
+.smoke-table td:nth-child(2), .smoke-table td:nth-child(3) { white-space: nowrap; }
+.smoke-table td:last-child code { word-break: break-word; }
 .log-body { flex: 1; overflow: auto; font: 11px var(--mono); }
 .log-row { display: grid; grid-template-columns: 78px 22px 1fr 70px; gap: 8px; padding: 2px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
 .log-row:hover { background: var(--panel-2); }
