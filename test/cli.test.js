@@ -124,7 +124,7 @@ test('smoke: runs the read-only tools, skips the rest, and warns when made-up ar
   assert.match(r.stdout, /warn\s+find_user\s+\d+ ms\s+returned an error for the made-up "id": No user with id "test"/);
   assert.match(r.stdout, /skip\s+delete_user\s+not marked read-only/);
   assert.match(r.stdout, /passed: 0 failed, 1 warning, 2 passed, 1 skipped\. Failing on: fail\./);
-  assert.match(r.stdout, /1 tool not marked read-only was skipped\. Add --all/);
+  assert.match(r.stdout, /1 of 4 tools was not tested because it isn't marked read-only \(annotations\.readOnlyHint\): delete_user\. Add --all to run it, or --fail-on skip/);
   assert.match(r.stdout, /--print-args/);
   assert.equal((await run('smoke', '--fail-on', 'warn', '--', 'node', smokeFixture)).code, 1);
 });
@@ -163,6 +163,38 @@ test('smoke: --all, --tool and --skip choose what runs', async () => {
   assert.match(skipped.stdout, /skip\s+find_user\s+skipped on request/);
 });
 
+test('smoke: untested tools are called out, and --fail-on skip turns them into a failure', async () => {
+  // By default the run passes, but says which tools the pass doesn't cover.
+  const lenient = await run('smoke', '--skip', 'find_user', '--', 'node', smokeFixture);
+  assert.equal(lenient.code, 0);
+  assert.match(lenient.stdout, /passed: 0 failed, 0 warnings, 2 passed, 2 skipped/);
+  assert.match(lenient.stdout, /1 of 4 tools was not tested .*: delete_user\./);
+
+  const strict = await run('smoke', '--fail-on', 'skip', '--skip', 'find_user', '--', 'node', smokeFixture);
+  assert.equal(strict.code, 1);
+  assert.match(strict.stdout, /failed: 0 failed, 0 warnings, 2 passed, 2 skipped\. Failing on: skip\./);
+  assert.match(strict.stdout, /delete_user\. Add --all to run it, or --skip to leave it out on purpose\./);
+
+  // A tool left out on purpose doesn't count: every tool is now either tested or excluded by name.
+  const excluded = await run('smoke', '--fail-on', 'skip', '--skip', 'find_user', '--skip', 'delete_user', '--', 'node', smokeFixture);
+  assert.equal(excluded.code, 0, excluded.stdout);
+  assert.doesNotMatch(excluded.stdout, /not tested/);
+
+  // Running it also satisfies the check, and "skip" still includes warnings.
+  assert.equal((await run('smoke', '--fail-on', 'skip', '--all', '--skip', 'find_user', '--', 'node', smokeFixture)).code, 0);
+  assert.equal((await run('smoke', '--fail-on', 'skip', '--all', '--', 'node', smokeFixture)).code, 1, 'find_user warns');
+
+  const github = await run('smoke', '--format', 'github', '--fail-on', 'skip', '--skip', 'find_user', '--', 'node', smokeFixture);
+  assert.match(github.stdout, /^::error title=MCP smoke%3A untested tools::1 of 4 tools was not tested/m);
+});
+
+test('smoke: tools left out with --tool are a choice, so they are not reported as untested', async () => {
+  const r = await run('smoke', '--fail-on', 'skip', '--tool', 'echo', '--', 'node', everything);
+  assert.equal(r.code, 0, r.stdout);
+  assert.match(r.stdout, /0 failed, 0 warnings, 1 passed, 12 skipped/);
+  assert.doesNotMatch(r.stdout, /not tested/);
+});
+
 test('smoke: a broken result, an exception and a timeout each fail the run', async () => {
   const r = await run('smoke', '--timeout', '1500', '--', 'node', smokeFixture, 'broken');
   assert.equal(r.code, 1);
@@ -184,9 +216,12 @@ test('smoke: a tool that crashes the server fails, and the tools after it are re
 test('smoke: a run that calls nothing fails and says why', async () => {
   const r = await run('smoke', '--', 'node', smokeFixture, 'unmarked');
   assert.equal(r.code, 1);
-  assert.match(r.stdout, /No tools were run: no tool is marked read-only \(annotations\.readOnlyHint\)\. Add --all/);
+  assert.match(r.stdout, /failed: no tools were run\. Failing on: fail\.\nNo tool is marked read-only \(annotations\.readOnlyHint\)\. Add --all, or name tools with --tool\./);
+  assert.doesNotMatch(r.stdout, /0 failed/, 'the verdict must not read "failed: 0 failed"');
   assert.equal((await run('smoke', '--all', '--', 'node', smokeFixture, 'unmarked')).code, 0);
-  assert.equal((await run('smoke', '--fail-on', 'never', '--', 'node', smokeFixture, 'unmarked')).code, 0);
+  const never = await run('smoke', '--fail-on', 'never', '--', 'node', smokeFixture, 'unmarked');
+  assert.equal(never.code, 0);
+  assert.match(never.stdout, /passed: 0 failed, 0 warnings, 0 passed, 1 skipped\. Failing on: never\.\nNo tools were run\. No tool is marked read-only/);
 });
 
 test('smoke: --format json is machine-readable', async () => {
@@ -202,6 +237,7 @@ test('smoke: --format json is machine-readable', async () => {
   assert.deepEqual({ ...byTool.get_weather, ms: 0 }, { tool: 'get_weather', status: 'pass', ms: 0, msg: '', args: { city: 'Pune' }, argSource: 'schema' });
   assert.equal(byTool.find_user.argSource, 'made-up');
   assert.deepEqual(byTool.delete_user, { tool: 'delete_user', status: 'skip', ms: null, msg: 'not marked read-only', args: null, argSource: null });
+  assert.deepEqual(j.untested, ['delete_user']);
 });
 
 test('smoke: --format github prints an annotation for each failure and warning', async () => {
@@ -209,7 +245,8 @@ test('smoke: --format github prints an annotation for each failure and warning',
   const lines = r.stdout.trim().split('\n');
   assert.ok(lines.includes('::error title=MCP smoke%3A get_stats::protocol error -32603: TypeError: stats is undefined'), r.stdout);
   assert.ok(lines.some((l) => l.startsWith('::warning title=MCP smoke%3A find_user::returned an error for the made-up "id"')));
-  assert.equal(lines.filter((l) => l.startsWith('::')).length, 4, 'passes and skips get no annotation');
+  assert.ok(lines.some((l) => l.startsWith('::warning title=MCP smoke%3A untested tools::1 of 7 tools was not tested because it isn\'t marked read-only (annotations.readOnlyHint): delete_user.')), r.stdout);
+  assert.equal(lines.filter((l) => l.startsWith('::')).length, 5, 'one per failure and warning, plus one for the untested tool; passes get none');
   assert.equal(lines.at(-1), 'MCP smoke: 3 failed, 1 warning, 2 passed, 1 skipped. Failing on: fail.');
 
   const nothing = await run('smoke', '--format', 'github', '--', 'node', smokeFixture, 'unmarked');
@@ -238,7 +275,7 @@ test('smoke: a misspelt tool name or a bad --args file exits 2 instead of testin
     [['--args', argsFile('scalar.json', { find_user: 'u_1' })], /the arguments for "find_user" .* must be a JSON object/],
     [['--args', argsFile('broken.json', '{ not json')], /--args: could not read/],
     [['--args', path.join(tmp, 'missing.json')], /--args: could not read/],
-    [['--fail-on', 'error'], /--fail-on must be fail, warn or never \(got "error"\)/],
+    [['--fail-on', 'error'], /--fail-on must be fail, warn, skip or never \(got "error"\)/],
   ];
   for (const [args, message] of cases) {
     const r = await run('smoke', ...args, '--', 'node', smokeFixture);

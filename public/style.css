@@ -171,6 +171,7 @@ table.grid th { color: var(--muted); font-weight: 600; font-size: 11px; }
 .chk input { width: auto; }
 .smoke-all { margin: 10px 0 14px; }
 .smoke-foot { margin-top: 10px; }
+.smoke-note { color: var(--warn); font-size: 12px; margin: 2px 0 10px; }
 .table-wrap { overflow-x: auto; }
 .smoke-table { min-width: 560px; }
 .smoke-table th:nth-child(-n+3) { width: 1%; }

@@ -2,7 +2,20 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
-## [1.3.0] - 2026-11-12
+## [1.3.1] - 2026-11-13
+
+### Added
+
+- **`smoke --fail-on skip`.** A stricter level that also fails the run when a tool went untested and you didn't leave it out yourself. With it, every tool must either be tested (marked read-only, or run with `--all` or `--tool`) or be excluded by name with `--skip`. It includes `warn` and `fail`. This is for servers whose annotations aren't complete: before, if 2 of 20 tools were marked read-only, the 2 ran and the run passed.
+- **Untested tools are called out by default.** After a run, `smoke` says how many tools it didn't test because they aren't marked read-only, and names them (the first eight). With `--format github` this is a warning annotation on the workflow run, or an error with `--fail-on skip`; before, skipped tools got no annotation. JSON output has a new `untested` list. In the UI, the Smoke tab shows the same note under the result counts.
+
+### Changed
+
+- **Clearer verdict when nothing ran.** The run already failed when it called no tools, but the line read `✖ failed: 0 failed, 0 warnings, 0 passed, 1 skipped`. It now reads `✖ failed: no tools were run`, followed by the reason.
+
+Both came from feedback on Reddit about servers that don't set tool annotations yet. ([#18](https://github.com/simplymanas/mcp-master-tester/pull/18))
+
+## [1.3.0] - 2026-11-13
 
 ### Added
 
@@ -112,6 +125,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.3.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.1...v1.2.0

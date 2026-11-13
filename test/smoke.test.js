@@ -1,7 +1,7 @@
 // Unit tests for the smoke test: which arguments are sent, which tools run, and how each answer is judged.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sampleValue, sampleArgs, planSmoke, judge, runSmoke, countSmoke, smokeFailed, NOT_READ_ONLY } from '../public/smoke.js';
+import { sampleValue, sampleArgs, planSmoke, judge, runSmoke, countSmoke, smokeFailed, untestedTools, NOT_READ_ONLY } from '../public/smoke.js';
 import { BIG_RESULT_CHARS } from '../public/lint.js';
 
 const readOnly = { readOnlyHint: true };
@@ -172,4 +172,29 @@ test('smokeFailed: the --fail-on levels, and a run that called nothing fails', (
   assert.equal(smokeFailed(r('skip', 'skip')), true, 'nothing ran, so nothing was proved');
   assert.equal(smokeFailed([]), true);
   assert.equal(smokeFailed([], 'never'), false);
+});
+
+test('untestedTools: tools nobody chose to leave out', async () => {
+  const tools = [tool('a', { annotations: readOnly }), tool('w'), tool('b', { annotations: readOnly }), tool('c', { annotations: readOnly })];
+  const run = (opts) => runSmoke(planSmoke(tools, opts), async () => ok());
+  assert.deepEqual(untestedTools(await run()).map((r) => r.tool), ['w'], 'not marked read-only');
+  assert.deepEqual(untestedTools(await run({ skip: ['w', 'b'] })), [], 'left out with --skip');
+  assert.deepEqual(untestedTools(await run({ only: ['a'] })), [], 'left out by --tool');
+  assert.deepEqual(untestedTools(await run({ all: true })), []);
+  // After a crash, the tools that could not run are untested too.
+  const crashed = await runSmoke(planSmoke(tools, { all: true }), async (name) => (name === 'w' ? err('MCP error -32000: Connection closed', -32000) : ok()));
+  assert.deepEqual(untestedTools(crashed).map((r) => r.tool), ['b', 'c']);
+});
+
+test('smokeFailed: --fail-on skip also fails when a tool went untested, and includes the levels before it', () => {
+  const r = (...pairs) => pairs.map(([status, msg = ''], i) => ({ tool: `t${i}`, status, msg }));
+  const untested = r(['pass'], ['skip', NOT_READ_ONLY]);
+  assert.equal(smokeFailed(untested, 'fail'), false);
+  assert.equal(smokeFailed(untested, 'warn'), false);
+  assert.equal(smokeFailed(untested, 'skip'), true);
+  assert.equal(smokeFailed(untested, 'never'), false);
+  assert.equal(smokeFailed(r(['pass'], ['skip', 'skipped on request'], ['skip', 'not selected']), 'skip'), false, 'left out on purpose');
+  assert.equal(smokeFailed(r(['pass'], ['warn']), 'skip'), true, 'skip includes warn');
+  assert.equal(smokeFailed(r(['pass'], ['fail']), 'skip'), true, 'skip includes fail');
+  assert.equal(smokeFailed(r(['pass']), 'skip'), false);
 });

@@ -13,7 +13,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { lintTools } from './public/lint.js';
-import { planSmoke, runSmoke, countSmoke, smokeFailed, NOT_READ_ONLY } from './public/smoke.js';
+import { planSmoke, runSmoke, countSmoke, smokeFailed, untestedTools, NOT_READ_ONLY } from './public/smoke.js';
 
 const VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 const SEVERITIES = ['error', 'warn', 'info'];
@@ -50,7 +50,9 @@ smoke options:
                         Tools not in the file get arguments built from their schema.
   --print-args          Print the arguments that would be sent, as JSON you can save, edit and
                         pass back with --args. Runs nothing.
-  --fail-on <level>     Exit 1 on: fail (default), warn, or never
+  --fail-on <level>     Exit 1 on: fail (default), warn, skip, or never. Each level includes
+                        the ones before it; skip also fails when a tool went untested and
+                        you didn't leave it out yourself with --skip or --tool.
 
 Exit codes: 0 passed, 1 findings or failures at or above --fail-on, 2 usage or connection error.
 
@@ -233,6 +235,9 @@ const runLint = (argv) => runCommand('lint', argv, {
 const SMOKE_LABEL = { pass: paint('32', 'pass'), warn: paint('33', 'warn'), fail: paint('31;1', 'fail'), skip: paint('2', 'skip') };
 const smokeSummary = (c) => `${c.fail} failed, ${plural(c.warn, 'warning')}, ${c.pass} passed, ${c.skip} skipped`;
 
+// Up to eight names, then a count, so a server with many tools doesn't flood the log.
+const someNames = (names, max = 8) => (names.length > max ? `${names.slice(0, max).join(', ')} and ${names.length - max} more` : names.join(', '));
+
 // --args file: { "tool_name": { ...arguments } }
 function readArgsFile(file) {
   let parsed;
@@ -244,7 +249,7 @@ function readArgsFile(file) {
 }
 
 const runSmokeCommand = (argv) => runCommand('smoke', argv, {
-  failLevels: ['fail', 'warn', 'never'],
+  failLevels: ['fail', 'warn', 'skip', 'never'],
   options: {
     all: { type: 'boolean', default: false },
     tool: { type: 'string', multiple: true, default: [] },
@@ -291,12 +296,24 @@ const runSmokeCommand = (argv) => runCommand('smoke', argv, {
     const counts = countSmoke(results);
     const failed = smokeFailed(results, failOn);
     const ran = counts.pass + counts.warn + counts.fail;
-    const notReadOnly = results.filter((r) => r.status === 'skip' && r.msg === NOT_READ_ONLY).length;
-    const nothingRan = ran === 0 ? `No tools were run${notReadOnly ? ': no tool is marked read-only (annotations.readOnlyHint). Add --all, or name tools with --tool' : ''}.` : '';
+    const untested = untestedTools(results);
+    const notReadOnly = untested.filter((r) => r.msg === NOT_READ_ONLY).map((r) => r.tool);
+    const one = notReadOnly.length === 1;
+
+    // A pass covers only the tools that ran. Say which ones didn't, where it can't be missed.
+    const coverage = ran > 0 && notReadOnly.length
+      ? `${notReadOnly.length} of ${plural(tools.length, 'tool')} ${one ? 'was' : 'were'} not tested because ${one ? 'it isn\'t' : 'they aren\'t'} marked read-only (annotations.readOnlyHint): ${someNames(notReadOnly)}. `
+        + `Add --all to run ${one ? 'it' : 'them'}, or ${failOn === 'skip' ? `--skip to leave ${one ? 'it' : 'them'} out on purpose` : '--fail-on skip to fail when a tool goes untested'}.`
+      : '';
+    const whyNothing = ran > 0 ? ''
+      : tools.length === 0 ? 'The server lists no tools.'
+      : notReadOnly.length ? 'No tool is marked read-only (annotations.readOnlyHint). Add --all, or name tools with --tool.'
+      : 'Every tool was skipped.';
 
     if (format === 'json') {
       console.log(JSON.stringify({
         server: serverJson(server), transport: config.transport, tools: tools.length, counts, failOn, passed: !failed,
+        untested: untested.map((r) => r.tool),
         results: results.map((r) => ({ tool: r.tool, status: r.status, ms: r.ms ?? null, msg: r.msg, args: r.args ?? null, argSource: r.source ?? null })),
       }, null, 2));
     } else if (format === 'github') {
@@ -304,12 +321,19 @@ const runSmokeCommand = (argv) => runCommand('smoke', argv, {
         if (r.status === 'fail') console.log(ghAnnotation('error', `MCP smoke: ${r.tool}`, r.msg));
         if (r.status === 'warn') console.log(ghAnnotation('warning', `MCP smoke: ${r.tool}`, r.msg));
       }
-      if (nothingRan && failed) console.log(ghAnnotation('error', 'MCP smoke', nothingRan));
+      if (ran === 0) {
+        if (failed) console.log(ghAnnotation('error', 'MCP smoke', `No tools were run. ${whyNothing}`));
+      } else {
+        if (coverage) console.log(ghAnnotation(failOn === 'skip' ? 'error' : 'warning', 'MCP smoke: untested tools', coverage));
+        // With --fail-on skip, every other untested tool fails the run too, so each gets its reason.
+        if (failOn === 'skip') for (const r of untested) if (r.msg !== NOT_READ_ONLY) console.log(ghAnnotation('error', `MCP smoke: ${r.tool}`, `not tested: ${r.msg}`));
+      }
       console.log(`MCP smoke: ${smokeSummary(counts)}. Failing on: ${failOn}.`);
     } else {
-      console.log(`\n${failed ? paint('31;1', '✖ failed') : paint('32;1', '✔ passed')}: ${smokeSummary(counts)}. Failing on: ${failOn}.`);
-      if (nothingRan) console.log(nothingRan);
-      else if (notReadOnly) console.log(`${plural(notReadOnly, 'tool')} not marked read-only ${notReadOnly === 1 ? 'was' : 'were'} skipped. Add --all to run ${notReadOnly === 1 ? 'it' : 'them'} too.`);
+      const verdict = failed ? paint('31;1', '✖ failed') : paint('32;1', '✔ passed');
+      if (ran === 0 && failed) console.log(`\n${verdict}: no tools were run. Failing on: ${failOn}.\n${whyNothing}`);
+      else console.log(`\n${verdict}: ${smokeSummary(counts)}. Failing on: ${failOn}.${ran === 0 ? `\nNo tools were run. ${whyNothing}` : ''}`);
+      if (coverage) console.log(paint('33', coverage));
       if (results.some((r) => r.status === 'warn' && r.source === 'made-up')) {
         console.log('A tool that rejects made-up arguments can\'t be checked fully. Save the arguments with --print-args, put in real values, and pass the file with --args.');
       }
