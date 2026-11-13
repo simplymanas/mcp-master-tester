@@ -6,7 +6,7 @@
 // Pure functions with no DOM or SDK access. The caller passes in `call(name, args)`, so the browser
 // (app.js), the command line (cli.js) and the unit tests (test/smoke.test.js) share one implementation.
 
-import { resultChars, BIG_RESULT_CHARS, approxTokens } from './lint.js';
+import { resultChars, readOnlyDoubt, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 
 export const NOT_READ_ONLY = 'not marked read-only';
 const SKIPPED_ON_REQUEST = 'skipped on request';
@@ -89,11 +89,13 @@ export function sampleArgs(inputSchema) {
  * Decide what to do with each tool.
  * @param {object[]} tools  tools from tools/list
  * @param {object} [opts]
- *   all:   also run tools that aren't marked read-only (annotations.readOnlyHint)
+ *   all:   also run tools that aren't clearly read-only: not marked annotations.readOnlyHint, or marked
+ *          but contradicted by their own name or annotations (see readOnlyDoubt in lint.js)
  *   only:  tool names: run exactly these, read-only or not
  *   skip:  tool names to leave out
  *   given: { [toolName]: args } arguments supplied by the user, used as they are
- * @returns {{tool: string, run: boolean, reason?: string, args?: object, source?: 'given'|'schema'|'made-up', made?: string[]}[]}
+ * @returns {{tool: string, run: boolean, reason?: string, guarded?: boolean, args?: object, source?: 'given'|'schema'|'made-up', made?: string[]}[]}
+ *   guarded: true marks a tool held back because it may change data, not because the user left it out
  */
 export function planSmoke(tools, { all = false, only = [], skip = [], given = {} } = {}) {
   const picked = new Set(only);
@@ -101,7 +103,10 @@ export function planSmoke(tools, { all = false, only = [], skip = [], given = {}
   return tools.map((t) => {
     if (dropped.has(t.name)) return { tool: t.name, run: false, reason: SKIPPED_ON_REQUEST };
     if (picked.size && !picked.has(t.name)) return { tool: t.name, run: false, reason: NOT_SELECTED };
-    if (t.annotations?.readOnlyHint !== true && !all && !picked.has(t.name)) return { tool: t.name, run: false, reason: NOT_READ_ONLY };
+    // readOnlyHint is the server's own word. Without it, or when the tool's name or other annotations
+    // contradict it, the tool runs only if the user asks for it.
+    const unsure = t.annotations?.readOnlyHint === true ? readOnlyDoubt(t) : NOT_READ_ONLY;
+    if (unsure && !all && !picked.has(t.name)) return { tool: t.name, run: false, reason: unsure, guarded: true };
     if (Object.hasOwn(given, t.name)) return { tool: t.name, run: true, args: given[t.name], source: 'given', made: [] };
     const { args, made } = sampleArgs(t.inputSchema);
     return { tool: t.name, run: true, args, source: made.length ? 'made-up' : 'schema', made };
@@ -157,7 +162,7 @@ export async function runSmoke(plan, call, onResult = () => {}) {
   for (const item of plan) {
     let result;
     if (!item.run) {
-      result = { tool: item.tool, status: 'skip', msg: item.reason };
+      result = { tool: item.tool, status: 'skip', msg: item.reason, ...(item.guarded && { guarded: true }) };
     } else if (closedDuring !== null) {
       result = { tool: item.tool, status: 'skip', msg: `not run: the server connection closed during "${closedDuring}"` };
     } else {

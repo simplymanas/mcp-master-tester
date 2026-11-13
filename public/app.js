@@ -1,9 +1,9 @@
 // MCP Master Tester — UI
 // Author: @simplymanas
 
-import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, BIG_RESULT_CHARS, approxTokens } from './lint.js';
+import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, readOnlyDoubt, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 import { esc, SECRET_RE, formFields } from './forms.js';
-import { planSmoke, runSmoke, countSmoke, NOT_READ_ONLY } from './smoke.js';
+import { planSmoke, runSmoke, countSmoke } from './smoke.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -720,7 +720,8 @@ function noteForLint(name, result) {
 const SMOKE_STYLE = { pass: 'ok', warn: 'warn', fail: 'err', skip: '' };
 const SMOKE_WORD = { pass: 'passed', warn: 'warning', fail: 'failed', skip: 'skipped' };
 const ARG_SOURCE = { given: 'your last run', schema: 'from the schema', 'made-up': 'made up' };
-const isReadOnly = (t) => t.annotations?.readOnlyHint === true;
+// Clearly read-only: marked so, and nothing in the tool's name or annotations says otherwise.
+const isReadOnly = (t) => t.annotations?.readOnlyHint === true && !readOnlyDoubt(t);
 const smokeLine = (r) => [r.status === 'pass' ? '' : SMOKE_WORD[r.status], r.ms === undefined ? '' : `${r.ms} ms`, r.msg].filter(Boolean).join(' · ');
 
 // Tab count: failures + warnings, coloured by the worst, then the passes muted ("0 · 9 ok").
@@ -744,10 +745,11 @@ function smokeHtml() {
   const c = countSmoke(sm.results);
   const label = sm.running ? `Running… ${sm.results.length}/${sm.total}` : sm.ran ? 'Run again' : 'Run smoke test';
   const nothing = !readOnly && !sm.all;
-  const untested = sm.results.filter((r) => r.status === 'skip' && r.msg === NOT_READ_ONLY).length;
+  const untested = sm.results.filter((r) => r.guarded).length;
   const args = (r) => (r.args === undefined ? '' : `<code>${esc(JSON.stringify(r.args).slice(0, 120))}</code> <span class="hint">${ARG_SOURCE[r.source]}</span>`);
   return `<h1 class="d-title">Smoke test</h1>
     <p class="hint">Calls each read-only tool once and checks that it answers: no protocol error, no timeout, and a result that fits its outputSchema.
+      "Read-only" is the server's own label, so run this against a test instance, not one holding real data.
       A tool gets the arguments you last ran it with in this session. Otherwise its required parameters are filled from the schema's defaults, examples and enums, and made up where the schema gives nothing.</p>
     <div class="run-row">
       <button class="btn primary" data-act="smoke" ${sm.running || nothing || !connected ? 'disabled' : ''}>${label}</button>
@@ -755,11 +757,11 @@ function smokeHtml() {
       <span class="hint">ms timeout for each tool</span>
     </div>
     <label class="chk smoke-all"><input type="checkbox" id="smokeAll" ${sm.all ? 'checked' : ''} ${sm.running || !others ? 'disabled' : ''} />
-      Also run the ${others} tool${others === 1 ? '' : 's'} not marked read-only. ${others === 1 ? 'It' : 'They'} may change data.</label>
+      Also run the ${others} tool${others === 1 ? '' : 's'} that may change data: not marked read-only, or named like a write.</label>
     ${connected ? '' : '<p class="error-box">The connection to the server closed. Reconnect to run again.</p>'}
-    ${nothing ? `<p>No tool on this server is marked read-only (<code>annotations.readOnlyHint</code>), so there is nothing safe to run. Tick the box above to run ${others === 1 ? 'it' : 'them'} anyway.</p>` : ''}
+    ${nothing ? `<p>No tool on this server is clearly read-only (marked <code>annotations.readOnlyHint</code> and not named like a write), so there is nothing safe to run. Tick the box above to run ${others === 1 ? 'it' : 'them'} anyway.</p>` : ''}
     ${sm.ran ? `<div class="badges"><span class="badge err">${c.fail} failed</span><span class="badge warn">${c.warn} warning${c.warn === 1 ? '' : 's'}</span><span class="badge ok">${c.pass} passed</span><span class="badge">${c.skip} skipped</span></div>
-      ${!sm.running && untested ? `<p class="smoke-note">${untested} of ${state.tools.length} tools ${untested === 1 ? 'was' : 'were'} not tested because ${untested === 1 ? 'it isn\'t' : 'they aren\'t'} marked read-only. A pass covers only the tools that ran.</p>` : ''}
+      ${!sm.running && untested ? `<p class="smoke-note">${untested} of ${state.tools.length} tools ${untested === 1 ? 'was' : 'were'} not tested because ${untested === 1 ? 'it' : 'they'} may change data. A pass covers only the tools that ran.</p>` : ''}
       <div class="table-wrap"><table class="grid smoke-table"><tr><th>Status</th><th>Tool</th><th>Time</th><th>Finding</th><th>Arguments sent</th></tr>
       ${sm.results.map((r) => `<tr><td><span class="badge ${SMOKE_STYLE[r.status]}">${SMOKE_WORD[r.status]}</span></td><td><code>${esc(r.tool)}</code></td><td>${r.ms === undefined ? '' : `${r.ms}&nbsp;ms`}</td><td>${esc(r.msg)}</td><td>${args(r)}</td></tr>`).join('')}</table></div>
       <p class="hint smoke-foot">Click a tool in the list to open it with the arguments sent and the full result.</p>` : ''}`;
@@ -776,7 +778,7 @@ async function runSmokeTest() {
   }
   const plan = planSmoke(state.tools, { all: sm.all, given });
   const risky = plan.filter((p, i) => p.run && !isReadOnly(state.tools[i])).map((p) => p.tool);
-  if (risky.length && !confirm(`Run ${risky.length} tool${risky.length === 1 ? '' : 's'} not marked read-only?\n\n${risky.join(', ')}\n\nThey may change data, and some get made-up arguments.`)) return;
+  if (risky.length && !confirm(`Run ${risky.length} tool${risky.length === 1 ? '' : 's'} that may change data?\n\n${risky.join(', ')}\n\nThey aren't clearly read-only, and some get made-up arguments.`)) return;
 
   Object.assign(sm, { results: [], total: plan.length, running: true, ran: true });
   render();

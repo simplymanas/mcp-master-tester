@@ -2,6 +2,24 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-11-13
+
+`readOnlyHint` is the server describing itself, and the smoke test acted on it without question. These changes come from feedback on Reddit about that. ([#19](https://github.com/simplymanas/mcp-master-tester/pull/19))
+
+### Added
+
+- **Lint: a read-only tool that looks like a write.** A warning for a tool marked `readOnlyHint: true` whose name starts or ends with a write verb (`cancel_booking`, `booking_delete`, `set_status`), or that is marked `destructiveHint: true` as well. Clients call read-only tools without asking the user, so a wrong label matters. Names that only mention a write (`get_update_status`, `validate_delete`) and words that are as often nouns (`order_status`) are not flagged.
+
+### Changed
+
+- **The smoke test holds those tools back.** A tool the new lint rule flags is no longer called by default, in the Smoke tab or from the command line. It is listed as skipped with the reason, counts as untested (so `--fail-on skip` fails), and runs when you name it with `--tool` or use `--all`. If you upgrade and a tool that ran on 1.3 is now skipped, this is why. If it was your only read-only tool, the run now fails with "no tools were run".
+- The Smoke tab's checkbox and its messages now say "may change data" instead of "not marked read-only", since both kinds of tool are covered.
+
+### Docs
+
+- **The allow-list comes first.** The smoke-test section of the README now opens with how far to trust `readOnlyHint` and which mode to use: `--tool` for a server that holds real data or isn't yours, the default for a local or test instance, `--all` for a throwaway one. It also says plainly what no name check can see: a `get_quote` that fires a webhook.
+- SECURITY.md describes the smoke test's trust in `readOnlyHint`.
+
 ## [1.3.1] - 2026-11-13
 
 ### Added
@@ -125,6 +143,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.4.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.0...v1.2.1

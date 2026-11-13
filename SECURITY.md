@@ -16,5 +16,6 @@ MCP Master Tester is a **local developer tool**:
 - Everything an MCP server sends (names, descriptions, schemas, results, logs) is untrusted. It is escaped before display, and a Content-Security-Policy stops injected script from running and stops the page from loading or sending anything outside the app.
 - API keys and tokens are kept in memory only and are never written to disk. Saved profiles store the names of secrets, never the values.
 - Tools run only when you click **Run**. Tools marked destructive ask for confirmation first.
+- The smoke test calls several tools from one click or one command. By default it runs only tools the server marks read-only (`readOnlyHint`), and holds back any whose name or other annotations contradict that. `readOnlyHint` is the server's own claim and can be wrong, so run the smoke test against a test instance, or allow-list tools with `--tool`.
 
 Issues that break these guarantees, for example a way to reach the backend from another machine or website, server content that runs as script in the page, or a secret ending up in storage or logs, are security issues.

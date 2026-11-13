@@ -15,7 +15,7 @@ You point it at a server, either a local command over stdio or a remote URL over
 
 🔒 **1.2.1 is a security fix:** a server could run script in the tester's page through a tool schema. Please update; `npx mcp-master-tester@latest` gets it. Details are in the [CHANGELOG](CHANGELOG.md#121---2026-11-12).
 
-🆕 **What's new in 1.3:** a smoke test. One click in the new **Smoke** tab, or `npx mcp-master-tester smoke -- <server command>` in CI, calls every read-only tool once and tells you which ones don't answer properly (see [Smoke test in CI](#smoke-test-in-ci)). 1.2 added [lint in CI](#lint-in-ci) and a light/dark theme button. See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
+🆕 **What's new in 1.4:** the smoke test no longer takes a server's "read-only" label at its word. A tool marked read-only but named like a write (`cancel_booking`) is held back, lint warns about it, and the docs now lead with the allow-list (`--tool`). 1.3 added the [smoke test](#smoke-test-in-ci) itself, in the **Smoke** tab and as `npx mcp-master-tester smoke -- <server command>` for CI; 1.2 added [lint in CI](#lint-in-ci). See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
 
 > 🤝 **Open source and looking for collaborators.** Whether you build MCP servers, love clean UIs, or just found a bug, see [Contributing](#contributing). First-time contributors are welcome.
 
@@ -68,7 +68,7 @@ npx mcp-master-tester
     - strings that should be typed (booleans, numbers, dates, URLs, emails)
     - enums and strings that give no example
   - **Naming:** non-snake_case names, and names that break the server's own convention
-  - **Annotations:** missing readOnly/destructive hints
+  - **Annotations:** missing readOnly/destructive hints, and tools marked read-only whose name says they change something (`cancel_booking`) or that are marked destructive too
   - **Output size:** list/search tools with no limit or pagination parameter
   - **From real calls:**
     - a badge and a warning when a result is over ~10k tokens
@@ -77,7 +77,7 @@ npx mcp-master-tester
 - **Smoke test:** the **Smoke** tab calls every read-only tool once and shows which ones pass:
   - it fails a tool that doesn't answer in time, crashes the server, throws a protocol error, or returns a result that breaks its `outputSchema`
   - arguments come from your last run of the tool in this session, else from the schema's defaults, examples and enums, else they are made up (and an error for a made-up value is a warning, not a failure)
-  - tools not marked read-only are left out unless you tick the box, and it asks before running them
+  - tools that may change data are left out unless you tick the box, and it asks before running them. That means tools not marked read-only, and tools marked read-only but named like a write (`cancel_booking`)
   - click a result to open the tool with the arguments sent and the full result
   - the same test runs from the command line: see [Smoke test in CI](#smoke-test-in-ci)
 - **Protocol log:** shows traffic and server output, newest at the bottom:
@@ -92,16 +92,16 @@ npx mcp-master-tester
 
 Staying small is a goal of this project, and the test suite enforces it.
 
-| | MCP Master Tester 1.3.0 | MCP Inspector 2.15.0 |
+| | MCP Master Tester 1.4.0 | MCP Inspector 2.15.0 |
 |---|---|---|
 | Runtime dependencies | 2 | 22 |
 | Packages installed | 96 | 121 |
 | Size on disk after install | 27 MB | 100 MB |
-| The package itself, unpacked | 164 kB | 6.6 MB |
+| The package itself, unpacked | 173 kB | 6.6 MB |
 
 Measured on 2026-11-12 with `npm install <package>` in an empty folder on macOS. The two tools differ in scope, so this compares install weight only.
 
-- **Two dependencies:** the official MCP SDK and Express. Nearly all of the 27 MB is the SDK's own dependency tree; this project's code is a 52 kB download.
+- **Two dependencies:** the official MCP SDK and Express. Nearly all of the 27 MB is the SDK's own dependency tree; this project's code is a 55 kB download.
 - **No build step, no frontend framework, no install scripts.**
 - **Nothing loads from the internet:** no CDN, fonts or analytics. The page's Content-Security-Policy blocks it.
 - **A weight budget in the tests** (`test/package.test.js`): a pull request that adds a dependency or pushes the package past its size limit fails CI.
@@ -202,7 +202,15 @@ mcp-master-tester smoke · my-server v1.4.0 · 6 tools · stdio
 ✖ failed: 2 failed, 1 warning, 2 passed, 1 skipped. Failing on: fail.
 ```
 
-**What runs.** Only tools marked read-only (`annotations.readOnlyHint: true`), so nothing is changed on the server. Add `--all` to run the others too, or name tools with `--tool`. If no tool runs at all, the command fails, because a run that called nothing has proved nothing.
+**What runs, and how far to trust it.** `readOnlyHint` is the server describing itself. If a tool is mislabelled, the smoke test calls a tool that writes. So choose by what is at stake:
+
+| The server | Use | What runs |
+|---|---|---|
+| Holds real data, or isn't yours | `--tool a --tool b` | Exactly the tools you name. An allow-list is the only mode that doesn't rely on the server's own labels. |
+| A local or test instance | no flag | Tools marked `annotations.readOnlyHint: true`, except those whose name or other annotations contradict it: named like a write (`cancel_booking`, `booking_delete`), or marked destructive as well. |
+| A throwaway instance | `--all` | Every tool. |
+
+The name check only catches careless labels. A `get_quote` that also fires a webhook looks read-only to any tool, which is why the allow-list comes first. If no tool runs at all, the command fails, because a run that called nothing has proved nothing.
 
 **What is sent.** A value for each required parameter and nothing else:
 
@@ -216,7 +224,7 @@ mcp-master-tester smoke · my-server v1.4.0 · 6 tools · stdio
 | `pass` | The tool answered with a normal result. |
 | `fail` | No answer before the timeout; the server closed the connection; a protocol error (the tool threw instead of returning an error result); a result that breaks the tool's `outputSchema`; or an error result for arguments that came from the schema or from you. |
 | `warn` | An error result, or "invalid params", for made-up arguments: the tool answered, but a placeholder can't prove it works. Also a result over ~10k tokens. |
-| `skip` | Not marked read-only, left out with `--skip`, or listed after a tool that crashed the server. |
+| `skip` | Not clearly read-only (not marked, or marked but named like a write), left out with `--skip`, or listed after a tool that crashed the server. |
 
 **A pass covers only the tools that ran.** When tools are skipped because they aren't marked read-only, the run says how many and which ones, and with `--format github` that is a warning on the workflow run. To make it a failure, use `--fail-on skip`: then every tool must either be tested (mark it read-only, or use `--all` or `--tool`) or be left out by name with `--skip`. This is the setting for a server whose annotations aren't complete yet.
 
@@ -230,8 +238,8 @@ npx mcp-master-tester smoke --args smoke.json -- node dist/index.js
 
 | Option | What it does |
 |---|---|
-| `--all` | Also run tools that aren't marked read-only. They may change data. |
-| `--tool <name>` | Run only this tool (repeatable), read-only or not |
+| `--all` | Also run tools that aren't clearly read-only. They may change data. |
+| `--tool <name>` | Run only this tool (repeatable), read-only or not. The safest way to choose what runs. |
 | `--skip <name>` | Leave this tool out (repeatable) |
 | `--args <file>` | JSON file of arguments: `{ "tool_name": { "param": "value" } }` |
 | `--print-args` | Print the arguments that would be sent, and run nothing |
@@ -240,7 +248,7 @@ npx mcp-master-tester smoke --args smoke.json -- node dist/index.js
 
 `--format`, `--env`, `--cwd`, `--url`, `--sse` and `--header` work as they do for `lint`, and so do the exit codes. A misspelt tool name in `--tool`, `--skip` or the `--args` file is an error (exit 2), so a renamed tool can't quietly drop out of the test.
 
-**GitHub Actions**, next to lint:
+**GitHub Actions**, next to lint (add `--tool` for each tool if the server in CI holds anything you care about):
 
 ```yaml
 - run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
@@ -310,6 +318,7 @@ All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on 
 - Secrets stay in memory in the browser tab and backend process. Profiles save names only, never values.
 - Closing or reloading the tab ends the session, so stdio server processes don't keep running in the background.
 - Tools are only run when you click Run. Tools marked destructive ask for confirmation first.
+- The smoke test calls tools without a click for each one, so it only runs tools the server marks read-only, and holds back any whose name or annotations contradict that. The label is still the server's own claim: point the smoke test at a test instance, or name the tools yourself with `--tool`.
 
 ## Limitations
 

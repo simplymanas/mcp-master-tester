@@ -147,7 +147,7 @@ test('runSmoke: calls the planned tools in order with their arguments and report
   assert.deepEqual(calls, [['a', {}], ['b', { id: 'test' }]]);
   assert.deepEqual(seen, [[0, 'a', 'pass'], [1, 'w', 'skip'], [2, 'b', 'warn']]);
   assert.deepEqual(results[0], { tool: 'a', status: 'pass', msg: '', ms: 5, args: {}, source: 'schema' });
-  assert.deepEqual(results[1], { tool: 'w', status: 'skip', msg: NOT_READ_ONLY });
+  assert.deepEqual(results[1], { tool: 'w', status: 'skip', msg: NOT_READ_ONLY, guarded: true });
   assert.equal(results[2].ms, 8);
   assert.deepEqual(countSmoke(results), { pass: 1, warn: 1, fail: 0, skip: 1 });
 });
@@ -197,4 +197,36 @@ test('smokeFailed: --fail-on skip also fails when a tool went untested, and incl
   assert.equal(smokeFailed(r(['pass'], ['warn']), 'skip'), true, 'skip includes warn');
   assert.equal(smokeFailed(r(['pass'], ['fail']), 'skip'), true, 'skip includes fail');
   assert.equal(smokeFailed(r(['pass']), 'skip'), false);
+});
+
+test('planSmoke: a tool that claims to be read-only but is named like a write is held back', () => {
+  const tools = [
+    tool('get_booking', { annotations: readOnly }),
+    tool('cancel_booking', { annotations: readOnly }),
+    tool('get_audit', { annotations: { readOnlyHint: true, destructiveHint: true } }),
+    tool('delete_user'),
+  ];
+  const plan = planSmoke(tools);
+  assert.deepEqual(plan.map((p) => [p.tool, p.run, p.guarded ?? false]), [['get_booking', true, false], ['cancel_booking', false, true], ['get_audit', false, true], ['delete_user', false, true]]);
+  assert.match(plan[1].reason, /^marked read-only, but "cancel" in its name suggests it changes something$/);
+  assert.equal(plan[2].reason, 'marked read-only and destructive at the same time');
+  assert.equal(plan[3].reason, NOT_READ_ONLY);
+  // Asking for it by name, or for everything, runs it.
+  assert.equal(planSmoke(tools, { only: ['cancel_booking'] })[1].run, true);
+  assert.deepEqual(planSmoke(tools, { all: true }).map((p) => p.run), [true, true, true, true]);
+  // Tools left out on purpose are not "guarded".
+  assert.equal(planSmoke(tools, { skip: ['cancel_booking'] })[1].guarded, undefined);
+  assert.equal(planSmoke(tools, { only: ['get_booking'] })[1].guarded, undefined);
+});
+
+test('runSmoke: a held-back tool is never called, and counts as untested', async () => {
+  const tools = [tool('get_booking', { annotations: readOnly }), tool('cancel_booking', { annotations: readOnly })];
+  const calls = [];
+  const results = await runSmoke(planSmoke(tools), async (name) => { calls.push(name); return ok(); });
+  assert.deepEqual(calls, ['get_booking']);
+  assert.equal(results[1].status, 'skip');
+  assert.equal(results[1].guarded, true);
+  assert.deepEqual(untestedTools(results).map((r) => r.tool), ['cancel_booking']);
+  assert.equal(smokeFailed(results, 'fail'), false);
+  assert.equal(smokeFailed(results, 'skip'), true);
 });

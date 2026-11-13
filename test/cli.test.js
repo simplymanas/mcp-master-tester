@@ -294,3 +294,39 @@ test('smoke: a server that fails to start exits 2 and shows its stderr', async (
   assert.equal(r.code, 2);
   assert.match(r.stderr, /boom: missing API_KEY/);
 });
+
+// ---------------------------------------------------------------- read-only claims
+
+test('smoke: a tool marked read-only but named like a write is not called unless asked for', async () => {
+  const r = await run('smoke', '--', 'node', smokeFixture, 'mislabelled');
+  assert.equal(r.code, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /pass\s+ping_db/);
+  assert.match(r.stdout, /skip\s+cancel_booking\s+marked read-only, but "cancel" in its name suggests it changes something/);
+  assert.match(r.stdout, /skip\s+get_audit\s+marked read-only and destructive at the same time/);
+  assert.match(r.stdout, /0 failed, 0 warnings, 1 passed, 2 skipped/);
+  assert.match(r.stdout, /2 of 3 tools were not tested because they aren't clearly read-only \(not marked read-only, or marked but named like a write\): cancel_booking, get_audit\. Add --all to run them/);
+
+  // By name, or with --all, it runs.
+  const named = await run('smoke', '--tool', 'cancel_booking', '--', 'node', smokeFixture, 'mislabelled');
+  assert.match(named.stdout, /pass\s+cancel_booking/);
+  assert.match((await run('smoke', '--all', '--', 'node', smokeFixture, 'mislabelled')).stdout, /0 failed, 0 warnings, 3 passed, 0 skipped/);
+
+  // They count as untested, so --fail-on skip fails until they are run or left out by name.
+  assert.equal((await run('smoke', '--fail-on', 'skip', '--', 'node', smokeFixture, 'mislabelled')).code, 1);
+  assert.equal((await run('smoke', '--fail-on', 'skip', '--skip', 'cancel_booking', '--skip', 'get_audit', '--', 'node', smokeFixture, 'mislabelled')).code, 0);
+
+  const json = JSON.parse((await run('smoke', '--format', 'json', '--', 'node', smokeFixture, 'mislabelled')).stdout);
+  assert.deepEqual(json.untested, ['cancel_booking', 'get_audit']);
+  assert.deepEqual(JSON.parse((await run('smoke', '--print-args', '--', 'node', smokeFixture, 'mislabelled')).stdout), { ping_db: {} });
+});
+
+test('lint: warns about read-only tools whose name or annotations contradict the label', async () => {
+  const r = await run('lint', '--', 'node', smokeFixture, 'mislabelled');
+  assert.equal(r.code, 0, 'a warning, not an error');
+  assert.match(r.stdout, /warn\s+cancel_booking\s+marked read-only, but "cancel" in its name suggests it changes something/);
+  assert.match(r.stdout, /warn\s+get_audit\s+marked read-only and destructive at the same time/);
+  assert.doesNotMatch(r.stdout, /warn\s+ping_db\s+marked read-only/);
+  assert.equal((await run('lint', '--fail-on', 'warn', '--', 'node', smokeFixture, 'mislabelled')).code, 1);
+  // The reference server's read-only tools are named like lookups.
+  assert.doesNotMatch((await run('lint', '--', 'node', everything)).stdout, /marked read-only/);
+});
