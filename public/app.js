@@ -3,8 +3,12 @@
 
 import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 import { esc, SECRET_RE, formFields } from './forms.js';
+import { planSmoke, runSmoke, countSmoke } from './smoke.js';
 
 const $ = (sel) => document.querySelector(sel);
+
+// One smoke-test run. `all` and `timeout` are the user's settings; the rest describes the run.
+const newSmoke = (keep = {}) => ({ results: [], total: 0, running: false, ran: false, all: keep.all ?? false, timeout: keep.timeout ?? 30000 });
 
 const state = {
   transport: 'stdio',
@@ -14,6 +18,7 @@ const state = {
   session: null,
   events: null,
   tools: [], resources: [], templates: [], prompts: [], lint: [],
+  smoke: newSmoke(),
   tab: 'tools',
   selected: null,         // key of selected item in current tab
   rawMode: false,
@@ -196,7 +201,7 @@ async function disconnect() {
   state.events?.close();
   state.events = null;
   if (s) await api(`/sessions/${s.id}`, undefined, 'DELETE').catch(() => {});
-  Object.assign(state, { tools: [], resources: [], templates: [], prompts: [], lint: [], selected: null, results: {}, history: {}, bigResults: {}, badErrors: {} });
+  Object.assign(state, { tools: [], resources: [], templates: [], prompts: [], lint: [], smoke: newSmoke(state.smoke), selected: null, results: {}, history: {}, bigResults: {}, badErrors: {} });
   setStatus('disconnected');
   render();
 }
@@ -352,6 +357,12 @@ function handleElicitation(e) {
   const p = e.params;
   const answer = (body) => api(`/sessions/${state.session.id}/elicit/${e.reqId}`, body);
 
+  // A smoke test runs unattended: decline, so the tool can finish instead of waiting for someone to answer.
+  if (state.smoke.running) {
+    addLogRow({ ts: Date.now(), type: 'log', params: { level: 'notice', logger: 'smoke test', data: 'declined the server\'s request for input (elicitation)' } });
+    return void answer({ action: 'decline' });
+  }
+
   if (p.mode === 'url') {
     // The URL comes from the server: only a web address becomes a link (never javascript: or data:).
     const link = /^https?:\/\//i.test(p.url)
@@ -476,6 +487,7 @@ function itemsForTab() {
     ];
     case 'prompts': return state.prompts.filter((p) => match(p.name, p.description)).map((p) => ({ key: p.name, name: p.name, desc: p.description, data: p }));
     case 'lint': return state.lint.filter((l) => match(l.target, l.msg)).map((l, i) => ({ key: `l:${i}`, name: l.target, desc: l.msg, data: l, sev: l.sev }));
+    case 'smoke': return state.smoke.results.filter((r) => match(r.tool, r.status, r.msg)).map((r, i) => ({ key: `s:${i}`, name: r.tool, desc: smokeLine(r), data: r, dot: SMOKE_STYLE[r.status] }));
     default: return [];
   }
 }
@@ -485,6 +497,7 @@ function render() {
   $('#cResources').textContent = state.resources.length + state.templates.length;
   $('#cPrompts').textContent = state.prompts.length;
   renderLintCount();
+  renderSmokeCount();
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === state.tab));
   $('.list-pane').hidden = state.tab === 'info';
 
@@ -492,7 +505,7 @@ function render() {
   const sevDot = { error: 'err', warn: 'warn', info: '' };
   $('#itemList').innerHTML = items.map((it) => {
     const last = state.results[`${state.tab}:${it.key}`];
-    const dot = it.sev ? sevDot[it.sev] : last ? (last.ok && !last.result?.isError ? 'ok' : 'err') : '';
+    const dot = it.dot ?? (it.sev ? sevDot[it.sev] : last ? (last.ok && !last.result?.isError ? 'ok' : 'err') : '');
     return `<li data-key="${esc(it.key)}" class="${it.key === state.selected ? 'active' : ''}">
       <div class="iname">${dot ? `<span class="dot ${dot}"></span>` : ''}${esc(it.name)}${it.template ? ' <span class="badge info">template</span>' : ''}</div>
       ${it.desc ? `<div class="idesc">${esc(it.desc)}</div>` : ''}
@@ -506,12 +519,15 @@ function renderDetail(item) {
   const d = $('#detail');
   if (state.tab === 'info') return void (d.innerHTML = infoHtml());
   if (state.tab === 'lint' && !item) return void (d.innerHTML = lintSummaryHtml());
+  if (state.tab === 'smoke' && !item) return void (d.innerHTML = smokeHtml());
   if (!state.session) return void (d.innerHTML = '<div class="empty">Connect to an MCP server to begin.</div>');
   if (!item) return void (d.innerHTML = '<div class="empty">Select an item from the list.</div>');
   if (state.tab === 'tools') d.innerHTML = toolHtml(item.data);
   if (state.tab === 'resources') d.innerHTML = resourceHtml(item);
   if (state.tab === 'prompts') d.innerHTML = promptHtml(item.data);
   if (state.tab === 'lint') { state.tab = 'tools'; state.selected = item.data.target; state.draft = null; render(); }
+  // A smoke result opens its tool, showing the arguments that were sent and the full result.
+  if (state.tab === 'smoke') { state.tab = 'tools'; state.selected = item.data.tool; state.draft = item.data.args ?? null; render(); }
 }
 
 function annotationBadges(t) {
@@ -690,6 +706,94 @@ function lintSummaryHtml() {
     : '<p>✓ No findings.</p>'}`;
 }
 
+// What a tool call revealed that the lint report should mention.
+function noteForLint(name, result) {
+  const chars = resultChars(result);
+  if (chars > BIG_RESULT_CHARS && chars > (state.bigResults[name] ?? 0)) state.bigResults[name] = chars;
+  const vague = unhelpfulError(result);
+  if (vague !== null) state.badErrors[name] = vague;
+  state.lint = lintServer();
+}
+
+// ---------------------------------------------------------------- smoke test
+
+const SMOKE_STYLE = { pass: 'ok', warn: 'warn', fail: 'err', skip: '' };
+const SMOKE_WORD = { pass: 'passed', warn: 'warning', fail: 'failed', skip: 'skipped' };
+const ARG_SOURCE = { given: 'your last run', schema: 'from the schema', 'made-up': 'made up' };
+const isReadOnly = (t) => t.annotations?.readOnlyHint === true;
+const smokeLine = (r) => [r.status === 'pass' ? '' : SMOKE_WORD[r.status], r.ms === undefined ? '' : `${r.ms} ms`, r.msg].filter(Boolean).join(' · ');
+
+// Tab count: failures + warnings, coloured by the worst, then the passes muted ("0 · 9 ok").
+function renderSmokeCount() {
+  const el = $('#cSmoke');
+  const sm = state.smoke;
+  if (!sm.ran) { el.className = 'count'; el.textContent = '–'; el.title = 'Not run yet'; return; }
+  const c = countSmoke(sm.results);
+  el.className = `count${c.fail ? ' has-err' : c.warn ? ' has-warn' : ''}`;
+  el.innerHTML = `${c.fail + c.warn}<span class="count-sub"> · ${c.pass} ok</span>`;
+  el.title = `${c.fail} failed, ${c.warn} warning${c.warn === 1 ? '' : 's'}, ${c.pass} passed, ${c.skip} skipped${sm.running ? ' (running)' : ''}`;
+}
+
+function smokeHtml() {
+  const sm = state.smoke;
+  // If the server went away during a run (a tool crashed it), the results stay up: they say which tool.
+  const connected = !!state.session;
+  if (!connected && !sm.ran) return '<div class="empty">Not connected.</div>';
+  const others = state.tools.filter((t) => !isReadOnly(t)).length;
+  const readOnly = state.tools.length - others;
+  const c = countSmoke(sm.results);
+  const label = sm.running ? `Running… ${sm.results.length}/${sm.total}` : sm.ran ? 'Run again' : 'Run smoke test';
+  const nothing = !readOnly && !sm.all;
+  const args = (r) => (r.args === undefined ? '' : `<code>${esc(JSON.stringify(r.args).slice(0, 120))}</code> <span class="hint">${ARG_SOURCE[r.source]}</span>`);
+  return `<h1 class="d-title">Smoke test</h1>
+    <p class="hint">Calls each read-only tool once and checks that it answers: no protocol error, no timeout, and a result that fits its outputSchema.
+      A tool gets the arguments you last ran it with in this session. Otherwise its required parameters are filled from the schema's defaults, examples and enums, and made up where the schema gives nothing.</p>
+    <div class="run-row">
+      <button class="btn primary" data-act="smoke" ${sm.running || nothing || !connected ? 'disabled' : ''}>${label}</button>
+      <input id="smokeTimeout" type="number" value="${sm.timeout}" min="1000" step="1000" title="Timeout for each tool (ms)" ${sm.running ? 'disabled' : ''} />
+      <span class="hint">ms timeout for each tool</span>
+    </div>
+    <label class="chk smoke-all"><input type="checkbox" id="smokeAll" ${sm.all ? 'checked' : ''} ${sm.running || !others ? 'disabled' : ''} />
+      Also run the ${others} tool${others === 1 ? '' : 's'} not marked read-only. ${others === 1 ? 'It' : 'They'} may change data.</label>
+    ${connected ? '' : '<p class="error-box">The connection to the server closed. Reconnect to run again.</p>'}
+    ${nothing ? `<p>No tool on this server is marked read-only (<code>annotations.readOnlyHint</code>), so there is nothing safe to run. Tick the box above to run ${others === 1 ? 'it' : 'them'} anyway.</p>` : ''}
+    ${sm.ran ? `<div class="badges"><span class="badge err">${c.fail} failed</span><span class="badge warn">${c.warn} warning${c.warn === 1 ? '' : 's'}</span><span class="badge ok">${c.pass} passed</span><span class="badge">${c.skip} skipped</span></div>
+      <div class="table-wrap"><table class="grid smoke-table"><tr><th>Status</th><th>Tool</th><th>Time</th><th>Finding</th><th>Arguments sent</th></tr>
+      ${sm.results.map((r) => `<tr><td><span class="badge ${SMOKE_STYLE[r.status]}">${SMOKE_WORD[r.status]}</span></td><td><code>${esc(r.tool)}</code></td><td>${r.ms === undefined ? '' : `${r.ms}&nbsp;ms`}</td><td>${esc(r.msg)}</td><td>${args(r)}</td></tr>`).join('')}</table></div>
+      <p class="hint smoke-foot">Click a tool in the list to open it with the arguments sent and the full result.</p>` : ''}`;
+}
+
+async function runSmokeTest() {
+  const sm = state.smoke;
+  if (!state.session || sm.running) return;
+  const sid = state.session.id;
+  const given = {};
+  for (const t of state.tools) {
+    const last = state.history[`tools:${t.name}`]?.[0]?.args;
+    if (last) given[t.name] = last;
+  }
+  const plan = planSmoke(state.tools, { all: sm.all, given });
+  const risky = plan.filter((p, i) => p.run && !isReadOnly(state.tools[i])).map((p) => p.tool);
+  if (risky.length && !confirm(`Run ${risky.length} tool${risky.length === 1 ? '' : 's'} not marked read-only?\n\n${risky.join(', ')}\n\nThey may change data, and some get made-up arguments.`)) return;
+
+  Object.assign(sm, { results: [], total: plan.length, running: true, ran: true });
+  render();
+  const call = async (name, args) => {
+    let res;
+    try { res = await sessionApi('/tools/call', { name, arguments: args, timeout: sm.timeout }); } catch (err) { res = err; res.ms = err.ms ?? 0; }
+    if (state.session?.id === sid) { // keep the full result, so opening the tool shows it
+      state.results[`tools:${name}`] = res;
+      if (res.ok) noteForLint(name, res.result);
+    }
+    return res.ok ? { ok: true, result: res.result, ms: res.ms } : { ok: false, error: res.error ?? res.message, code: res.code, ms: res.ms };
+  };
+  // state.smoke is replaced on disconnect; a run that is still finishing then stops updating the page.
+  const show = () => { if (state.smoke !== sm) return; if (state.tab === 'smoke' && !state.selected) render(); else renderSmokeCount(); };
+  await runSmoke(plan, call, (r) => { sm.results.push(r); show(); });
+  sm.running = false;
+  show();
+}
+
 // ---------------------------------------------------------------- actions
 
 function currentItem() { return itemsForTab().find((i) => i.key === state.selected); }
@@ -740,13 +844,7 @@ async function execute() {
   try { res = await sessionApi(path, body); } catch (err) { res = err; res.ms = err.ms ?? 0; }
   if (state.session?.id !== sid) return; // session was replaced while the call ran
   state.results[key] = res;
-  if (path === '/tools/call' && res.ok) {
-    const chars = resultChars(res.result);
-    if (chars > BIG_RESULT_CHARS && chars > (state.bigResults[body.name] ?? 0)) state.bigResults[body.name] = chars;
-    const vague = unhelpfulError(res.result);
-    if (vague !== null) state.badErrors[body.name] = vague;
-    state.lint = lintServer();
-  }
+  if (path === '/tools/call' && res.ok) noteForLint(body.name, res.result);
   state.draft = args;
   (state.history[key] ??= []).unshift({ args, ok: res.ok && !res.result?.isError, ms: res.ms, ts: Date.now() });
   state.history[key].length = Math.min(state.history[key].length, 20);
@@ -858,6 +956,7 @@ $('#itemList').addEventListener('click', (e) => {
 
 $('#detail').addEventListener('click', async (e) => {
   const act = e.target.dataset.act; if (!act) return;
+  if (act === 'smoke') return runSmokeTest();
   const item = currentItem();
   const key = item && `${state.tab}:${item.key}`;
   if (act === 'run' || act === 'read') execute();
@@ -874,6 +973,11 @@ $('#detail').addEventListener('click', async (e) => {
     renderDetail(item);
   }
   if (act === 'rerun') { state.draft = state.history[key][e.target.dataset.i].args; renderDetail(item); }
+});
+
+$('#detail').addEventListener('change', (e) => {
+  if (e.target.id === 'smokeAll') { state.smoke.all = e.target.checked; renderDetail(); }
+  if (e.target.id === 'smokeTimeout') state.smoke.timeout = Math.max(1000, Number(e.target.value) || 30000);
 });
 
 document.addEventListener('keydown', (e) => {

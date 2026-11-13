@@ -2,7 +2,22 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.3.0] - 2026-11-12
+
+### Added
+
+- **Smoke test.** Calls every read-only tool once and tells you which ones don't answer properly. ([#17](https://github.com/simplymanas/mcp-master-tester/pull/17))
+  - **In the UI:** a new **Smoke** tab with a Run button, a result for each tool (passed, warning, failed or skipped), the time it took and the arguments that were sent. Click a result to open the tool with those arguments and the full result. The tab shows failures + warnings, then the passes (`0 · 9 ok`).
+  - **From the command line, for CI:** `npx mcp-master-tester smoke -- <server command>` (or `--url`). It exits 1 when a tool fails, prints text, JSON or GitHub Actions annotations, and shares its connection options with `lint`.
+  - **What fails a tool:** no answer before the timeout, the server closing the connection, a protocol error, a result that breaks the tool's `outputSchema`, or an error result for arguments that came from the schema or from you.
+  - **Arguments** are a value for each required parameter: the schema's default, example, const or first enum value, or else a made-up placeholder. An error for a made-up value is a warning, not a failure, because the tool did answer. In the UI, a tool you already ran by hand is called with the arguments you used. On the command line, `--print-args` writes the arguments to a file you can edit and pass back with `--args`.
+  - **Safe by default:** only tools marked `readOnlyHint: true` run. `--all` (or the checkbox, which asks first) runs the rest. `--tool` and `--skip` pick tools by name, and a misspelt name is an error, so a renamed tool can't quietly drop out of the test.
+  - A run that calls no tool at all fails, because it has proved nothing. If a tool crashes the server, the tools after it are reported as not run.
+  - While a smoke test runs in the UI, a server's request for user input (elicitation) is declined automatically, so the run doesn't wait for someone to answer.
+
+### Changed
+
+- `mcp-master-tester lint` with no server now says "No server given" instead of "Nothing to lint". Its options and output are otherwise unchanged.
 
 ### Internal
 
@@ -97,7 +112,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
-[Unreleased]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.1...HEAD
+[1.3.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.1.0...v1.1.1

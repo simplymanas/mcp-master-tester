@@ -1,15 +1,17 @@
-// Tests for `mcp-master-tester lint`: run the CLI as a child process against fixture and reference servers.
+// Tests for `mcp-master-tester lint` and `smoke`: run the CLI as a child process against fixture and reference servers.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cli = path.join(root, 'cli.js');
 const fixture = path.join(root, 'test/fixtures/lint-server.js');
+const smokeFixture = path.join(root, 'test/fixtures/smoke-server.js');
 const everything = createRequire(import.meta.url).resolve('@modelcontextprotocol/server-everything/dist/index.js');
 const HTTP_PORT = 6393;
 const { version } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -29,7 +31,9 @@ before(async () => {
     httpServer.stderr.on('data', check);
   });
 });
-after(() => httpServer?.kill());
+const tmp = mkdtempSync(path.join(os.tmpdir(), 'mcpt-cli-'));
+after(() => { httpServer?.kill(); rmSync(tmp, { recursive: true, force: true }); });
+const argsFile = (name, content) => { const file = path.join(tmp, name); writeFileSync(file, typeof content === 'string' ? content : JSON.stringify(content)); return file; };
 
 test('lint: a clean server passes, even when failing on warnings', async () => {
   const r = await run('lint', '--fail-on', 'warn', '--', 'node', fixture, 'clean');
@@ -102,7 +106,153 @@ test('lint: usage errors exit 2 with a hint', async () => {
 test('--version, --help and unknown commands', async () => {
   assert.equal((await run('--version')).stdout.trim(), version);
   assert.match((await run('lint', '--help')).stdout, /--fail-on <level>/);
+  assert.match((await run('smoke', '--help')).stdout, /--print-args/);
+  assert.match((await run('--help')).stdout, /mcp-master-tester smoke/);
   const r = await run('frobnicate');
   assert.equal(r.code, 2);
   assert.match(r.stderr, /Unknown command "frobnicate"/);
+});
+
+// ---------------------------------------------------------------- smoke
+
+test('smoke: runs the read-only tools, skips the rest, and warns when made-up arguments are rejected', async () => {
+  const r = await run('smoke', '--', 'node', smokeFixture);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /mcp-master-tester smoke · smoke-fixture v0\.0\.1 · 4 tools · stdio/);
+  assert.match(r.stdout, /pass\s+ping_db\s+\d+ ms/);
+  assert.match(r.stdout, /pass\s+get_weather\s+\d+ ms/);
+  assert.match(r.stdout, /warn\s+find_user\s+\d+ ms\s+returned an error for the made-up "id": No user with id "test"/);
+  assert.match(r.stdout, /skip\s+delete_user\s+not marked read-only/);
+  assert.match(r.stdout, /passed: 0 failed, 1 warning, 2 passed, 1 skipped\. Failing on: fail\./);
+  assert.match(r.stdout, /1 tool not marked read-only was skipped\. Add --all/);
+  assert.match(r.stdout, /--print-args/);
+  assert.equal((await run('smoke', '--fail-on', 'warn', '--', 'node', smokeFixture)).code, 1);
+});
+
+test('smoke: --args supplies real arguments, and --print-args writes a file to start from', async () => {
+  const printed = await run('smoke', '--print-args', '--', 'node', smokeFixture);
+  assert.equal(printed.code, 0, printed.stderr);
+  assert.deepEqual(JSON.parse(printed.stdout), { ping_db: {}, get_weather: { city: 'Pune' }, find_user: { id: 'test' } });
+  assert.match(printed.stderr, /Made-up values to replace with real ones: find_user \(id\)/);
+
+  const file = argsFile('real.json', { ...JSON.parse(printed.stdout), find_user: { id: 'u_1' } });
+  const r = await run('smoke', '--fail-on', 'warn', '--args', file, '--', 'node', smokeFixture);
+  assert.equal(r.code, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /pass\s+find_user/);
+  assert.match(r.stdout, /0 failed, 0 warnings, 3 passed, 1 skipped/);
+
+  // The same error is a failure once the arguments are the user's own.
+  const wrong = await run('smoke', '--args', argsFile('wrong.json', { find_user: { id: 'u_404' } }), '--', 'node', smokeFixture);
+  assert.equal(wrong.code, 1);
+  assert.match(wrong.stdout, /fail\s+find_user\s+\d+ ms\s+returned an error: No user with id "u_404"/);
+});
+
+test('smoke: --all, --tool and --skip choose what runs', async () => {
+  const all = await run('smoke', '--all', '--', 'node', smokeFixture);
+  assert.match(all.stdout, /pass\s+delete_user/);
+  assert.match(all.stdout, /3 passed, 0 skipped/);
+
+  const one = await run('smoke', '--tool', 'delete_user', '--', 'node', smokeFixture);
+  assert.equal(one.code, 0);
+  assert.match(one.stdout, /pass\s+delete_user/);
+  assert.match(one.stdout, /skip\s+ping_db\s+not selected/);
+  assert.match(one.stdout, /0 failed, 0 warnings, 1 passed, 3 skipped/);
+
+  const skipped = await run('smoke', '--fail-on', 'warn', '--skip', 'find_user', '--', 'node', smokeFixture);
+  assert.equal(skipped.code, 0);
+  assert.match(skipped.stdout, /skip\s+find_user\s+skipped on request/);
+});
+
+test('smoke: a broken result, an exception and a timeout each fail the run', async () => {
+  const r = await run('smoke', '--timeout', '1500', '--', 'node', smokeFixture, 'broken');
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /fail\s+get_report\s+\d+ ms\s+result breaks its outputSchema: .*celsius must be number/);
+  assert.match(r.stdout, /fail\s+get_stats\s+\d+ ms\s+protocol error -32603: TypeError: stats is undefined/);
+  assert.match(r.stdout, /fail\s+slow_query\s+\d+ ms\s+no answer: timed out after 15\d\d ms/);
+  assert.match(r.stdout, /failed: 3 failed, 1 warning, 2 passed, 1 skipped/);
+  assert.equal((await run('smoke', '--timeout', '1500', '--fail-on', 'never', '--', 'node', smokeFixture, 'broken')).code, 0);
+});
+
+test('smoke: a tool that crashes the server fails, and the tools after it are reported as not run', async () => {
+  const r = await run('smoke', '--', 'node', smokeFixture, 'crash');
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /pass\s+ping_db/);
+  assert.match(r.stdout, /fail\s+crash_now\s+\d+ ms\s+the server closed the connection during the call/);
+  assert.match(r.stdout, /skip\s+after_crash\s+not run: the server connection closed during "crash_now"/);
+});
+
+test('smoke: a run that calls nothing fails and says why', async () => {
+  const r = await run('smoke', '--', 'node', smokeFixture, 'unmarked');
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /No tools were run: no tool is marked read-only \(annotations\.readOnlyHint\)\. Add --all/);
+  assert.equal((await run('smoke', '--all', '--', 'node', smokeFixture, 'unmarked')).code, 0);
+  assert.equal((await run('smoke', '--fail-on', 'never', '--', 'node', smokeFixture, 'unmarked')).code, 0);
+});
+
+test('smoke: --format json is machine-readable', async () => {
+  const r = await run('smoke', '--format', 'json', '--timeout', '1500', '--', 'node', smokeFixture, 'broken');
+  assert.equal(r.code, 1);
+  const j = JSON.parse(r.stdout);
+  assert.deepEqual(j.server, { name: 'smoke-fixture', version: '0.0.1' });
+  assert.deepEqual(j.counts, { pass: 2, warn: 1, fail: 3, skip: 1 });
+  assert.equal(j.passed, false);
+  assert.equal(j.failOn, 'fail');
+  assert.equal(j.tools, 7);
+  const byTool = Object.fromEntries(j.results.map((x) => [x.tool, x]));
+  assert.deepEqual({ ...byTool.get_weather, ms: 0 }, { tool: 'get_weather', status: 'pass', ms: 0, msg: '', args: { city: 'Pune' }, argSource: 'schema' });
+  assert.equal(byTool.find_user.argSource, 'made-up');
+  assert.deepEqual(byTool.delete_user, { tool: 'delete_user', status: 'skip', ms: null, msg: 'not marked read-only', args: null, argSource: null });
+});
+
+test('smoke: --format github prints an annotation for each failure and warning', async () => {
+  const r = await run('smoke', '--format', 'github', '--timeout', '1500', '--', 'node', smokeFixture, 'broken');
+  const lines = r.stdout.trim().split('\n');
+  assert.ok(lines.includes('::error title=MCP smoke%3A get_stats::protocol error -32603: TypeError: stats is undefined'), r.stdout);
+  assert.ok(lines.some((l) => l.startsWith('::warning title=MCP smoke%3A find_user::returned an error for the made-up "id"')));
+  assert.equal(lines.filter((l) => l.startsWith('::')).length, 4, 'passes and skips get no annotation');
+  assert.equal(lines.at(-1), 'MCP smoke: 3 failed, 1 warning, 2 passed, 1 skipped. Failing on: fail.');
+
+  const nothing = await run('smoke', '--format', 'github', '--', 'node', smokeFixture, 'unmarked');
+  assert.match(nothing.stdout, /^::error title=MCP smoke::No tools were run/);
+});
+
+test('smoke: the reference server passes over stdio and Streamable HTTP', async () => {
+  // trigger-long-running-operation takes 10 seconds by design; leave it out to keep the suite quick.
+  const stdio = await run('smoke', '--skip', 'trigger-long-running-operation', '--', 'node', everything);
+  assert.equal(stdio.code, 0, stdio.stdout + stdio.stderr);
+  assert.match(stdio.stdout, /pass\s+get-structured-content/);
+  assert.match(stdio.stdout, /passed: 0 failed, 0 warnings, 8 passed, 5 skipped/);
+
+  const http = await run('smoke', '--tool', 'echo', '--tool', 'get-sum', '--url', `http://127.0.0.1:${HTTP_PORT}/mcp`);
+  assert.equal(http.code, 0, http.stdout + http.stderr);
+  assert.match(http.stdout, /· Streamable HTTP/);
+  assert.match(http.stdout, /0 failed, 0 warnings, 2 passed/);
+});
+
+test('smoke: a misspelt tool name or a bad --args file exits 2 instead of testing less', async () => {
+  const cases = [
+    [['--tool', 'pingdb'], /--tool: the server has no tool named "pingdb"\. It has: ping_db, get_weather/],
+    [['--skip', 'nope'], /--skip: the server has no tool named "nope"/],
+    [['--args', argsFile('typo.json', { find_usr: { id: 'u_1' } })], /--args: the server has no tool named "find_usr"/],
+    [['--args', argsFile('array.json', [1])], /must hold a JSON object like/],
+    [['--args', argsFile('scalar.json', { find_user: 'u_1' })], /the arguments for "find_user" .* must be a JSON object/],
+    [['--args', argsFile('broken.json', '{ not json')], /--args: could not read/],
+    [['--args', path.join(tmp, 'missing.json')], /--args: could not read/],
+    [['--fail-on', 'error'], /--fail-on must be fail, warn or never \(got "error"\)/],
+  ];
+  for (const [args, message] of cases) {
+    const r = await run('smoke', ...args, '--', 'node', smokeFixture);
+    assert.equal(r.code, 2, `should reject ${JSON.stringify(args)}: ${r.stdout}`);
+    assert.match(r.stderr, message);
+    assert.match(r.stderr, /smoke --help/);
+  }
+  const noServer = await run('smoke');
+  assert.equal(noServer.code, 2);
+  assert.match(noServer.stderr, /No server given/);
+});
+
+test('smoke: a server that fails to start exits 2 and shows its stderr', async () => {
+  const r = await run('smoke', '--timeout', '10000', '--', 'node', '-e', "console.error('boom: missing API_KEY'); process.exit(1)");
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /boom: missing API_KEY/);
 });
