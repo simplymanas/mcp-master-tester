@@ -218,6 +218,8 @@ mcp-master-tester smoke · my-server v1.4.0 · 6 tools · stdio
 | `warn` | An error result, or "invalid params", for made-up arguments: the tool answered, but a placeholder can't prove it works. Also a result over ~10k tokens. |
 | `skip` | Not marked read-only, left out with `--skip`, or listed after a tool that crashed the server. |
 
+**A pass covers only the tools that ran.** When tools are skipped because they aren't marked read-only, the run says how many and which ones, and with `--format github` that is a warning on the workflow run. To make it a failure, use `--fail-on skip`: then every tool must either be tested (mark it read-only, or use `--all` or `--tool`) or be left out by name with `--skip`. This is the setting for a server whose annotations aren't complete yet.
+
 **Give real arguments** to turn warnings into real checks. Print what would be sent, replace the made-up values, and pass the file back:
 
 ```bash
@@ -233,7 +235,7 @@ npx mcp-master-tester smoke --args smoke.json -- node dist/index.js
 | `--skip <name>` | Leave this tool out (repeatable) |
 | `--args <file>` | JSON file of arguments: `{ "tool_name": { "param": "value" } }` |
 | `--print-args` | Print the arguments that would be sent, and run nothing |
-| `--fail-on <level>` | Exit 1 on `fail` (default) or also on `warn`, or `never` |
+| `--fail-on <level>` | Exit 1 on `fail` (default), also on `warn`, also on `skip` (a tool went untested and you didn't leave it out yourself), or `never` |
 | `--timeout <ms>` | How long each tool may take (default 30000) |
 
 `--format`, `--env`, `--cwd`, `--url`, `--sse` and `--header` work as they do for `lint`, and so do the exit codes. A misspelt tool name in `--tool`, `--skip` or the `--args` file is an error (exit 2), so a renamed tool can't quietly drop out of the test.

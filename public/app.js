@@ -3,7 +3,7 @@
 
 import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 import { esc, SECRET_RE, formFields } from './forms.js';
-import { planSmoke, runSmoke, countSmoke } from './smoke.js';
+import { planSmoke, runSmoke, countSmoke, NOT_READ_ONLY } from './smoke.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -744,6 +744,7 @@ function smokeHtml() {
   const c = countSmoke(sm.results);
   const label = sm.running ? `Running… ${sm.results.length}/${sm.total}` : sm.ran ? 'Run again' : 'Run smoke test';
   const nothing = !readOnly && !sm.all;
+  const untested = sm.results.filter((r) => r.status === 'skip' && r.msg === NOT_READ_ONLY).length;
   const args = (r) => (r.args === undefined ? '' : `<code>${esc(JSON.stringify(r.args).slice(0, 120))}</code> <span class="hint">${ARG_SOURCE[r.source]}</span>`);
   return `<h1 class="d-title">Smoke test</h1>
     <p class="hint">Calls each read-only tool once and checks that it answers: no protocol error, no timeout, and a result that fits its outputSchema.
@@ -758,6 +759,7 @@ function smokeHtml() {
     ${connected ? '' : '<p class="error-box">The connection to the server closed. Reconnect to run again.</p>'}
     ${nothing ? `<p>No tool on this server is marked read-only (<code>annotations.readOnlyHint</code>), so there is nothing safe to run. Tick the box above to run ${others === 1 ? 'it' : 'them'} anyway.</p>` : ''}
     ${sm.ran ? `<div class="badges"><span class="badge err">${c.fail} failed</span><span class="badge warn">${c.warn} warning${c.warn === 1 ? '' : 's'}</span><span class="badge ok">${c.pass} passed</span><span class="badge">${c.skip} skipped</span></div>
+      ${!sm.running && untested ? `<p class="smoke-note">${untested} of ${state.tools.length} tools ${untested === 1 ? 'was' : 'were'} not tested because ${untested === 1 ? 'it isn\'t' : 'they aren\'t'} marked read-only. A pass covers only the tools that ran.</p>` : ''}
       <div class="table-wrap"><table class="grid smoke-table"><tr><th>Status</th><th>Tool</th><th>Time</th><th>Finding</th><th>Arguments sent</th></tr>
       ${sm.results.map((r) => `<tr><td><span class="badge ${SMOKE_STYLE[r.status]}">${SMOKE_WORD[r.status]}</span></td><td><code>${esc(r.tool)}</code></td><td>${r.ms === undefined ? '' : `${r.ms}&nbsp;ms`}</td><td>${esc(r.msg)}</td><td>${args(r)}</td></tr>`).join('')}</table></div>
       <p class="hint smoke-foot">Click a tool in the list to open it with the arguments sent and the full result.</p>` : ''}`;

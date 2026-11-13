@@ -9,6 +9,8 @@
 import { resultChars, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 
 export const NOT_READ_ONLY = 'not marked read-only';
+const SKIPPED_ON_REQUEST = 'skipped on request';
+const NOT_SELECTED = 'not selected';
 
 const STRING_FORMATS = {
   uri: 'https://example.com', url: 'https://example.com', 'uri-reference': 'https://example.com',
@@ -97,8 +99,8 @@ export function planSmoke(tools, { all = false, only = [], skip = [], given = {}
   const picked = new Set(only);
   const dropped = new Set(skip);
   return tools.map((t) => {
-    if (dropped.has(t.name)) return { tool: t.name, run: false, reason: 'skipped on request' };
-    if (picked.size && !picked.has(t.name)) return { tool: t.name, run: false, reason: 'not selected' };
+    if (dropped.has(t.name)) return { tool: t.name, run: false, reason: SKIPPED_ON_REQUEST };
+    if (picked.size && !picked.has(t.name)) return { tool: t.name, run: false, reason: NOT_SELECTED };
     if (t.annotations?.readOnlyHint !== true && !all && !picked.has(t.name)) return { tool: t.name, run: false, reason: NOT_READ_ONLY };
     if (Object.hasOwn(given, t.name)) return { tool: t.name, run: true, args: given[t.name], source: 'given', made: [] };
     const { args, made } = sampleArgs(t.inputSchema);
@@ -176,12 +178,26 @@ export function countSmoke(results) {
 }
 
 /**
+ * The tools that went untested without the user leaving them out: not marked read-only, listed after a
+ * tool that took the server down, and so on. A pass says nothing about these.
+ */
+export function untestedTools(results) {
+  return results.filter((r) => r.status === 'skip' && r.msg !== SKIPPED_ON_REQUEST && r.msg !== NOT_SELECTED);
+}
+
+/**
  * Whether a finished run counts as failed. A run that called nothing has proved nothing, so it fails too.
- * @param {'fail'|'warn'|'never'} failOn
+ * Each level includes the ones before it:
+ *   fail: a tool failed
+ *   warn: or a tool gave a warning
+ *   skip: or a tool went untested without being left out on purpose (see untestedTools)
+ * @param {'fail'|'warn'|'skip'|'never'} failOn
  */
 export function smokeFailed(results, failOn = 'fail') {
   if (failOn === 'never') return false;
   const counts = countSmoke(results);
   if (counts.pass + counts.warn + counts.fail === 0) return true;
-  return counts.fail > 0 || (failOn === 'warn' && counts.warn > 0);
+  if (counts.fail > 0) return true;
+  if (failOn !== 'fail' && counts.warn > 0) return true;
+  return failOn === 'skip' && untestedTools(results).length > 0;
 }
