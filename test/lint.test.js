@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs,
+  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt,
   BIG_RESULT_CHARS,
 } from '../public/lint.js';
 
@@ -122,6 +122,49 @@ test('list/search tools need a limit or pagination parameter', () => {
   const props = (extra) => ({ type: 'object', properties: { q: { type: 'string', description: 'e.g. "x"' }, ...extra }, required: [] });
   assert.ok(has(findings([clean({ name: 'search_notes', inputSchema: props() })]), 'search_notes', /no limit or pagination/));
   assert.ok(!has(findings([clean({ name: 'search_notes', inputSchema: props({ limit: { type: 'integer', description: 'Max' } }) })]), 'search_notes', /no limit/));
+});
+
+test('annotations: a read-only tool named like a write, or also marked destructive, is a warning', () => {
+  const readOnly = { readOnlyHint: true };
+  const f = findings([
+    clean({ name: 'cancel_booking', annotations: readOnly }),
+    clean({ name: 'booking_delete', annotations: readOnly }),
+    clean({ name: 'get_audit', annotations: { readOnlyHint: true, destructiveHint: true } }),
+    // near-misses: the same names without the read-only claim, and read-only names that only mention a write
+    clean({ name: 'cancel_order', annotations: { readOnlyHint: false } }),
+    clean({ name: 'delete_note', annotations: undefined }),
+    clean({ name: 'get_update_status', annotations: readOnly }),
+    clean({ name: 'validate_delete', annotations: readOnly }),
+    clean({ name: 'order_status', annotations: readOnly }),
+  ]);
+  assert.equal(sevOf(f, 'cancel_booking', /marked read-only, but "cancel" in its name suggests it changes something/), 'warn');
+  assert.equal(sevOf(f, 'booking_delete', /marked read-only, but "delete" in its name/), 'warn');
+  assert.equal(sevOf(f, 'get_audit', /marked read-only and destructive at the same time/), 'warn');
+  for (const name of ['cancel_order', 'delete_note', 'get_update_status', 'validate_delete', 'order_status']) {
+    assert.ok(!has(f, name, /marked read-only/), `${name} must not be flagged`);
+  }
+});
+
+test('writeVerb: finds the verb at the start or end of a name, in any naming style', () => {
+  const verbs = {
+    cancel_booking: 'cancel', 'delete-user': 'delete', deleteUser: 'delete', 'user.remove': 'remove', booking_cancel: 'cancel',
+    send: 'send', set_status: 'set', post_comment: 'post', update_status: 'update',
+  };
+  for (const [name, verb] of Object.entries(verbs)) assert.equal(writeVerb(name), verb, name);
+  // Lookups that mention a write, nouns that look like verbs, and names with no verb at all.
+  for (const name of ['get_booking', 'get_update_status', 'list_deleted_users', 'validate_delete', 'dry_run_delete', 'order_status',
+    'get_order', 'data_set', 'blog_post', 'echo', 'get-sum', 'trigger-long-running-operation', 'search_and_replace', '']) {
+    assert.equal(writeVerb(name), null, name);
+  }
+});
+
+test('readOnlyDoubt: only questions a tool that claims to be read-only', () => {
+  assert.match(readOnlyDoubt({ name: 'cancel_booking', annotations: { readOnlyHint: true } }), /"cancel"/);
+  assert.equal(readOnlyDoubt({ name: 'cancel_booking', annotations: { readOnlyHint: false } }), null);
+  assert.equal(readOnlyDoubt({ name: 'cancel_booking' }), null);
+  assert.equal(readOnlyDoubt({ name: 'get_booking', annotations: { readOnlyHint: true } }), null);
+  assert.equal(readOnlyDoubt({ name: 'get_booking', annotations: { readOnlyHint: true, destructiveHint: false } }), null);
+  assert.equal(readOnlyDoubt(undefined), null);
 });
 
 test('naming: snake_case is quiet, other styles are info, breaking the server majority is a warning', () => {

@@ -3,6 +3,7 @@
 //   broken         adds a tool whose result breaks its outputSchema, one that throws, and one that never answers
 //   crash          adds a tool that kills the server, followed by a healthy one that can then no longer run
 //   unmarked       one healthy tool with no annotations
+//   mislabelled    a healthy tool, plus two that claim to be read-only but whose name or annotations say otherwise
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema, McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
@@ -50,9 +51,15 @@ const crashing = [
   { name: 'after_crash', description: 'Healthy, but listed after the crash.', inputSchema: noArgs, annotations: readOnly, run: () => text('ok') },
 ];
 
+const mislabelled = [
+  { name: 'cancel_booking', description: 'Cancels a booking.', inputSchema: noArgs, annotations: readOnly, run: () => text('booking cancelled') },
+  { name: 'get_audit', description: 'Reads the audit log.', inputSchema: noArgs, annotations: { readOnlyHint: true, destructiveHint: true }, run: () => text('audit') },
+];
+
 const tools = mode === 'unmarked' ? [{ name: 'do_thing', description: 'Does a thing.', inputSchema: noArgs, run: () => text('done') }]
   : mode === 'broken' ? [...healthy, ...broken]
   : mode === 'crash' ? [healthy[0], ...crashing]
+  : mode === 'mislabelled' ? [healthy[0], ...mislabelled]
   : healthy;
 
 const server = new Server({ name: 'smoke-fixture', version: '0.0.1' }, { capabilities: { tools: {} } });

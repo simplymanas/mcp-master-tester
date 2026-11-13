@@ -56,6 +56,8 @@ export function lintTools(tools, runtime = {}) {
     }
 
     if (!t.annotations) add('info', t.name, 'no annotations (readOnly/destructive hints)');
+    const doubt = readOnlyDoubt(t);
+    if (doubt) add('warn', t.name, `${doubt} — clients call read-only tools without asking the user first; fix the name or the annotation`);
     if (t.outputSchema && t.outputSchema.type !== 'object') add('error', t.name, 'outputSchema.type must be "object"');
     if (isListish(t.name) && !names.some((n) => LIMIT_RE.test(n)))
       add('info', t.name, 'list/search-style tool with no limit or pagination parameter — output may be unbounded and flood the client\'s context');
@@ -146,6 +148,41 @@ export function wrapsTextOnly(res) {
   const norm = (t) => t.replace(/\s+/g, ' ').trim();
   const text = norm((res.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n'));
   return text !== '' && norm(vals[0]) === text;
+}
+
+// ---------------------------------------------------------------- read-only claims
+
+// readOnlyHint is the server describing itself, and clients act on it: they call read-only tools without
+// asking. These verbs in a tool's name say it changes something. Only words that are plainly verbs are
+// listed: "order", "book", "charge" and the like are left out because they are just as often nouns
+// (order_status), so the check catches careless labels, not every mislabelled tool.
+const WRITE_VERBS = new Set(['create', 'add', 'insert', 'update', 'edit', 'modify', 'patch', 'write', 'save', 'delete', 'remove', 'drop',
+  'destroy', 'purge', 'clear', 'reset', 'cancel', 'revoke', 'send', 'publish', 'submit', 'upload', 'import', 'move', 'rename', 'restore',
+  'approve', 'reject', 'assign', 'pay', 'deploy', 'kill', 'terminate', 'enable', 'disable', 'activate', 'deactivate', 'register',
+  'unregister', 'subscribe', 'unsubscribe', 'grant', 'invite', 'ban', 'install', 'uninstall', 'wipe', 'truncate', 'overwrite', 'replace',
+  'append', 'upsert', 'erase', 'buy', 'sell', 'withdraw', 'notify', 'toggle', 'increment', 'decrement']);
+const WRITE_VERBS_FIRST_ONLY = new Set(['set', 'put', 'post']); // nouns when they come last: data_set, blog_post
+const READ_FIRST_WORDS = new Set(['get', 'list', 'read', 'find', 'search', 'fetch', 'query', 'show', 'describe', 'view', 'check', 'count',
+  'lookup', 'is', 'has', 'can', 'validate', 'verify', 'preview', 'estimate', 'dry', 'simulate', 'explain', 'compare', 'diff']);
+
+// The word in a tool name that says the tool changes something: "cancel" in cancel_booking or
+// booking_cancel. Null for names that read as a lookup (get_update_status, validate_delete).
+export function writeVerb(name) {
+  const words = nameWords(name);
+  const first = words[0];
+  const last = words[words.length - 1];
+  if (WRITE_VERBS.has(first) || WRITE_VERBS_FIRST_ONLY.has(first)) return first;
+  if (words.length > 1 && !READ_FIRST_WORDS.has(first) && WRITE_VERBS.has(last)) return last;
+  return null;
+}
+
+// Why a tool's readOnlyHint: true shouldn't be taken at its word, or null when nothing contradicts it
+// (or the tool isn't marked read-only at all). Shared by the lint rule and the smoke test.
+export function readOnlyDoubt(tool) {
+  if (tool?.annotations?.readOnlyHint !== true) return null;
+  if (tool.annotations.destructiveHint === true) return 'marked read-only and destructive at the same time';
+  const verb = writeVerb(tool.name);
+  return verb ? `marked read-only, but "${verb}" in its name suggests it changes something` : null;
 }
 
 // ---------------------------------------------------------------- helpers

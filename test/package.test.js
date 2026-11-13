@@ -11,8 +11,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-const MAX_TARBALL_BYTES = 60_000;    // the .tgz that npm downloads (52 kB at 1.3.0)
-const MAX_UNPACKED_BYTES = 200_000;  // the files once installed (164 kB at 1.3.0)
+const MAX_TARBALL_BYTES = 60_000;    // the .tgz that npm downloads (55 kB at 1.4.0)
+const MAX_UNPACKED_BYTES = 200_000;  // the files once installed (173 kB at 1.4.0)
 
 // What `npm publish` would upload, without writing a file.
 const [packed] = JSON.parse(execSync('npm pack --dry-run --json', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));

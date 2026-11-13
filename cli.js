@@ -43,8 +43,9 @@ lint options:
   --show-info           Also list info findings in text output (they are counted either way)
 
 smoke options:
-  --all                 Also run tools that aren't marked read-only. They may change data.
-  --tool <name>         Run only this tool (repeatable), whether or not it is read-only
+  --all                 Also run tools that aren't clearly read-only. They may change data.
+  --tool <name>         Run only this tool (repeatable), whether or not it is read-only.
+                        The safest way to choose: it doesn't rely on the server's own labels.
   --skip <name>         Don't run this tool (repeatable)
   --args <file>         JSON file with the arguments to send: { "tool_name": { "param": "value" } }
                         Tools not in the file get arguments built from their schema.
@@ -297,18 +298,25 @@ const runSmokeCommand = (argv) => runCommand('smoke', argv, {
     const failed = smokeFailed(results, failOn);
     const ran = counts.pass + counts.warn + counts.fail;
     const untested = untestedTools(results);
-    const notReadOnly = untested.filter((r) => r.msg === NOT_READ_ONLY).map((r) => r.tool);
-    const one = notReadOnly.length === 1;
+    // Held back because they may change data: not marked read-only, or marked but contradicted by their name.
+    const guarded = untested.filter((r) => r.guarded);
+    const names = guarded.map((r) => r.tool);
+    const one = guarded.length === 1;
+    const unmarkedOnly = guarded.every((r) => r.msg === NOT_READ_ONLY);
+    const because = unmarkedOnly
+      ? `${one ? 'it isn\'t' : 'they aren\'t'} marked read-only (annotations.readOnlyHint)`
+      : `${one ? 'it isn\'t' : 'they aren\'t'} clearly read-only (not marked read-only, or marked but named like a write)`;
 
     // A pass covers only the tools that ran. Say which ones didn't, where it can't be missed.
-    const coverage = ran > 0 && notReadOnly.length
-      ? `${notReadOnly.length} of ${plural(tools.length, 'tool')} ${one ? 'was' : 'were'} not tested because ${one ? 'it isn\'t' : 'they aren\'t'} marked read-only (annotations.readOnlyHint): ${someNames(notReadOnly)}. `
+    const coverage = ran > 0 && guarded.length
+      ? `${guarded.length} of ${plural(tools.length, 'tool')} ${one ? 'was' : 'were'} not tested because ${because}: ${someNames(names)}. `
         + `Add --all to run ${one ? 'it' : 'them'}, or ${failOn === 'skip' ? `--skip to leave ${one ? 'it' : 'them'} out on purpose` : '--fail-on skip to fail when a tool goes untested'}.`
       : '';
     const whyNothing = ran > 0 ? ''
       : tools.length === 0 ? 'The server lists no tools.'
-      : notReadOnly.length ? 'No tool is marked read-only (annotations.readOnlyHint). Add --all, or name tools with --tool.'
-      : 'Every tool was skipped.';
+      : !guarded.length ? 'Every tool was skipped.'
+      : unmarkedOnly ? 'No tool is marked read-only (annotations.readOnlyHint). Add --all, or name tools with --tool.'
+      : 'No tool is clearly read-only: each is unmarked, or marked read-only but named like a write. Add --all, or name tools with --tool.';
 
     if (format === 'json') {
       console.log(JSON.stringify({
@@ -326,7 +334,7 @@ const runSmokeCommand = (argv) => runCommand('smoke', argv, {
       } else {
         if (coverage) console.log(ghAnnotation(failOn === 'skip' ? 'error' : 'warning', 'MCP smoke: untested tools', coverage));
         // With --fail-on skip, every other untested tool fails the run too, so each gets its reason.
-        if (failOn === 'skip') for (const r of untested) if (r.msg !== NOT_READ_ONLY) console.log(ghAnnotation('error', `MCP smoke: ${r.tool}`, `not tested: ${r.msg}`));
+        if (failOn === 'skip') for (const r of untested) if (!r.guarded) console.log(ghAnnotation('error', `MCP smoke: ${r.tool}`, `not tested: ${r.msg}`));
       }
       console.log(`MCP smoke: ${smokeSummary(counts)}. Failing on: ${failOn}.`);
     } else {
