@@ -160,8 +160,9 @@ const WRITE_VERBS = new Set(['create', 'add', 'insert', 'update', 'edit', 'modif
   'destroy', 'purge', 'clear', 'reset', 'cancel', 'revoke', 'send', 'publish', 'submit', 'upload', 'import', 'move', 'rename', 'restore',
   'approve', 'reject', 'assign', 'pay', 'deploy', 'kill', 'terminate', 'enable', 'disable', 'activate', 'deactivate', 'register',
   'unregister', 'subscribe', 'unsubscribe', 'grant', 'invite', 'ban', 'install', 'uninstall', 'wipe', 'truncate', 'overwrite', 'replace',
-  'append', 'upsert', 'erase', 'buy', 'sell', 'withdraw', 'notify', 'toggle', 'increment', 'decrement']);
-const WRITE_VERBS_FIRST_ONLY = new Set(['set', 'put', 'post']); // nouns when they come last: data_set, blog_post
+  'append', 'upsert', 'erase', 'buy', 'sell', 'withdraw', 'liquidate', 'amend', 'halt', 'retire', 'notify', 'toggle', 'increment', 'decrement']);
+// Verbs only when they lead the name. At the end they are nouns: data_set, blog_post, market_close, market_place.
+const WRITE_VERBS_FIRST_ONLY = new Set(['set', 'put', 'post', 'close', 'place']);
 const READ_FIRST_WORDS = new Set(['get', 'list', 'read', 'find', 'search', 'fetch', 'query', 'show', 'describe', 'view', 'check', 'count',
   'lookup', 'is', 'has', 'can', 'validate', 'verify', 'preview', 'estimate', 'dry', 'simulate', 'explain', 'compare', 'diff']);
 

@@ -129,6 +129,8 @@ test('annotations: a read-only tool named like a write, or also marked destructi
   const f = findings([
     clean({ name: 'cancel_booking', annotations: readOnly }),
     clean({ name: 'booking_delete', annotations: readOnly }),
+    clean({ name: 'close_position', annotations: readOnly }),
+    clean({ name: 'get_close_price', annotations: readOnly }),
     clean({ name: 'get_audit', annotations: { readOnlyHint: true, destructiveHint: true } }),
     // near-misses: the same names without the read-only claim, and read-only names that only mention a write
     clean({ name: 'cancel_order', annotations: { readOnlyHint: false } }),
@@ -139,8 +141,9 @@ test('annotations: a read-only tool named like a write, or also marked destructi
   ]);
   assert.equal(sevOf(f, 'cancel_booking', /marked read-only, but "cancel" in its name suggests it changes something/), 'warn');
   assert.equal(sevOf(f, 'booking_delete', /marked read-only, but "delete" in its name/), 'warn');
+  assert.equal(sevOf(f, 'close_position', /marked read-only, but "close" in its name/), 'warn');
   assert.equal(sevOf(f, 'get_audit', /marked read-only and destructive at the same time/), 'warn');
-  for (const name of ['cancel_order', 'delete_note', 'get_update_status', 'validate_delete', 'order_status']) {
+  for (const name of ['cancel_order', 'delete_note', 'get_update_status', 'validate_delete', 'order_status', 'get_close_price']) {
     assert.ok(!has(f, name, /marked read-only/), `${name} must not be flagged`);
   }
 });
@@ -149,11 +152,15 @@ test('writeVerb: finds the verb at the start or end of a name, in any naming sty
   const verbs = {
     cancel_booking: 'cancel', 'delete-user': 'delete', deleteUser: 'delete', 'user.remove': 'remove', booking_cancel: 'cancel',
     send: 'send', set_status: 'set', post_comment: 'post', update_status: 'update',
+    close_position: 'close', close_all_positions: 'close', closePosition: 'close', place_order: 'place', 'place-order': 'place',
+    liquidate_position: 'liquidate', amend_order: 'amend', order_amend: 'amend', halt_desk: 'halt', retire_bot: 'retire',
   };
   for (const [name, verb] of Object.entries(verbs)) assert.equal(writeVerb(name), verb, name);
   // Lookups that mention a write, nouns that look like verbs, and names with no verb at all.
   for (const name of ['get_booking', 'get_update_status', 'list_deleted_users', 'validate_delete', 'dry_run_delete', 'order_status',
-    'get_order', 'data_set', 'blog_post', 'echo', 'get-sum', 'trigger-long-running-operation', 'search_and_replace', '']) {
+    'get_order', 'data_set', 'blog_post', 'echo', 'get-sum', 'trigger-long-running-operation', 'search_and_replace', '',
+    // "close" and "place" are nouns anywhere but the start: a closing price, a market place.
+    'get_close_price', 'market_close', 'previous_close', 'market_place', 'get_place', 'list_open_orders', 'open_orders']) {
     assert.equal(writeVerb(name), null, name);
   }
 });

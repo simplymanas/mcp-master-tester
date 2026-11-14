@@ -2,6 +2,12 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.4.1] - 2026-11-14
+
+### Fixed
+
+- **The read-only check knows more write verbs.** `close`, `place`, `liquidate`, `amend`, `halt` and `retire` were missing, so a tool such as `close_position` or `place_order` marked read-only got no lint warning and was called by the smoke test. `close` and `place` count only at the start of a name, because elsewhere they are nouns: `get_close_price`, `market_close` and `market_place` are not flagged. Found from feedback on Reddit about a trading server. ([#20](https://github.com/simplymanas/mcp-master-tester/pull/20))
+
 ## [1.4.0] - 2026-11-13
 
 `readOnlyHint` is the server describing itself, and the smoke test acted on it without question. These changes come from feedback on Reddit about that. ([#19](https://github.com/simplymanas/mcp-master-tester/pull/19))
@@ -143,6 +149,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.4.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.2.1...v1.3.0
