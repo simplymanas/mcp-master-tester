@@ -206,6 +206,8 @@ test('planSmoke: a tool that claims to be read-only but is named like a write is
     tool('get_audit', { annotations: { readOnlyHint: true, destructiveHint: true } }),
     tool('delete_user'),
   ];
+  // Trading-style names: closing or placing is a write, a closing price is a lookup.
+  assert.deepEqual(planSmoke([tool('close_position', { annotations: readOnly }), tool('place_order', { annotations: readOnly }), tool('get_close_price', { annotations: readOnly })]).map((p) => p.run), [false, false, true]);
   const plan = planSmoke(tools);
   assert.deepEqual(plan.map((p) => [p.tool, p.run, p.guarded ?? false]), [['get_booking', true, false], ['cancel_booking', false, true], ['get_audit', false, true], ['delete_user', false, true]]);
   assert.match(plan[1].reason, /^marked read-only, but "cancel" in its name suggests it changes something$/);
