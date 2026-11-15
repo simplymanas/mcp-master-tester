@@ -13,6 +13,8 @@ You point it at a server, either a local command over stdio or a remote URL over
 
 📖 **Tutorial:** [Testing any MCP server, step by step, with MCP Master Tester](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35) on Medium.
 
+🎬 **Video:** [MCP Master Tester: The Complete Setup Guide](https://www.youtube.com/watch?v=XXQ25jPZsh0) on YouTube.
+
 ⭐ **Found it useful?** A [star on GitHub](https://github.com/simplymanas/mcp-master-tester) helps other people find it.
 
 🔒 **1.2.1 is a security fix:** a server could run script in the tester's page through a tool schema. Please update; `npx mcp-master-tester@latest` gets it. Details are in the [CHANGELOG](CHANGELOG.md#121---2026-11-12).
