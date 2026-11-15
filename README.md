@@ -13,6 +13,10 @@ You point it at a server, either a local command over stdio or a remote URL over
 
 📖 **Tutorial:** [Testing any MCP server, step by step, with MCP Master Tester](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35) on Medium.
 
+🎬 **Video:** [MCP Master Tester: The Complete Setup Guide](https://www.youtube.com/watch?v=XXQ25jPZsh0) on YouTube.
+
+⭐ **Found it useful?** A [star on GitHub](https://github.com/simplymanas/mcp-master-tester) helps other people find it.
+
 🔒 **1.2.1 is a security fix:** a server could run script in the tester's page through a tool schema. Please update; `npx mcp-master-tester@latest` gets it. Details are in the [CHANGELOG](CHANGELOG.md#121---2026-11-12).
 
 🆕 **What's new in 1.4:** the smoke test no longer takes a server's "read-only" label at its word. A tool marked read-only but named like a write (`cancel_booking`) is held back, lint warns about it, and the docs now lead with the allow-list (`--tool`). 1.3 added the [smoke test](#smoke-test-in-ci) itself, in the **Smoke** tab and as `npx mcp-master-tester smoke -- <server command>` for CI; 1.2 added [lint in CI](#lint-in-ci). See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
