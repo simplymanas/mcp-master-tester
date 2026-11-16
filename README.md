@@ -232,6 +232,14 @@ The name check only catches careless labels. A `get_quote` that also fires a web
 
 **A pass covers only the tools that ran.** When tools are skipped because they aren't marked read-only, the run says how many and which ones, and with `--format github` that is a warning on the workflow run. To make it a failure, use `--fail-on skip`: then every tool must either be tested (mark it read-only, or use `--all` or `--tool`) or be left out by name with `--skip`. This is the setting for a server whose annotations aren't complete yet.
 
+**List the skips you expect.** Together, `--skip` and `--fail-on skip` say "these tools should go untested, and no others":
+
+```bash
+npx mcp-master-tester smoke --fail-on skip --skip add_card --skip delete_card -- node dist/index.js
+```
+
+The tools you name show as "skipped on request" and don't count against the run. A new tool that nobody marked read-only fails it, and so does a renamed one, because a `--skip` name the server doesn't have is an error. `--fail-on skip` is the strictest level, so warnings fail the run too; clear them by giving real arguments, as below.
+
 **Give real arguments** to turn warnings into real checks. Print what would be sent, replace the made-up values, and pass the file back:
 
 ```bash
@@ -244,7 +252,7 @@ npx mcp-master-tester smoke --args smoke.json -- node dist/index.js
 |---|---|
 | `--all` | Also run tools that aren't clearly read-only. They may change data. |
 | `--tool <name>` | Run only this tool (repeatable), read-only or not. The safest way to choose what runs. |
-| `--skip <name>` | Leave this tool out (repeatable) |
+| `--skip <name>` | Leave this tool out (repeatable). With `--fail-on skip`, this is how you list the skips you expect. |
 | `--args <file>` | JSON file of arguments: `{ "tool_name": { "param": "value" } }` |
 | `--print-args` | Print the arguments that would be sent, and run nothing |
 | `--fail-on <level>` | Exit 1 on `fail` (default), also on `warn`, also on `skip` (a tool went untested and you didn't leave it out yourself), or `never` |
