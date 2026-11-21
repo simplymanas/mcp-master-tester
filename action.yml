@@ -1,0 +1,100 @@
+name: MCP Master Tester
+description: Lint an MCP server's tool definitions and smoke-test its read-only tools, with annotations and a job summary.
+author: simplymanas
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  command:
+    description: >-
+      Command that starts a stdio server, for example "node dist/index.js". It is split on spaces
+      and run without a shell, so an argument that contains a space needs a wrapper script.
+      Give this or url.
+    required: false
+  url:
+    description: URL of a Streamable HTTP server. Give this or command.
+    required: false
+  sse:
+    description: Use the legacy SSE transport for url.
+    required: false
+    default: 'false'
+  headers:
+    description: 'HTTP headers for url, one "Name: value" per line. Pass secrets from the secrets context.'
+    required: false
+  env:
+    description: >-
+      Environment variables for a stdio server, one KEY=VALUE per line. The server does not see
+      the workflow's environment except PATH, HOME and a few others, so pass what it needs here.
+    required: false
+  cwd:
+    description: Working directory for a stdio server. Defaults to the workspace.
+    required: false
+  checks:
+    description: Which checks to run, comma-separated. lint, smoke, or both.
+    required: false
+    default: lint, smoke
+  lint-fail-on:
+    description: Fail on lint findings at this level or worse. error, warn, info or never.
+    required: false
+    default: error
+  smoke-fail-on:
+    description: >-
+      Fail the smoke test on fail, warn, skip (a tool went untested and you didn't leave it out
+      with skip or tools), or never.
+    required: false
+    default: fail
+  tools:
+    description: >-
+      Smoke-test only these tools, comma- or newline-separated, whether or not they are marked
+      read-only. The safest way to choose what runs.
+    required: false
+  skip:
+    description: Tools the smoke test leaves out, comma- or newline-separated.
+    required: false
+  all:
+    description: Also smoke-test tools that aren't clearly read-only. They may change data.
+    required: false
+    default: 'false'
+  args:
+    description: 'JSON file of smoke-test arguments: { "tool_name": { "param": "value" } }.'
+    required: false
+  timeout:
+    description: Milliseconds to wait for connecting, listing tools, or one tool call.
+    required: false
+    default: '30000'
+
+outputs:
+  lint:
+    description: passed, failed, error (couldn't run) or skipped
+    value: ${{ steps.run.outputs.lint }}
+  smoke:
+    description: passed, failed, error (couldn't run) or skipped
+    value: ${{ steps.run.outputs.smoke }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install MCP Master Tester
+      shell: bash
+      run: cd "$GITHUB_ACTION_PATH" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error
+    - name: Run checks
+      id: run
+      shell: bash
+      # Inputs reach the script only as environment variables, never pasted into the shell line.
+      env:
+        MMT_COMMAND: ${{ inputs.command }}
+        MMT_URL: ${{ inputs.url }}
+        MMT_SSE: ${{ inputs.sse }}
+        MMT_HEADERS: ${{ inputs.headers }}
+        MMT_ENV: ${{ inputs.env }}
+        MMT_CWD: ${{ inputs.cwd }}
+        MMT_CHECKS: ${{ inputs.checks }}
+        MMT_LINT_FAIL_ON: ${{ inputs.lint-fail-on }}
+        MMT_SMOKE_FAIL_ON: ${{ inputs.smoke-fail-on }}
+        MMT_TOOLS: ${{ inputs.tools }}
+        MMT_SKIP: ${{ inputs.skip }}
+        MMT_ALL: ${{ inputs.all }}
+        MMT_ARGS: ${{ inputs.args }}
+        MMT_TIMEOUT: ${{ inputs.timeout }}
+      run: node "$GITHUB_ACTION_PATH/action/run.mjs"

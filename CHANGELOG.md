@@ -2,6 +2,12 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-11-21
+
+### Added
+
+- **A GitHub Action.** `uses: simplymanas/mcp-master-tester@v1` with `command: node dist/index.js` (or `url` and `headers` for a remote server) runs lint and the smoke test in one step. Findings show as annotations on the workflow run, the job page gets a summary table of the errors and warnings, and the outputs `lint` and `smoke` say whether each passed. Both checks run even if the first fails. The inputs match the command-line options: `checks`, `lint-fail-on`, `smoke-fail-on`, `tools`, `skip`, `all`, `args`, `env`, `cwd`, `timeout`. Inputs reach the script only as environment variables, and a stdio command runs without a shell. The action lives in `action.yml` and `action/run.mjs`, which are not in the npm package. CI runs the action itself against the test servers.
+
 ## [1.5.0] - 2026-11-21
 
 ### Added
@@ -169,6 +175,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.6.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.0...v1.4.1
