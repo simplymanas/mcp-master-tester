@@ -11,6 +11,8 @@
 
 You point it at a server, either a local command over stdio or a remote URL over Streamable HTTP or SSE. It lists the server's tools, resources and prompts and gives each one a form, so you can call it and see exactly what comes back, down to every JSON-RPC message.
 
+🌐 **Website and docs:** [simplymanas.github.io/mcp-master-tester](https://simplymanas.github.io/mcp-master-tester/)
+
 📖 **Tutorial:** [Testing any MCP server, step by step, with MCP Master Tester](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35) on Medium.
 
 🎬 **Video:** [MCP Master Tester: The Complete Setup Guide](https://www.youtube.com/watch?v=XXQ25jPZsh0) on YouTube.
