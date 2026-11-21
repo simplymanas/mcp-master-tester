@@ -2,6 +2,16 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-11-21
+
+### Added
+
+- **Lint: indentation inside a description.** A warning when a tool description carries at least ~50 tokens of indentation that a dedent would remove, and that indentation is at least 15% of the description. It happens when a multi-line string is indented to match the code around it (a Python docstring, or a template literal inside a class), and every one of those spaces is sent with every request. Only the shared margin is counted, the way Python's `inspect.cleandoc` strips it, so nested lists and code samples aren't flagged. On the 28 public MCP servers in the survey, it flags 17 tools, all on one server whose tool list is about a quarter indentation, and nothing on the other 27. Suggested by a reader of the survey write-up.
+
+### Changed
+
+- The npm package page links the new website ([#25](https://github.com/simplymanas/mcp-master-tester/pull/25)).
+
 ## [1.4.2] - 2026-11-21
 
 ### Fixed
@@ -159,6 +169,8 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.5.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.2...v1.5.0
+[1.4.2]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.3.0...v1.3.1

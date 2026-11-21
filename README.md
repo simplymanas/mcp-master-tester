@@ -66,7 +66,7 @@ npx mcp-master-tester
 - **Lint:** checks each tool definition against the spec and against what models handle well:
   - **Spec:** `inputSchema` and `outputSchema` must be of type object, required fields must be defined, names must be valid and unique
   - **Confusable tools:** names that overlap so much a model may pick the wrong one (`get_user` vs `getUsers`), and near-identical descriptions
-  - **Descriptions:** missing, very short, never saying when *not* to use the tool, or so long they eat context (it's sent with every request); also flags a whole tool list that is too big
+  - **Descriptions:** missing, very short, never saying when *not* to use the tool, so long they eat context (it's sent with every request), or padded with indentation from the source code; also flags a whole tool list that is too big
   - **Parameters:**
     - missing types or descriptions
     - no `required` list when a parameter has no default

@@ -7,6 +7,8 @@
 export const BIG_RESULT_CHARS = 40000;      // ≈10k tokens: one result this big crowds a client's context
 export const BIG_DESCRIPTION_CHARS = 2000;  // ≈500 tokens for a single tool description
 export const BIG_CATALOG_CHARS = 40000;     // ≈10k tokens for all tool definitions, sent on every model request
+export const INDENT_MIN_CHARS = 200;        // ≈50 tokens of indentation a dedent would remove from one description…
+export const INDENT_MIN_SHARE = 0.15;       // …that is also at least this share of the description
 export const approxTokens = (chars) => Math.round(chars / 4).toLocaleString('en-US');
 
 /**
@@ -30,6 +32,9 @@ export function lintTools(tools, runtime = {}) {
     else if (t.description.length < 20) add('info', t.name, 'very short description');
     else if (t.description.length > BIG_DESCRIPTION_CHARS)
       add('warn', t.name, `description is ~${approxTokens(t.description.length)} tokens — it is sent with every request; move detail into parameter descriptions or docs`);
+    const indent = t.description ? descriptionIndent(t.description) : 0;
+    if (indent >= INDENT_MIN_CHARS && indent >= INDENT_MIN_SHARE * t.description.length)
+      add('warn', t.name, `description carries ~${approxTokens(indent)} tokens of indentation (${Math.round((100 * indent) / t.description.length)}% of it), sent with every request — dedent the string (inspect.cleandoc or textwrap.dedent in Python, or trim each line)`);
 
     const s = t.inputSchema;
     if (!s || s.type !== 'object') { add('error', t.name, 'inputSchema.type must be "object"'); continue; }
@@ -109,6 +114,20 @@ export function lintTools(tools, runtime = {}) {
   const order = { error: 0, warn: 1, info: 2 };
   const toolOrder = new Map(tools.map((t, i) => [t.name, i]));
   return out.sort((a, b) => order[a.sev] - order[b.sev] || (toolOrder.get(a.target) ?? 0) - (toolOrder.get(b.target) ?? 0));
+}
+
+// ---------------------------------------------------------------- descriptions
+
+// Characters of indentation a dedent would remove, the way Python's inspect.cleandoc does: leading
+// whitespace on the first line, the margin shared by the other non-blank lines, and whitespace-only
+// lines. Indentation beyond the shared margin (a nested list, a code sample) is kept, so it isn't
+// counted. This catches multi-line strings indented to match the source code around them.
+export function descriptionIndent(text) {
+  const [first, ...rest] = text.split('\n');
+  const lead = (l) => l.match(/^[ \t]*/)[0].length;
+  const lines = rest.filter((l) => l.trim());
+  const margin = lines.length ? Math.min(...lines.map(lead)) : 0;
+  return lead(first) + rest.reduce((n, l) => n + (l.trim() ? margin : l.length), 0);
 }
 
 // ---------------------------------------------------------------- results
