@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt,
+  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent,
   BIG_RESULT_CHARS,
 } from '../public/lint.js';
 
@@ -53,6 +53,32 @@ test('huge descriptions and a huge tool catalog are flagged', () => {
   const many = Array.from({ length: 30 }, (_, i) => clean({ name: `tool_${i}`, description: `Do not use for X. Tool ${i} ${'detail '.repeat(220)}` }));
   assert.ok(findings(many).some((f) => /all 30 tool definitions add up/.test(f.msg)));
   assert.ok(!findings([clean()]).some((f) => /tool definitions add up/.test(f.msg)));
+});
+
+test('indentation a dedent would remove: first line, shared margin and blank lines, not nested indents', () => {
+  assert.equal(descriptionIndent('one line'), 0);
+  assert.equal(descriptionIndent('\n    Read a file.\n    \n    Returns text.'), 4 + 4 + 4);
+  assert.equal(descriptionIndent('  Read a file.\n  Options:\n    - lines\n    - offset'), 2 + 2 + 2 + 2);
+  assert.equal(descriptionIndent('Read a file.\nOptions:\n  - lines'), 0);
+});
+
+test('a description indented to match its source code is flagged; real nesting and small amounts are not', () => {
+  // The way a template literal or docstring inside a class ends up: 24 spaces on every line.
+  const pad = ' '.repeat(24);
+  const lines = Array.from({ length: 12 }, (_, i) => `${pad}Step ${i}: do the thing.`);
+  const indented = clean({ description: `\n${pad}Read a file. Do not use for searching.\n${lines.join('\n')}` });
+  const f = findings([indented]);
+  assert.equal(sevOf(f, 'read_note', /tokens of indentation \(\d+% of it\)/), 'warn');
+  assert.ok(has(f, 'read_note', /dedent/));
+
+  // The same text at the left margin, with a nested list: nothing to remove.
+  const nested = clean({ description: `Read a file. Do not use for searching.\n${lines.map((l, i) => (i % 2 ? `  - ${l.trim()}` : l.trim())).join('\n')}` });
+  assert.ok(!has(findings([nested]), 'read_note', /indentation/));
+  // A little indentation (under ~50 tokens) is not worth a warning.
+  assert.ok(!has(findings([clean({ description: `Read a file. Do not use for searching.\n${lines.slice(0, 3).join('\n')}` })]), 'read_note', /indentation/));
+  // Over 200 characters, but a small share of a long description.
+  const long = clean({ description: `Read a file. Do not use for searching. ${'word '.repeat(300)}\n${lines.slice(0, 10).join('\n')}` });
+  assert.ok(!has(findings([long]), 'read_note', /indentation/));
 });
 
 test('confusable names: plurals, casing, word order and filler words', () => {
