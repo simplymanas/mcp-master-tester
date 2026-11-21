@@ -222,7 +222,30 @@ npx mcp-master-tester smoke --args smoke.json -- node dist/index.js</code></pre>
 
     <section id="ci">
       <h2>GitHub Actions</h2>
-      <p>Build your server, then run lint and the smoke test against it. With <code>--format github</code>, each finding shows as an annotation on the workflow run. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
+      <p>Build your server, then run the action against it. It runs lint and the smoke test, shows each finding as an annotation on the workflow run, and adds a summary table to the job page.</p>
+      <pre><code>- uses: actions/checkout@v7
+- run: npm ci &amp;&amp; npm run build
+- uses: simplymanas/mcp-master-tester@v1
+  with:
+    command: node dist/index.js</code></pre>
+      <p>For a remote server, give <code>url</code> and <code>headers</code> (one <code>Name: value</code> per line, from the secrets context) instead of <code>command</code>. A stdio server doesn't see the step's environment apart from <code>PATH</code>, <code>HOME</code> and a few others, so pass what it needs in <code>env</code>, one <code>KEY=VALUE</code> per line. If the server in CI holds anything you care about, list the tools the smoke test may call in <code>tools</code>.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Input</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>command</code></td><td>Command that starts a stdio server. Split on spaces and run without a shell.</td></tr>
+            <tr><td><code>url</code>, <code>sse</code>, <code>headers</code></td><td>A remote server instead</td></tr>
+            <tr><td><code>env</code>, <code>cwd</code></td><td>Environment and working directory for a stdio server</td></tr>
+            <tr><td><code>checks</code></td><td><code>lint, smoke</code> (default), <code>lint</code> or <code>smoke</code></td></tr>
+            <tr><td><code>lint-fail-on</code></td><td><code>error</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
+            <tr><td><code>smoke-fail-on</code></td><td><code>fail</code> (default), <code>warn</code>, <code>skip</code> or <code>never</code></td></tr>
+            <tr><td><code>tools</code>, <code>skip</code>, <code>all</code>, <code>args</code></td><td>Which tools the smoke test calls, and with what arguments, as in <a href="#smoke-args">the smoke test options</a></td></tr>
+            <tr><td><code>timeout</code></td><td>Milliseconds for connecting, listing tools, or one tool call (default 30000)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The outputs <code>lint</code> and <code>smoke</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.6.0</code> or a commit SHA to stay on one version.</p>
+      <p>On another CI system, or to control every flag, run the commands directly. With <code>--format github</code>, findings still show as annotations on GitHub. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
       <pre><code>- run: npm ci &amp;&amp; npm run build
 - run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
 - run: npx -y mcp-master-tester smoke --format github --args smoke.json -- node dist/index.js</code></pre>

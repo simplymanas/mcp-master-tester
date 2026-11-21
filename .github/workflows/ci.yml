@@ -19,3 +19,28 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+
+  # The GitHub Action (action.yml), run the way a user's workflow runs it.
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./
+        id: healthy
+        with:
+          command: node test/fixtures/smoke-server.js
+      - uses: ./
+        id: broken
+        continue-on-error: true
+        with:
+          command: node test/fixtures/lint-server.js
+          checks: lint
+      - name: Check the results
+        env:
+          HEALTHY_LINT: ${{ steps.healthy.outputs.lint }}
+          HEALTHY_SMOKE: ${{ steps.healthy.outputs.smoke }}
+          BROKEN_LINT: ${{ steps.broken.outputs.lint }}
+          BROKEN_OUTCOME: ${{ steps.broken.outcome }}
+        run: |
+          test "$HEALTHY_LINT" = passed && test "$HEALTHY_SMOKE" = passed
+          test "$BROKEN_LINT" = failed && test "$BROKEN_OUTCOME" = failure

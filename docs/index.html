@@ -115,8 +115,12 @@
 
   <section class="band" id="ci">
     <div class="wrap">
-      <h2>Add it to CI in two lines</h2>
-      <p class="intro">Both commands exit non-zero when something is wrong. With <code>--format github</code>, each finding shows as an annotation on the workflow run.</p>
+      <h2>Add it to CI in three lines</h2>
+      <p class="intro">The GitHub Action runs lint and the smoke test, shows each finding as an annotation on the workflow run, and fails the job when something is wrong.</p>
+<pre><code>- uses: simplymanas/mcp-master-tester@v1
+  with:
+    command: node dist/index.js</code></pre>
+      <p>Without the action, on GitHub or any other CI system, the same checks are two commands that exit non-zero on a problem:</p>
 <pre><code>- run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
 - run: npx -y mcp-master-tester smoke --format github -- node dist/index.js</code></pre>
 <pre><code>mcp-master-tester lint · my-server v1.4.0 · 12 tools · stdio

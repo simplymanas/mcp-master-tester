@@ -21,7 +21,7 @@ You point it at a server, either a local command over stdio or a remote URL over
 
 🔒 **1.2.1 is a security fix:** a server could run script in the tester's page through a tool schema. Please update; `npx mcp-master-tester@latest` gets it. Details are in the [CHANGELOG](CHANGELOG.md#121---2026-11-12).
 
-🆕 **What's new in 1.4:** the smoke test no longer takes a server's "read-only" label at its word. A tool marked read-only but named like a write (`cancel_booking`) is held back, lint warns about it, and the docs now lead with the allow-list (`--tool`). 1.3 added the [smoke test](#smoke-test-in-ci) itself, in the **Smoke** tab and as `npx mcp-master-tester smoke -- <server command>` for CI; 1.2 added [lint in CI](#lint-in-ci). See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
+🆕 **What's new in 1.6:** a [GitHub Action](#github-action), `uses: simplymanas/mcp-master-tester@v1`, runs lint and the smoke test with annotations and a summary on the job page. 1.5 added a lint warning for descriptions padded with indentation from the source code. In 1.4, the smoke test stopped taking a server's "read-only" label at its word: a tool marked read-only but named like a write (`cancel_booking`) is held back. 1.3 added the [smoke test](#smoke-test-in-ci) itself, in the **Smoke** tab and as `npx mcp-master-tester smoke -- <server command>` for CI; 1.2 added [lint in CI](#lint-in-ci). See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
 
 > 🤝 **Open source and looking for collaborators.** Whether you build MCP servers, love clean UIs, or just found a bug, see [Contributing](#contributing). First-time contributors are welcome.
 
@@ -144,6 +144,48 @@ npm start
 Open **http://127.0.0.1:6280** and click **Connect**. The default fields launch the reference server (`npx -y @modelcontextprotocol/server-everything`), which uses every feature above.
 
 Requires **Node.js 20+**. To use a different port, set `PORT`, for example `PORT=7000 npx mcp-master-tester`. If the port is already taken, it says so and exits instead of starting.
+
+## GitHub Action
+
+Runs lint and the smoke test in one step. Each finding shows as an annotation on the workflow run, and the job page gets a summary table.
+
+```yaml
+- uses: actions/checkout@v7
+- run: npm ci && npm run build
+- uses: simplymanas/mcp-master-tester@v1
+  with:
+    command: node dist/index.js
+```
+
+A remote server, with only lint, failing on warnings:
+
+```yaml
+- uses: simplymanas/mcp-master-tester@v1
+  with:
+    url: https://staging.example.com/mcp
+    headers: |
+      Authorization: Bearer ${{ secrets.MCP_TOKEN }}
+    checks: lint
+    lint-fail-on: warn
+```
+
+| Input | What it does |
+|---|---|
+| `command` | Command that starts a stdio server, e.g. `node dist/index.js`. Split on spaces and run without a shell; use a script if an argument has a space in it. |
+| `url`, `sse`, `headers` | A remote server instead: its URL, `sse: true` for the legacy transport, and one `Name: value` header per line |
+| `env`, `cwd` | One `KEY=VALUE` per line for a stdio server, and its working directory. The server doesn't see the step's `env:`, apart from `PATH`, `HOME` and a few others, so put what it needs here. |
+| `checks` | `lint, smoke` (default), `lint` or `smoke` |
+| `lint-fail-on` | `error` (default), `warn`, `info` or `never` |
+| `smoke-fail-on` | `fail` (default), `warn`, `skip` or `never` |
+| `tools` | Smoke-test only these tools, comma- or newline-separated, read-only or not. The safest way to choose what runs. |
+| `skip`, `all`, `args` | Leave tools out; also run tools that aren't clearly read-only; a JSON file of arguments. As in the [smoke test](#smoke-test-in-ci). |
+| `timeout` | Milliseconds for connecting, listing tools, or one tool call (default 30000) |
+
+The outputs `lint` and `smoke` are `passed`, `failed`, `error` (it couldn't run) or `skipped`. Both checks run even when the first one fails, and the step fails if either does.
+
+By default the smoke test only calls tools marked read-only, with made-up arguments. If the server in CI holds anything you care about, list the tools to run in `tools`.
+
+`@v1` follows the latest 1.x release. To stay on one version, use `@v1.6.0` or a commit SHA. It needs Node.js 20 or newer, which GitHub-hosted runners have.
 
 ## Lint in CI
 
