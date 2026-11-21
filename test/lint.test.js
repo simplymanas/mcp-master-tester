@@ -72,6 +72,26 @@ test('near-identical descriptions are flagged even when names share nothing', ()
   assert.equal(sevOf(f, 'weather_now', /description is nearly identical to "forecast"/), 'warn');
 });
 
+test('a prefix every tool has, or a description template most share, does not make tools look alike', () => {
+  // Shaped like servers generated from an API spec: every name starts with "API-", every description
+  // carries the same "Acme | … Error Responses" wrapper. Seen in a survey of public MCP servers.
+  const tool = (name, what, code = 'Bad request') => clean({ name, description: `Acme | ${what} Error Responses: 400: ${code}` });
+  const tools = [
+    tool('API-retrieve-a-block', 'Retrieve a block'),
+    tool('API-update-a-block', 'Update a block'),
+    tool('API-delete-a-block', 'Delete a block'),
+    tool('API-retrieve-a-page', 'Retrieve a page'),
+    tool('API-post-search', 'Search by title'),
+    tool('API-get-user', 'Retrieve a user', '400'),
+    tool('API-get-users', 'List all users', '400'),
+  ];
+  // Only the real near-duplicate is left.
+  assert.deepEqual(confusablePairs(tools).map((p) => `${p.a} ~ ${p.b}`), ['API-get-user ~ API-get-users']);
+  // Templated descriptions that differ in what they manage are not "nearly identical".
+  const azureLike = (name, what) => clean({ name, description: `${what} operations - Commands for managing ${what} resources. This tool is a hierarchical command router.` });
+  assert.deepEqual(confusablePairs([azureLike('acr', 'Container Registry'), azureLike('containerapps', 'Container Apps'), azureLike('keyvault', 'Key Vault')]), []);
+});
+
 test('"when not to use" guidance: info alone, warn when a look-alike exists', () => {
   const plain = 'Read one note by its id and return the full text.';
   assert.equal(sevOf(findings([clean({ description: plain })]), 'read_note', /when not to use/), 'info');
