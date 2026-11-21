@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://simplymanas.github.io/mcp-master-tester/sitemap.xml

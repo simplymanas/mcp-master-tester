@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <title>Docs: how to test an MCP server · MCP Master Tester</title>
+  <meta name="description" content="How to test an MCP server: connect over stdio or HTTP, run its tools, lint the tool definitions and smoke-test them in CI with GitHub Actions.">
+  <link rel="canonical" href="https://simplymanas.github.io/mcp-master-tester/guide.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="How to test an MCP server · MCP Master Tester docs">
+  <meta property="og:description" content="Connect, run tools, lint the tool definitions and smoke-test them in CI.">
+  <meta property="og:url" content="https://simplymanas.github.io/mcp-master-tester/guide.html">
+  <meta property="og:image" content="https://simplymanas.github.io/mcp-master-tester/screenshot-lint.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M8 1l7 7-7 7-7-7z%27 fill=%27%234f9cf9%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l7 7-7 7-7-7z"/></svg>MCP Master Tester</a>
+    <nav class="site-nav" aria-label="Site">
+      <a href="./" class="hide-sm">Home</a>
+      <a href="guide.html" aria-current="page">Docs</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap docs">
+  <nav class="toc" aria-label="On this page">
+    <p>On this page</p>
+    <ul>
+      <li><a href="#quick-start">Quick start</a></li>
+      <li><a href="#connect">Connecting to a server</a></li>
+      <li><a href="#explore">Running tools by hand</a></li>
+      <li><a href="#lint">Lint</a>
+        <ul>
+          <li><a href="#lint-checks">What it checks</a></li>
+          <li><a href="#lint-cli">From the command line</a></li>
+        </ul>
+      </li>
+      <li><a href="#smoke">Smoke test</a>
+        <ul>
+          <li><a href="#smoke-trust">What runs</a></li>
+          <li><a href="#smoke-args">What is sent</a></li>
+          <li><a href="#smoke-results">How answers are judged</a></li>
+          <li><a href="#smoke-skips">Expected skips</a></li>
+          <li><a href="#smoke-options">Options</a></li>
+        </ul>
+      </li>
+      <li><a href="#ci">GitHub Actions</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#limitations">Limitations</a></li>
+    </ul>
+  </nav>
+
+  <main class="content">
+    <h1>How to test an MCP server</h1>
+    <p class="muted">Connect to the server, call its tools by hand, then check the tool definitions with lint and the tools themselves with a smoke test, in the browser or in CI.</p>
+
+    <section id="quick-start">
+      <h2>Quick start</h2>
+      <pre><code>npx mcp-master-tester</code></pre>
+      <p>Open <strong>http://127.0.0.1:6280</strong> and click <strong>Connect</strong>. The default fields launch the official reference server (<code>npx -y @modelcontextprotocol/server-everything</code>), which uses every feature, so you can try everything before pointing it at your own server.</p>
+      <p>It needs <strong>Node.js 20</strong> or later. To use a different port, set <code>PORT</code>, for example <code>PORT=7000 npx mcp-master-tester</code>. If the port is taken, it says so and exits.</p>
+      <p>Or run it from source:</p>
+      <pre><code>git clone https://github.com/simplymanas/mcp-master-tester.git
+cd mcp-master-tester
+npm install
+npm start</code></pre>
+    </section>
+
+    <section id="connect">
+      <h2>Connecting to a server</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Server type</th><th>Settings</th></tr></thead>
+          <tbody>
+            <tr><td>Local npm package</td><td>stdio → Command <code>npx</code>, Arguments <code>-y @modelcontextprotocol/server-filesystem /path/to/dir</code></td></tr>
+            <tr><td>Local script</td><td>stdio → Command <code>python</code>, Arguments <code>my_server.py</code>, Working dir as needed</td></tr>
+            <tr><td>Needs an API key</td><td>stdio → <strong>+ var</strong> → <code>GITHUB_PERSONAL_ACCESS_TOKEN</code> = <code>…</code> (hidden automatically)</td></tr>
+            <tr><td>Remote (current spec)</td><td>Streamable HTTP → URL <code>https://host/mcp</code>, plus a Bearer token if required</td></tr>
+            <tr><td>Remote (legacy)</td><td>SSE → URL <code>https://host/sse</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The connection panel shows <em>Not connected</em>, <em>Connecting…</em> or <em>Connected</em>, and once connected, the server's name and version, the transport and the process id. Edit any field and click <strong>Reconnect</strong> to apply it. Closing or reloading the tab ends the session and stops the server process.</p>
+      <p><strong>Keys and auth.</strong> Environment variables named like <code>*KEY*</code>, <code>*TOKEN*</code>, <code>*SECRET*</code> or <code>*PASSWORD*</code> are hidden as you type. If a remote server answers <strong>401</strong>, the app asks for a token and retries. If a stdio server crashes and its error output mentions a missing key, the app offers to add it and reconnect.</p>
+      <p><strong>Profiles</strong> are saved in your browser. Secrets are never stored, so the app asks for them when you connect.</p>
+    </section>
+
+    <section id="explore">
+      <h2>Running tools by hand</h2>
+      <p>Each tool's <code>inputSchema</code> becomes a form: text and number fields, checkboxes, drop-downs for enums (including <code>oneOf</code> with titles), multi-select arrays and JSON editors for objects. Required fields are checked before anything is sent, and <em>Edit as JSON</em> lets you type the arguments directly. <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> runs the selected tool.</p>
+      <ul>
+        <li><strong>Results:</strong> text (JSON is pretty-printed), images, audio, resource links, embedded resources and <code>structuredContent</code>. A tool's <code>isError</code> result is shown separately from a protocol error, with how long the call took.</li>
+        <li><strong>While it runs:</strong> set a timeout per call and watch progress from <code>notifications/progress</code>. Tools marked destructive ask for confirmation, and each tool keeps a call history.</li>
+        <li><strong>Resources and prompts:</strong> read static resources, fill in URI templates, and see the messages a prompt returns.</li>
+        <li><strong>Elicitation:</strong> when a server sends <code>elicitation/create</code>, a form built from its <code>requestedSchema</code> appears.</li>
+        <li><strong>Protocol log:</strong> every JSON-RPC frame in both directions with request-to-response time, the server's stderr, and <code>notifications/message</code> entries, with a <code>logging/setLevel</code> control when the server supports logging.</li>
+      </ul>
+    </section>
+
+    <section id="lint">
+      <h2>Lint</h2>
+      <p>Lint reads the server's tool list and checks each definition against the MCP spec and against what models handle well. A model only knows a tool through its name, description and schema, and that whole list is sent with every request, so a vague or bloated definition costs accuracy and context on every call.</p>
+      <p>In the app, open the <strong>Lint</strong> tab. The tab count shows errors and warnings, coloured by the worst one, then info findings in muted text: <code>2 · 14</code> means 2 errors or warnings and 14 info suggestions.</p>
+
+      <h3 id="lint-checks">What it checks</h3>
+      <ul>
+        <li><strong>Spec:</strong> <code>inputSchema</code> and <code>outputSchema</code> must be of type object, required fields must be defined, and names must be valid and unique.</li>
+        <li><strong>Look-alike tools:</strong> names so close a model may pick the wrong one (<code>get_user</code> and <code>getUsers</code>), and near-identical descriptions. A prefix every tool shares, or a description template most of them share, doesn't count.</li>
+        <li><strong>Descriptions:</strong> missing, very short, never saying when <em>not</em> to use the tool, or so long they eat context. It also flags a whole tool list that is too big.</li>
+        <li><strong>Parameters:</strong> missing types or descriptions; no <code>required</code> list when a parameter has no default; free-form strings that list fixed values (should be an enum); strings that should be booleans, numbers, dates, URLs or emails; and values with no example.</li>
+        <li><strong>Naming:</strong> names that aren't snake_case, and names that break the server's own convention.</li>
+        <li><strong>Annotations:</strong> missing read-only and destructive hints, and tools marked read-only whose name says they change something (<code>cancel_booking</code>) or that are also marked destructive.</li>
+        <li><strong>Output size:</strong> list and search tools with no limit or pagination parameter.</li>
+        <li><strong>From real calls in the app:</strong> a result over about 10,000 tokens, and an <code>isError</code> result with no useful message for the model to recover from.</li>
+      </ul>
+
+      <h3 id="lint-cli">From the command line</h3>
+      <p>The same rules run in a terminal or CI. The command connects, lists the tools, prints the findings and exits non-zero when there are any at your chosen level.</p>
+      <pre><code># stdio: put the server command after --
+npx mcp-master-tester lint -- node dist/index.js
+
+# Streamable HTTP (add --sse for the legacy SSE transport)
+npx mcp-master-tester lint --url https://example.com/mcp --header "Authorization: Bearer $TOKEN"</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Option</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>--fail-on &lt;level&gt;</code></td><td>Exit 1 at <code>error</code> (default), <code>warn</code> or <code>info</code> findings, or <code>never</code></td></tr>
+            <tr><td><code>--format &lt;format&gt;</code></td><td><code>text</code> (default), <code>json</code>, or <code>github</code> for GitHub Actions annotations</td></tr>
+            <tr><td><code>--show-info</code></td><td>List info findings too (they're always counted)</td></tr>
+            <tr><td><code>--env KEY=VALUE</code>, <code>--cwd &lt;dir&gt;</code></td><td>Environment and working directory for a stdio server</td></tr>
+            <tr><td><code>--url &lt;url&gt;</code>, <code>--sse</code>, <code>--header "Name: value"</code></td><td>Connect to a remote server</td></tr>
+            <tr><td><code>--timeout &lt;ms&gt;</code></td><td>Give up after this long (default 30000)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Exit codes:</strong> <code>0</code> passed, <code>1</code> findings at or above <code>--fail-on</code>, <code>2</code> the server couldn't be started or reached, or the options were wrong. If a stdio server crashes on start, its stderr is printed.</p>
+    </section>
+
+    <section id="smoke">
+      <h2>Smoke test</h2>
+      <p>Lint asks whether the tool definitions are good. The smoke test asks whether the tools actually work: it calls each read-only tool once and fails if one doesn't answer properly. It runs in the app's <strong>Smoke</strong> tab and from the command line:</p>
+      <pre><code>npx mcp-master-tester smoke -- node dist/index.js</code></pre>
+      <pre><code>mcp-master-tester smoke · my-server v1.4.0 · 6 tools · stdio
+
+  pass  ping_db           2 ms
+  pass  get_weather      48 ms
+  warn  find_user         3 ms  returned an error for the made-up "id": No user with id "test". Ids look like "u_1".
+  fail  get_report       12 ms  result breaks its outputSchema: … data/celsius must be number
+  fail  slow_query    30001 ms  no answer: timed out after 30001 ms
+  skip  delete_user             not marked read-only
+
+✖ failed: 2 failed, 1 warning, 2 passed, 1 skipped. Failing on: fail.</code></pre>
+
+      <h3 id="smoke-trust">What runs, and how far to trust it</h3>
+      <div class="note warn"><p><code>readOnlyHint</code> is the server describing itself. If a tool is mislabelled, the smoke test calls a tool that writes. Choose by what is at stake.</p></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>The server</th><th>Use</th><th>What runs</th></tr></thead>
+          <tbody>
+            <tr><td>Holds real data, or isn't yours</td><td><code>--tool a --tool b</code></td><td>Exactly the tools you name. An allow-list is the only mode that doesn't rely on the server's own labels.</td></tr>
+            <tr><td>A local or test instance</td><td>no flag</td><td>Tools marked <code>readOnlyHint: true</code>, except those whose name or other annotations contradict it: named like a write (<code>cancel_booking</code>), or marked destructive as well.</td></tr>
+            <tr><td>A throwaway instance</td><td><code>--all</code></td><td>Every tool.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The name check only catches careless labels. A <code>get_quote</code> that also fires a webhook looks read-only to any tool, which is why the allow-list comes first. If no tool runs at all, the command fails, because a run that called nothing has proved nothing.</p>
+
+      <h3 id="smoke-args">What is sent</h3>
+      <p>A value for each required parameter and nothing else:</p>
+      <ol>
+        <li>the schema's <code>default</code>, first <code>examples</code> entry, <code>const</code> or first <code>enum</code> value, if it has one;</li>
+        <li>otherwise a made-up placeholder: <code>"test"</code>, <code>1</code>, or a value that fits the <code>format</code> (a URL, an email address, a date).</li>
+      </ol>
+      <p>In the app, your last run of a tool in the session comes first. To turn warnings into real checks in CI, print what would be sent, replace the made-up values, and pass the file back:</p>
+      <pre><code>npx mcp-master-tester smoke --print-args -- node dist/index.js &gt; smoke.json
+# edit smoke.json, for example:  { "find_user": { "id": "u_1" } }
+npx mcp-master-tester smoke --args smoke.json -- node dist/index.js</code></pre>
+
+      <h3 id="smoke-results">How answers are judged</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Result</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td class="r-pass">pass</td><td>The tool answered with a normal result.</td></tr>
+            <tr><td class="r-fail">fail</td><td>No answer before the timeout; the server closed the connection; a protocol error (the tool threw instead of returning an error result); a result that breaks the tool's <code>outputSchema</code>; or an error result for arguments that came from the schema or from you.</td></tr>
+            <tr><td class="r-warn">warn</td><td>An error result, or "invalid params", for made-up arguments: the tool answered, but a placeholder can't prove it works. Also a result over about 10,000 tokens.</td></tr>
+            <tr><td class="r-skip">skip</td><td>Not clearly read-only, left out with <code>--skip</code>, or listed after a tool that crashed the server.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="smoke-skips">Expected skips</h3>
+      <p>A pass covers only the tools that ran. When tools are skipped because they aren't marked read-only, the run says which ones. To make that a failure, use <code>--fail-on skip</code>, and list the tools you expect to go untested with <code>--skip</code>:</p>
+      <pre><code>npx mcp-master-tester smoke --fail-on skip --skip add_card --skip delete_card -- node dist/index.js</code></pre>
+      <p>The tools you name show as "skipped on request" and don't count against the run. A new tool that nobody marked read-only fails it, and so does a renamed one, because a <code>--skip</code> name the server doesn't have is an error. <code>--fail-on skip</code> is the strictest level, so warnings fail the run too; clear them by giving real arguments, as above.</p>
+
+      <h3 id="smoke-options">Options</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Option</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>--all</code></td><td>Also run tools that aren't clearly read-only. They may change data.</td></tr>
+            <tr><td><code>--tool &lt;name&gt;</code></td><td>Run only this tool (repeatable), read-only or not. The safest way to choose what runs.</td></tr>
+            <tr><td><code>--skip &lt;name&gt;</code></td><td>Leave this tool out (repeatable). With <code>--fail-on skip</code>, this is how you list the skips you expect.</td></tr>
+            <tr><td><code>--args &lt;file&gt;</code></td><td>JSON file of arguments: <code>{ "tool_name": { "param": "value" } }</code></td></tr>
+            <tr><td><code>--print-args</code></td><td>Print the arguments that would be sent, and run nothing</td></tr>
+            <tr><td><code>--fail-on &lt;level&gt;</code></td><td>Exit 1 on <code>fail</code> (default), also on <code>warn</code>, also on <code>skip</code>, or <code>never</code></td></tr>
+            <tr><td><code>--timeout &lt;ms&gt;</code></td><td>How long each tool may take (default 30000)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>--format</code>, <code>--env</code>, <code>--cwd</code>, <code>--url</code>, <code>--sse</code> and <code>--header</code> work as they do for lint, and so do the exit codes. A misspelt tool name in <code>--tool</code>, <code>--skip</code> or the <code>--args</code> file is an error (exit 2), so a renamed tool can't quietly drop out of the test.</p>
+    </section>
+
+    <section id="ci">
+      <h2>GitHub Actions</h2>
+      <p>Build your server, then run lint and the smoke test against it. With <code>--format github</code>, each finding shows as an annotation on the workflow run. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
+      <pre><code>- run: npm ci &amp;&amp; npm run build
+- run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
+- run: npx -y mcp-master-tester smoke --format github --args smoke.json -- node dist/index.js</code></pre>
+    </section>
+
+    <section id="security">
+      <h2>Security</h2>
+      <ul>
+        <li>The backend listens on <strong><code>127.0.0.1</code> only</strong>, because it can run any command you enter in the stdio form. Don't expose it on a network.</li>
+        <li>Requests with a <code>Host</code> other than <code>127.0.0.1</code> or <code>localhost</code>, or an <code>Origin</code> other than the app itself, are rejected. That blocks DNS-rebinding attacks and other websites open in your browser.</li>
+        <li>Everything a server sends (names, descriptions, schemas, results, logs) is treated as untrusted and escaped before display. A Content-Security-Policy backs that up.</li>
+        <li>Secrets stay in memory in the browser tab and the backend process. Profiles save names only, never values.</li>
+        <li>Tools only run when you click Run, and tools marked destructive ask first. The smoke test is the exception, which is why it only runs tools marked read-only, or the ones you name.</li>
+      </ul>
+      <p>To report a security issue, see <a href="https://github.com/simplymanas/mcp-master-tester/blob/main/SECURITY.md">SECURITY.md</a>.</p>
+    </section>
+
+    <section id="limitations">
+      <h2>Limitations</h2>
+      <ul>
+        <li>No browser sign-in (OAuth) for remote servers. Use a Bearer token or custom headers instead.</li>
+        <li>Sampling (<code>sampling/createMessage</code>) and roots are not advertised to servers.</li>
+        <li>URL-mode elicitation is not advertised, so servers can only ask for input with a form.</li>
+      </ul>
+      <p>These are on the <a href="https://github.com/simplymanas/mcp-master-tester#roadmap-help-wanted">roadmap</a>, and several are marked as good first contributions.</p>
+    </section>
+  </main>
+</div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>MCP Master Tester · MIT licence · by <a href="https://github.com/simplymanas">@simplymanas</a></span>
+    <nav aria-label="Footer">
+      <a href="./">Home</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester">GitHub</a>
+      <a href="https://www.npmjs.com/package/mcp-master-tester">npm</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

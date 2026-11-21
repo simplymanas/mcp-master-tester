@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <title>MCP Master Tester: test any MCP server</title>
+  <meta name="description" content="Debug any MCP server in a local web UI, then guard it in CI with lint and a smoke test. Free and open source. One npx command, two dependencies.">
+  <link rel="canonical" href="https://simplymanas.github.io/mcp-master-tester/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MCP Master Tester: test any MCP server">
+  <meta property="og:description" content="Debug any MCP server in a local web UI, then guard it in CI with lint and a smoke test.">
+  <meta property="og:url" content="https://simplymanas.github.io/mcp-master-tester/">
+  <meta property="og:image" content="https://simplymanas.github.io/mcp-master-tester/screenshot-tool.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M8 1l7 7-7 7-7-7z%27 fill=%27%234f9cf9%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l7 7-7 7-7-7z"/></svg>MCP Master Tester</a>
+    <nav class="site-nav" aria-label="Site">
+      <a href="./" aria-current="page" class="hide-sm">Home</a>
+      <a href="guide.html">Docs</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1>Test any MCP server</h1>
+      <p class="lede">Debug any MCP server in a local web UI, then guard it in CI with lint and a smoke test. Free, open source, and it runs on your machine.</p>
+      <div class="cmd"><code>npx mcp-master-tester</code></div>
+      <div class="actions">
+        <a class="btn primary" href="guide.html#quick-start">Get started</a>
+        <a class="btn" href="https://github.com/simplymanas/mcp-master-tester">View on GitHub</a>
+        <a class="btn" href="https://www.npmjs.com/package/mcp-master-tester">npm package</a>
+      </div>
+      <ul class="facts">
+        <li><strong>stdio</strong>, <strong>Streamable HTTP</strong> and <strong>SSE</strong></li>
+        <li><strong>2</strong> dependencies</li>
+        <li>No build step</li>
+        <li>MIT licence</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <figure class="shot">
+      <img src="demo.gif" width="1000" height="597" alt="Connecting to the reference server, running the echo and get-sum tools, the protocol log, a resource, the lint report and the server info">
+      <figcaption>Connect, run tools, read the protocol log, then lint the tool list.</figcaption>
+    </figure>
+  </div>
+
+  <section class="band first">
+    <div class="wrap">
+      <h2>One tool, three jobs</h2>
+      <p class="intro">Point it at a server, either a local command over stdio or a remote URL. Use the web UI while you build, and the same checks from the command line in CI.</p>
+      <div class="trio">
+        <div class="card">
+          <span class="tag">Explore</span>
+          <h3>Run every tool by hand</h3>
+          <p>Each tool's schema becomes a form. Call it and see the result, its structured content, and every JSON-RPC message in both directions.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Lint</span>
+          <h3>Check what the model sees</h3>
+          <p>Spec errors, missing descriptions, look-alike tools a model may confuse, missing safety labels, and tool lists so large they eat the context window.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Smoke test</span>
+          <h3>Prove the tools answer</h3>
+          <p>Calls each read-only tool once and fails on timeouts, crashes, protocol errors and results that break their output schema.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div>
+          <h3>Forms from the schema</h3>
+          <p>Strings, numbers, enums, multi-select arrays and JSON objects each get the right field, with required-field checks before anything is sent.</p>
+          <p>Results show text, images, audio and embedded resources. A tool's <code>isError</code> result is shown apart from a protocol error, so you can tell which one you have.</p>
+        </div>
+        <figure class="shot">
+          <img src="screenshot-tool.png" width="1440" height="860" alt="The echo tool of the reference server: the form, the echoed result, call history and the protocol log listing every JSON-RPC frame">
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div>
+          <h3>Lint that knows how models fail</h3>
+          <p>Every finding links to its tool. Beyond the spec, it flags what trips models up in practice: <code>get_user</code> next to <code>getUsers</code>, a string that should be an enum, a list tool with no limit, a tool marked read-only but named <code>cancel_booking</code>.</p>
+          <p><a href="guide.html#lint">How lint works</a></p>
+        </div>
+        <figure class="shot">
+          <img src="screenshot-lint.png" width="1440" height="860" alt="The lint report for the reference server: 0 errors, 0 warnings and 30 info findings">
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div>
+          <h3>A smoke test that doesn't take labels on trust</h3>
+          <p>Only tools marked read-only run by default, and any whose name says they write are held back. For a server with real data, name the tools yourself with <code>--tool</code>.</p>
+          <p><a href="guide.html#smoke">How the smoke test works</a></p>
+        </div>
+        <figure class="shot">
+          <img src="screenshot-smoke.png" width="1440" height="860" alt="The smoke test for the reference server: 9 read-only tools passed and 5 tools not marked read-only were skipped">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="ci">
+    <div class="wrap">
+      <h2>Add it to CI in two lines</h2>
+      <p class="intro">Both commands exit non-zero when something is wrong. With <code>--format github</code>, each finding shows as an annotation on the workflow run.</p>
+<pre><code>- run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
+- run: npx -y mcp-master-tester smoke --format github -- node dist/index.js</code></pre>
+<pre><code>mcp-master-tester lint · my-server v1.4.0 · 12 tools · stdio
+
+  error  send_mail    required "subject" is not defined in properties
+  warn   get_user     name is very close to "getUsers" — models may confuse them; …
+  warn   send_mail    missing description — models cannot tell when to use it
+
+✖ failed: 1 error, 2 warnings, 9 info (add --show-info to list the info findings). Failing on: error.</code></pre>
+      <p><a href="guide.html#ci">Options, exit codes and GitHub Actions</a></p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap split">
+      <div>
+        <h2>Small on purpose</h2>
+        <ul class="checks">
+          <li>Two runtime dependencies: the official MCP SDK and Express.</li>
+          <li>No build step and no frontend framework. Plain JavaScript you can read.</li>
+          <li>No install scripts, and nothing loaded from the internet: no CDN, fonts or analytics.</li>
+          <li>A weight budget in the test suite, so a pull request that adds a dependency fails CI.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Safe to run locally</h2>
+        <ul class="checks">
+          <li>Listens on <code>127.0.0.1</code> only, and rejects other hosts and origins to block DNS rebinding.</li>
+          <li>Everything a server sends is escaped before display, backed by a Content-Security-Policy.</li>
+          <li>Secrets stay in memory. Saved profiles keep names, never values.</li>
+          <li>Tools marked destructive ask before they run.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <h2>Learn more</h2>
+      <div class="trio">
+        <a class="card link" href="https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35">
+          <span class="tag">Tutorial</span>
+          <h3>Testing any MCP server, step by step</h3>
+          <p class="muted">A walkthrough on Medium.</p>
+        </a>
+        <a class="card link" href="https://www.youtube.com/watch?v=XXQ25jPZsh0">
+          <span class="tag">Video</span>
+          <h3>The complete setup guide</h3>
+          <p class="muted">An illustrated overview on YouTube.</p>
+        </a>
+        <a class="card link" href="https://github.com/simplymanas/mcp-master-tester/blob/main/CHANGELOG.md">
+          <span class="tag">Changelog</span>
+          <h3>What changed in each release</h3>
+          <p class="muted">Every version since 1.0.</p>
+        </a>
+      </div>
+      <p class="after">Building MCP servers or found a bug? <a href="https://github.com/simplymanas/mcp-master-tester/issues">Open an issue</a>, or see <a href="https://github.com/simplymanas/mcp-master-tester/blob/main/CONTRIBUTING.md">how to contribute</a>. First-time contributors are welcome.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>MCP Master Tester · MIT licence · by <a href="https://github.com/simplymanas">@simplymanas</a></span>
+    <nav aria-label="Footer">
+      <a href="guide.html">Docs</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester">GitHub</a>
+      <a href="https://www.npmjs.com/package/mcp-master-tester">npm</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester/blob/main/SECURITY.md">Security</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
