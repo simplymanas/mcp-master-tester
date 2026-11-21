@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <title>How much context do popular MCP servers use? · MCP Master Tester</title>
+  <meta name="description" content="I listed the tools of 28 popular MCP servers and measured what each one sends to the model on every request. Four send over 10,000 tokens. Data, method and fixes.">
+  <link rel="canonical" href="https://simplymanas.github.io/mcp-master-tester/survey.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="How much context do popular MCP servers use?">
+  <meta property="og:description" content="28 MCP servers, 335 tools: four send over 10,000 tokens with every request. Data, method and fixes.">
+  <meta property="og:url" content="https://simplymanas.github.io/mcp-master-tester/survey.html">
+  <meta property="og:image" content="https://simplymanas.github.io/mcp-master-tester/screenshot-lint.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M8 1l7 7-7 7-7-7z%27 fill=%27%234f9cf9%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l7 7-7 7-7-7z"/></svg>MCP Master Tester</a>
+    <nav class="site-nav" aria-label="Site">
+      <a href="./" class="hide-sm">Home</a>
+      <a href="guide.html">Docs</a>
+      <a href="survey.html" aria-current="page">Survey</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap article">
+  <p class="kicker">Survey · 21 November 2026</p>
+  <h1>How much context do popular MCP servers use?</h1>
+  <p class="lede">I listed the tools of 28 popular MCP servers and measured what each one sends to the model on every request, before you've asked anything. Most are small. Four send over 10,000 tokens.</p>
+
+  <ul class="stats">
+    <li><strong>28</strong><span>servers, 335 tools</span></li>
+    <li><strong>4</strong><span>over 10,000 tokens</span></li>
+    <li><strong>~1,900</strong><span>tokens for the median server</span></li>
+    <li><strong>7</strong><span>servers with no safety labels</span></li>
+  </ul>
+
+  <h2>Why the size of a tool list matters</h2>
+  <p>When an MCP client connects to a server, it fetches the server's tool list: each tool's name, description and input schema. Unless the client loads tools on demand, it sends that whole list to the model with every request, so the model can pick a tool.</p>
+  <p>That text is paid for on every turn, and it takes room the conversation could use. It adds up across servers: connect the four largest below and about 77,000 tokens go out before you type anything.</p>
+
+  <h2>Four servers send over 10,000 tokens</h2>
+  <figure class="chart-figure">
+    <div class="chart-scroll">
+<svg class="chart" viewBox="0 0 720 660" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">Estimated tokens each server's tool list adds to every request</title>
+<desc id="chart-desc">Horizontal bars for 28 servers, largest first. Four are over 10,000 tokens: Firecrawl MCP 24,568, Azure MCP 19,814, Notion MCP 19,048, Desktop Commander 13,389. The median is 1,922.</desc>
+<line class="grid" x1="178.0" y1="28" x2="178.0" y2="650"/>
+<text class="axis" x="178.0" y="22" text-anchor="middle">0k</text>
+<line class="grid" x1="272.4" y1="28" x2="272.4" y2="650"/>
+<text class="axis" x="272.4" y="22" text-anchor="middle">5k</text>
+<line class="limit" x1="366.8" y1="28" x2="366.8" y2="650"/>
+<text class="axis" x="366.8" y="22" text-anchor="middle">10k</text>
+<line class="grid" x1="461.2" y1="28" x2="461.2" y2="650"/>
+<text class="axis" x="461.2" y="22" text-anchor="middle">15k</text>
+<line class="grid" x1="555.6" y1="28" x2="555.6" y2="650"/>
+<text class="axis" x="555.6" y="22" text-anchor="middle">20k</text>
+<line class="grid" x1="650.0" y1="28" x2="650.0" y2="650"/>
+<text class="axis" x="650.0" y="22" text-anchor="middle">25k</text>
+<text class="limit-label" x="372.8" y="335">lint warns above ~10k</text>
+<g><title>Firecrawl MCP: ~24,568 tokens, 28 tools</title><rect class="hit" x="0" y="34" width="720" height="22"/><path class="bar big" d="M178,38.0h459.8a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-459.8z"/><text class="name" x="170" y="49.0" text-anchor="end">Firecrawl MCP</text><text class="value" x="647.8" y="49.0">24,568</text></g>
+<g><title>Azure MCP: ~19,814 tokens, 74 tools</title><rect class="hit" x="0" y="56" width="720" height="22"/><path class="bar big" d="M178,60.0h370.1a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-370.1z"/><text class="name" x="170" y="71.0" text-anchor="end">Azure MCP</text><text class="value" x="558.1" y="71.0">19,814</text></g>
+<g><title>Notion MCP: ~19,048 tokens, 24 tools</title><rect class="hit" x="0" y="78" width="720" height="22"/><path class="bar big" d="M178,82.0h355.6a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-355.6z"/><text class="name" x="170" y="93.0" text-anchor="end">Notion MCP</text><text class="value" x="543.6" y="93.0">19,048</text></g>
+<g><title>Desktop Commander: ~13,389 tokens, 25 tools</title><rect class="hit" x="0" y="100" width="720" height="22"/><path class="bar big" d="M178,104.0h248.8a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-248.8z"/><text class="name" x="170" y="115.0" text-anchor="end">Desktop Commander</text><text class="value" x="436.8" y="115.0">13,389</text></g>
+<g><title>Chrome DevTools MCP: ~7,866 tokens, 33 tools</title><rect class="hit" x="0" y="122" width="720" height="22"/><path class="bar" d="M178,126.0h144.5a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-144.5z"/><text class="name" x="170" y="137.0" text-anchor="end">Chrome DevTools MCP</text><text class="value" x="332.5" y="137.0">7,866</text></g>
+<g><title>Kubernetes MCP: ~5,971 tokens, 23 tools</title><rect class="hit" x="0" y="144" width="720" height="22"/><path class="bar" d="M178,148.0h108.7a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-108.7z"/><text class="name" x="170" y="159.0" text-anchor="end">Kubernetes MCP</text><text class="value" x="296.7" y="159.0">5,971</text></g>
+<g><title>AWS Documentation MCP: ~5,808 tokens, 5 tools</title><rect class="hit" x="0" y="166" width="720" height="22"/><path class="bar" d="M178,170.0h105.7a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-105.7z"/><text class="name" x="170" y="181.0" text-anchor="end">AWS Documentation MCP</text><text class="value" x="293.7" y="181.0">5,808</text></g>
+<g><title>Playwright MCP: ~5,293 tokens, 25 tools</title><rect class="hit" x="0" y="188" width="720" height="22"/><path class="bar" d="M178,192.0h95.9a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-95.9z"/><text class="name" x="170" y="203.0" text-anchor="end">Playwright MCP</text><text class="value" x="283.9" y="203.0">5,293</text></g>
+<g><title>Hugging Face: ~4,965 tokens, 4 tools</title><rect class="hit" x="0" y="210" width="720" height="22"/><path class="bar" d="M178,214.0h89.7a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-89.7z"/><text class="name" x="170" y="225.0" text-anchor="end">Hugging Face</text><text class="value" x="277.7" y="225.0">4,965</text></g>
+<g><title>Filesystem: ~3,274 tokens, 14 tools</title><rect class="hit" x="0" y="232" width="720" height="22"/><path class="bar" d="M178,236.0h57.8a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-57.8z"/><text class="name" x="170" y="247.0" text-anchor="end">Filesystem</text><text class="value" x="245.8" y="247.0">3,274</text></g>
+<g><title>Memory: ~2,764 tokens, 9 tools</title><rect class="hit" x="0" y="254" width="720" height="22"/><path class="bar" d="M178,258.0h48.2a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-48.2z"/><text class="name" x="170" y="269.0" text-anchor="end">Memory</text><text class="value" x="236.2" y="269.0">2,764</text></g>
+<g><title>AWS Knowledge: ~1,976 tokens, 5 tools</title><rect class="hit" x="0" y="276" width="720" height="22"/><path class="bar" d="M178,280.0h33.3a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-33.3z"/><text class="name" x="170" y="291.0" text-anchor="end">AWS Knowledge</text><text class="value" x="221.3" y="291.0">1,976</text></g>
+<g><title>Git: ~1,925 tokens, 14 tools</title><rect class="hit" x="0" y="298" width="720" height="22"/><path class="bar" d="M178,302.0h32.3a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-32.3z"/><text class="name" x="170" y="313.0" text-anchor="end">Git</text><text class="value" x="220.3" y="313.0">1,925</text></g>
+<g><title>Tavily MCP: ~1,922 tokens, 5 tools</title><rect class="hit" x="0" y="320" width="720" height="22"/><path class="bar" d="M178,324.0h32.3a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-32.3z"/><text class="name" x="170" y="335.0" text-anchor="end">Tavily MCP</text><text class="value" x="220.3" y="335.0">1,922</text></g>
+<g><title>Everything (reference): ~1,910 tokens, 13 tools</title><rect class="hit" x="0" y="342" width="720" height="22"/><path class="bar" d="M178,346.0h32.1a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-32.1z"/><text class="name" x="170" y="357.0" text-anchor="end">Everything (reference)</text><text class="value" x="220.1" y="357.0">1,910</text></g>
+<g><title>Browserbase MCP: ~1,332 tokens, 9 tools</title><rect class="hit" x="0" y="364" width="720" height="22"/><path class="bar" d="M178,368.0h21.1a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-21.1z"/><text class="name" x="170" y="379.0" text-anchor="end">Browserbase MCP</text><text class="value" x="209.1" y="379.0">1,332</text></g>
+<g><title>Context7 (npm): ~1,304 tokens, 2 tools</title><rect class="hit" x="0" y="386" width="720" height="22"/><path class="bar" d="M178,390.0h20.6a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-20.6z"/><text class="name" x="170" y="401.0" text-anchor="end">Context7 (npm)</text><text class="value" x="208.6" y="401.0">1,304</text></g>
+<g><title>Context7 (remote): ~1,304 tokens, 2 tools</title><rect class="hit" x="0" y="408" width="720" height="22"/><path class="bar" d="M178,412.0h20.6a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-20.6z"/><text class="name" x="170" y="423.0" text-anchor="end">Context7 (remote)</text><text class="value" x="208.6" y="423.0">1,304</text></g>
+<g><title>Microsoft Learn: ~1,214 tokens, 3 tools</title><rect class="hit" x="0" y="430" width="720" height="22"/><path class="bar" d="M178,434.0h18.9a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-18.9z"/><text class="name" x="170" y="445.0" text-anchor="end">Microsoft Learn</text><text class="value" x="206.9" y="445.0">1,214</text></g>
+<g><title>Sequential Thinking: ~1,160 tokens, 1 tools</title><rect class="hit" x="0" y="452" width="720" height="22"/><path class="bar" d="M178,456.0h17.9a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-17.9z"/><text class="name" x="170" y="467.0" text-anchor="end">Sequential Thinking</text><text class="value" x="205.9" y="467.0">1,160</text></g>
+<g><title>Time: ~1,082 tokens, 3 tools</title><rect class="hit" x="0" y="474" width="720" height="22"/><path class="bar" d="M178,478.0h16.4a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-16.4z"/><text class="name" x="170" y="489.0" text-anchor="end">Time</text><text class="value" x="204.4" y="489.0">1,082</text></g>
+<g><title>Exa MCP: ~545 tokens, 2 tools</title><rect class="hit" x="0" y="496" width="720" height="22"/><path class="bar" d="M178,500.0h6.3a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-6.3z"/><text class="name" x="170" y="511.0" text-anchor="end">Exa MCP</text><text class="value" x="194.3" y="511.0">545</text></g>
+<g><title>GitMCP: ~451 tokens, 4 tools</title><rect class="hit" x="0" y="518" width="720" height="22"/><path class="bar" d="M178,522.0h4.5a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-4.5z"/><text class="name" x="170" y="533.0" text-anchor="end">GitMCP</text><text class="value" x="192.5" y="533.0">451</text></g>
+<g><title>Cloudflare Docs: ~433 tokens, 2 tools</title><rect class="hit" x="0" y="540" width="720" height="22"/><path class="bar" d="M178,544.0h4.2a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-4.2z"/><text class="name" x="170" y="555.0" text-anchor="end">Cloudflare Docs</text><text class="value" x="192.2" y="555.0">433</text></g>
+<g><title>DeepWiki: ~426 tokens, 3 tools</title><rect class="hit" x="0" y="562" width="720" height="22"/><path class="bar" d="M178,566.0h4.0a4,4 0 0 1 4,4v6a4,4 0 0 1 -4,4h-4.0z"/><text class="name" x="170" y="577.0" text-anchor="end">DeepWiki</text><text class="value" x="192.0" y="577.0">426</text></g>
+<g><title>Fetch: ~362 tokens, 1 tools</title><rect class="hit" x="0" y="584" width="720" height="22"/><path class="bar" d="M178,588.0h3.4a3.417280000000005,3.417280000000005 0 0 1 3.417280000000005,3.417280000000005v7.16543999999999a3.417280000000005,3.417280000000005 0 0 1 -3.417280000000005,3.417280000000005h-3.4z"/><text class="name" x="170" y="599.0" text-anchor="end">Fetch</text><text class="value" x="190.8" y="599.0">362</text></g>
+<g><title>MarkItDown MCP: ~105 tokens, 1 tools</title><rect class="hit" x="0" y="606" width="720" height="22"/><path class="bar" d="M178,610.0h1.0a1.0,1.0 0 0 1 1.0,1.0v12.0a1.0,1.0 0 0 1 -1.0,1.0h-1.0z"/><text class="name" x="170" y="621.0" text-anchor="end">MarkItDown MCP</text><text class="value" x="186.0" y="621.0">105</text></g>
+<g><title>Astro Docs: ~79 tokens, 1 tools</title><rect class="hit" x="0" y="628" width="720" height="22"/><path class="bar" d="M178,632.0h1.0a1.0,1.0 0 0 1 1.0,1.0v12.0a1.0,1.0 0 0 1 -1.0,1.0h-1.0z"/><text class="name" x="170" y="643.0" text-anchor="end">Astro Docs</text><text class="value" x="185.5" y="643.0">79</text></g>
+</svg>
+    </div>
+    <figcaption>Estimated tokens each server's tool list adds to every request, with default settings. Hover a bar for its tool count; the <a href="#data">table below</a> has every number.</figcaption>
+  </figure>
+  <p>Each of the four is large for a different reason:</p>
+  <ul>
+    <li><strong>Firecrawl (~24,600):</strong> 28 tools with detailed input schemas. <code>firecrawl_search</code> alone is about 2,600.</li>
+    <li><strong>Azure (~19,800):</strong> 74 tools, the most in the survey. Descriptions make up 44% of it.</li>
+    <li><strong>Notion (~19,000):</strong> its tools are generated from Notion's API spec, and 98% of the size is input schemas.</li>
+    <li><strong>Desktop Commander (~13,400):</strong> descriptions are 76% of it, and eight of them are over 500 tokens each. About a quarter of all its characters are indentation inside the description text.</li>
+  </ul>
+  <p>Big isn't automatically wrong. A detailed description can help a model use a tool correctly. The question for each server is whether every request needs all of it.</p>
+
+  <h2>Seven servers have no safety labels</h2>
+  <p>Tool annotations tell a client what a tool does to the world: <code>readOnlyHint</code> marks a tool that only reads, and <code>destructiveHint</code> one that can delete or overwrite. Clients use them to run safe tools without asking and to warn before risky ones.</p>
+  <p>306 of the 335 tools have them. Of the 29 that don't, 28 are on seven servers that label none of their tools: AWS Documentation, Tavily, Browserbase, GitMCP, DeepWiki, MarkItDown and Astro Docs. Six of the seven only search or read, which makes it an easy fix: one line per tool.</p>
+
+  <h2>One parameter in four has no description</h2>
+  <p>274 of 1,170 parameters have no description of their own, so the model has only the name to go on. They are concentrated in five servers:</p>
+  <ul>
+    <li><strong>Firecrawl:</strong> 118 of 171</li>
+    <li><strong>Desktop Commander:</strong> all 72. It explains parameters inside each tool's description instead, which is part of why those are long.</li>
+    <li><strong>Notion:</strong> 31 of 71</li>
+    <li><strong>Git:</strong> 21 of 32, and <strong>Filesystem:</strong> 18 of 25. Both are official reference servers that many people copy.</li>
+  </ul>
+
+  <h2>Output schemas are still rare</h2>
+  <p>An <code>outputSchema</code> tells the client what shape a tool's result will have, so the result can be checked and used without guessing. 70 of 335 tools declare one, on 12 servers. Eight servers declare one for every tool, among them Firecrawl for all 28 of its tools.</p>
+
+  <h2>The good news</h2>
+  <ul class="checks">
+    <li>No spec errors: every input schema is an object, every tool name is valid and unique, and every required parameter is defined.</li>
+    <li>Every one of the 335 tools has a description.</li>
+    <li>Tool names that a model could mix up are rare. A handful remain, such as <code>firecrawl_monitor_run</code> and <code>firecrawl_monitor_check</code>.</li>
+  </ul>
+
+  <h2>For server authors: five fixes</h2>
+  <ol>
+    <li><strong>Label every tool.</strong> Add <code>readOnlyHint: true</code> to tools that only read, and <code>destructiveHint: true</code> to ones that delete or overwrite.</li>
+    <li><strong>Describe each parameter in its schema,</strong> not only in the tool description. A sentence on what it is and an example value is enough.</li>
+    <li><strong>Keep tool descriptions to what the model needs to choose the tool.</strong> Remove indentation from multi-line description strings: it's sent too.</li>
+    <li><strong>Watch the total.</strong> If the tool list is past about 10,000 tokens, consider fewer, broader tools, or a setting that loads only the groups a user needs.</li>
+    <li><strong>Declare an <code>outputSchema</code></strong> for tools that return structured data.</li>
+  </ol>
+  <p>To check your own server, run lint against it. It warns when the tool list passes about 10,000 tokens or a description passes about 500, and lists missing labels and parameter descriptions as suggestions:</p>
+  <pre><code>npx mcp-master-tester lint --show-info -- node dist/index.js</code></pre>
+  <p><a href="guide.html#lint">How lint works</a>, and <a href="guide.html#ci">how to run it in CI</a>.</p>
+
+  <h2 id="data">All 28 servers</h2>
+  <div class="table-wrap">
+<table class="data">
+<thead><tr><th>Server and package</th><th>Maker</th><th class="num">Tools</th><th class="num">Est. tokens</th><th class="num">Tools labelled</th><th class="num">Params without a description</th></tr></thead>
+<tbody>
+<tr><td>Firecrawl MCP<span class="pkg">firecrawl-mcp 3.41.0</span></td><td>Firecrawl</td><td class="num">28</td><td class="num">24,568</td><td class="num">28 of 28</td><td class="num">118 of 171</td></tr>
+<tr><td>Azure MCP<span class="pkg">@azure/mcp 4.0.0-beta.9</span></td><td>Microsoft</td><td class="num">74</td><td class="num">19,814</td><td class="num">74 of 74</td><td class="num">0 of 285</td></tr>
+<tr><td>Notion MCP<span class="pkg">@notionhq/notion-mcp-server 2.6.1</span></td><td>Notion</td><td class="num">24</td><td class="num">19,048</td><td class="num">24 of 24</td><td class="num">31 of 71</td></tr>
+<tr><td>Desktop Commander<span class="pkg">@wonderwhy-er/desktop-commander 0.3.4</span></td><td>wonderwhy-er</td><td class="num">25</td><td class="num">13,389</td><td class="num">25 of 25</td><td class="num">72 of 72</td></tr>
+<tr><td>Chrome DevTools MCP<span class="pkg">chrome-devtools-mcp 1.13.0</span></td><td>Google</td><td class="num">33</td><td class="num">7,866</td><td class="num">33 of 33</td><td class="num">0 of 123</td></tr>
+<tr><td>Kubernetes MCP<span class="pkg">mcp-server-kubernetes 4.2.3</span></td><td>Flux159</td><td class="num">23</td><td class="num">5,971</td><td class="num">22 of 23</td><td class="num">6 of 152</td></tr>
+<tr><td>AWS Documentation MCP<span class="pkg">awslabs.aws-documentation-mcp-server 1.2.6 (PyPI)</span></td><td>AWS Labs</td><td class="num">5</td><td class="num">5,808</td><td class="num">0 of 5</td><td class="num">0 of 15</td></tr>
+<tr><td>Playwright MCP<span class="pkg">@playwright/mcp 0.0.86</span></td><td>Microsoft</td><td class="num">25</td><td class="num">5,293</td><td class="num">25 of 25</td><td class="num">0 of 73</td></tr>
+<tr><td>Hugging Face<span class="pkg">remote: huggingface.co/mcp</span></td><td>Hugging Face</td><td class="num">4</td><td class="num">4,965</td><td class="num">4 of 4</td><td class="num">1 of 14</td></tr>
+<tr><td>Filesystem<span class="pkg">@modelcontextprotocol/server-filesystem 2.4.0</span></td><td>MCP project</td><td class="num">14</td><td class="num">3,274</td><td class="num">14 of 14</td><td class="num">18 of 25</td></tr>
+<tr><td>Memory<span class="pkg">@modelcontextprotocol/server-memory 2.2.1</span></td><td>MCP project</td><td class="num">9</td><td class="num">2,764</td><td class="num">9 of 9</td><td class="num">4 of 8</td></tr>
+<tr><td>AWS Knowledge<span class="pkg">remote: knowledge-mcp.global.api.aws</span></td><td>AWS</td><td class="num">5</td><td class="num">1,976</td><td class="num">5 of 5</td><td class="num">0 of 11</td></tr>
+<tr><td>Git<span class="pkg">mcp-server-git 2026.11.18 (PyPI)</span></td><td>MCP project</td><td class="num">14</td><td class="num">1,925</td><td class="num">14 of 14</td><td class="num">21 of 32</td></tr>
+<tr><td>Tavily MCP<span class="pkg">tavily-mcp 0.2.22</span></td><td>Tavily</td><td class="num">5</td><td class="num">1,922</td><td class="num">0 of 5</td><td class="num">0 of 42</td></tr>
+<tr><td>Everything (reference)<span class="pkg">@modelcontextprotocol/server-everything 2.3.1</span></td><td>MCP project</td><td class="num">13</td><td class="num">1,910</td><td class="num">13 of 13</td><td class="num">1 of 16</td></tr>
+<tr><td>Browserbase MCP<span class="pkg">@browserbasehq/mcp-server-browserbase 2.4.3</span></td><td>Browserbase</td><td class="num">9</td><td class="num">1,332</td><td class="num">0 of 9</td><td class="num">0 of 8</td></tr>
+<tr><td>Context7 (npm)<span class="pkg">@upstash/context7-mcp 4.7.3</span></td><td>Upstash</td><td class="num">2</td><td class="num">1,304</td><td class="num">2 of 2</td><td class="num">0 of 5</td></tr>
+<tr><td>Context7 (remote)<span class="pkg">remote: mcp.context7.com</span></td><td>Upstash</td><td class="num">2</td><td class="num">1,304</td><td class="num">2 of 2</td><td class="num">0 of 5</td></tr>
+<tr><td>Microsoft Learn<span class="pkg">remote: learn.microsoft.com/api/mcp</span></td><td>Microsoft</td><td class="num">3</td><td class="num">1,214</td><td class="num">3 of 3</td><td class="num">0 of 4</td></tr>
+<tr><td>Sequential Thinking<span class="pkg">@modelcontextprotocol/server-sequential-thinking 2.2.0</span></td><td>MCP project</td><td class="num">1</td><td class="num">1,160</td><td class="num">1 of 1</td><td class="num">0 of 9</td></tr>
+<tr><td>Time<span class="pkg">mcp-server-time 2026.11.18 (PyPI)</span></td><td>MCP project</td><td class="num">3</td><td class="num">1,082</td><td class="num">3 of 3</td><td class="num">0 of 9</td></tr>
+<tr><td>Exa MCP<span class="pkg">exa-mcp-server 3.5.1</span></td><td>Exa</td><td class="num">2</td><td class="num">545</td><td class="num">2 of 2</td><td class="num">0 of 4</td></tr>
+<tr><td>GitMCP<span class="pkg">remote: gitmcp.io</span></td><td>GitMCP</td><td class="num">4</td><td class="num">451</td><td class="num">0 of 4</td><td class="num">0 of 4</td></tr>
+<tr><td>Cloudflare Docs<span class="pkg">remote: docs.mcp.cloudflare.com</span></td><td>Cloudflare</td><td class="num">2</td><td class="num">433</td><td class="num">2 of 2</td><td class="num">1 of 1</td></tr>
+<tr><td>DeepWiki<span class="pkg">remote: mcp.deepwiki.com</span></td><td>Cognition</td><td class="num">3</td><td class="num">426</td><td class="num">0 of 3</td><td class="num">0 of 4</td></tr>
+<tr><td>Fetch<span class="pkg">mcp-server-fetch 2026.11.18 (PyPI)</span></td><td>MCP project</td><td class="num">1</td><td class="num">362</td><td class="num">1 of 1</td><td class="num">0 of 5</td></tr>
+<tr><td>MarkItDown MCP<span class="pkg">markitdown-mcp 0.0.1a8 (PyPI)</span></td><td>Microsoft</td><td class="num">1</td><td class="num">105</td><td class="num">0 of 1</td><td class="num">1 of 1</td></tr>
+<tr><td>Astro Docs<span class="pkg">remote: mcp.docs.astro.build</span></td><td>Astro</td><td class="num">1</td><td class="num">79</td><td class="num">0 of 1</td><td class="num">0 of 1</td></tr>
+</tbody><tfoot><tr><td colspan="2">All 28 servers</td><td class="num">335</td><td class="num">130,290</td><td class="num">306 of 335</td><td class="num">274 of 1,170</td></tr></tfoot></table>
+  </div>
+
+  <h2 id="method">Method</h2>
+  <ul>
+    <li><strong>When:</strong> 21 November 2026. Each package was the latest release on npm or PyPI, run with <code>npx</code> or <code>uvx</code> and default settings. Playwright and Chrome DevTools ran with <code>--headless --isolated</code>; Filesystem and Git were pointed at an empty test folder and repository.</li>
+    <li><strong>Remote servers</strong> were reached over Streamable HTTP without signing in.</li>
+    <li><strong>Only tool lists were read.</strong> No tool was called on any vendor's server. The tool lists were checked with MCP Master Tester 1.4.2's lint.</li>
+    <li><strong>Tokens are estimated</strong> as the characters of each tool definition, as compact JSON, divided by four. That is the estimate lint uses. Real tokenizers differ by model, and runs of spaces usually cost less than this suggests, so read the figures as approximate and compare servers with each other. Clients also wrap tool lists in their own format, which adds a little.</li>
+    <li><strong>Settings change the numbers.</strong> Several servers can expose fewer tools through their options. These figures are for the defaults.</li>
+    <li><strong>Not included:</strong> Supabase, Sentry, Stripe and Brave Search need an API key just to list their tools, and Semgrep's remote server refused the connection.</li>
+  </ul>
+  <div class="note">
+    <p>I make MCP Master Tester, the tool used for these checks. If a number here is wrong, or a server has changed since, please <a href="https://github.com/simplymanas/mcp-master-tester/issues" target="_blank" rel="noopener">open an issue</a> and I'll correct it.</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>MCP Master Tester · MIT licence · by <a href="https://github.com/simplymanas" target="_blank" rel="noopener">@simplymanas</a></span>
+    <nav aria-label="Footer">
+      <a href="./">Home</a>
+      <a href="guide.html">Docs</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.npmjs.com/package/mcp-master-tester" target="_blank" rel="noopener">npm</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
