@@ -2,6 +2,16 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.4.2] - 2026-11-21
+
+### Fixed
+
+- **Fewer false "look-alike tools" warnings.** Lint treated two tools as easy to confuse when their names shared any word and their descriptions mostly matched. On servers generated from an API spec, every name shares a prefix (`API-`) and every description the same wrapper ("Error Responses: 400"), so almost every pair was flagged: 87 warnings on one server, nearly all wrong. Words in every tool's name, or in at least half the descriptions, no longer count towards a match. Real near-duplicates such as `get_user` and `get_users` are still caught. Found by linting 28 public MCP servers.
+
+### Changed
+
+- The README shows how `--skip` with `--fail-on skip` lists the tools you expect the smoke test to skip ([#22](https://github.com/simplymanas/mcp-master-tester/pull/22)), and links a video setup guide ([#21](https://github.com/simplymanas/mcp-master-tester/pull/21)).
+
 ## [1.4.1] - 2026-11-14
 
 ### Fixed

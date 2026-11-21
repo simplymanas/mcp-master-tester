@@ -275,6 +275,17 @@ export function confusablePairs(tools) {
   const STOP = new Set([...FILLER, 'and', 'or', 'to', 'in', 'on', 'with', 'from', 'is', 'it', 'this', 'that', 'be', 'as', 'at', 'use', 'return', 'given']);
   const jaccard = (a, b) => { const shared = [...a].filter((w) => b.has(w)).length; const union = new Set([...a, ...b]).size; return union ? shared / union : 0; };
   const info = tools.map((t) => ({ name: t.name, nw: words(t.name, FILLER), dw: words(t.description, STOP) }));
+  // Words most tools share can't tell tools apart, so they mustn't make two tools look alike: a prefix in every
+  // name ("API-"), or a template in at least half the descriptions ("Error Responses: 400", "Commands for managing …").
+  // With only two tools every word looks shared, so this starts at three.
+  if (info.length >= 3) {
+    for (const [key, share] of [['nw', 1], ['dw', 0.5]]) {
+      const count = new Map();
+      for (const t of info) for (const w of t[key]) count.set(w, (count.get(w) ?? 0) + 1);
+      const common = [...count].filter(([, n]) => n >= Math.max(2, share * info.length)).map(([w]) => w);
+      for (const t of info) for (const w of common) t[key].delete(w);
+    }
+  }
   const pairs = [];
   for (let i = 0; i < info.length; i++) {
     for (let j = i + 1; j < info.length; j++) {
