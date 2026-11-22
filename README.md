@@ -101,7 +101,7 @@ Staying small is a goal of this project, and the test suite enforces it.
 
 Measured on 2026-11-12 with `npm install <package>` in an empty folder on macOS. The two tools differ in scope, so this compares install weight only.
 
-- **Two dependencies:** the official MCP SDK and Express. Nearly all of the 27 MB is the SDK's own dependency tree; this project's code is a 55 kB download.
+- **Two dependencies:** the official MCP SDK and Express. Nearly all of the 27 MB is the SDK's own dependency tree; this project's code is a 60 kB download.
 - **No build step, no frontend framework, no install scripts.**
 - **Nothing loads from the internet:** no CDN, fonts or analytics. The page's Content-Security-Policy blocks it.
 - **A weight budget in the tests** (`test/package.test.js`): a pull request that adds a dependency or pushes the package past its size limit fails CI.
