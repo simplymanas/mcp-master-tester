@@ -2,15 +2,18 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.7.0] - 2026-11-22
 
 ### Added
 
+- **Import servers from a client's config.** The Profiles card has an **Import** button: paste the JSON from Claude Desktop (`claude_desktop_config.json`), Cursor, Windsurf, Cline (`mcpServers`) or VS Code (`servers`, in `.vscode/mcp.json` or settings), and each server becomes a profile. Stdio servers keep their command, arguments and environment; remote servers keep their URL, transport and headers. Secret values are never imported: an env var or header whose name looks secret, or whose value is a placeholder such as `${input:token}`, keeps its name and loses its value, and the app asks for it when you connect. The dialog says which servers were imported, which values you'll be asked for, and which entries were skipped and why. Profiles with the same name are replaced.
+- **Copy the lint report as Markdown.** A button in the Lint tab puts the report on the clipboard as a table with the server name and counts, ready for an issue or a pull request. Text from the server is cleaned so it can't break the table.
 - **A result that breaks its outputSchema is shown, not hidden.** The SDK checks a tool's `structuredContent` against its `outputSchema` and throws when it doesn't fit, so the app only showed the error. It now runs the same check itself and shows the whole result, with each problem listed above it (`celsius: must be number`) and the outputSchema one click away. The result is marked "breaks its outputSchema" in red, and its dot in the tool list and history is red. A tool that declares an outputSchema but returns no `structuredContent` now shows its text too. The smoke test still fails both cases, in the app and from the command line. Suggested in an outside review of the project; it was on the roadmap.
 
 ### Changed
 
 - The README opens with what the tool does, `npx mcp-master-tester` and the demo, with the links in one line. The 1.2.1 security notice moved out of the top: versions up to 1.2.0 are deprecated on npm with that notice, and the details stay in this changelog. The GitHub Action section shows a complete workflow file to copy, as does the website's docs page. The npm description uses the same opening line.
+- The project layout and REST API reference moved from the README to [CONTRIBUTING.md](CONTRIBUTING.md), where contributors look for them, and now list the action and the new files. The README keeps the diagram and a link. This also keeps the npm package inside its 60 kB budget.
 
 ## [1.6.0] - 2026-11-21
 
@@ -185,6 +188,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.7.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.1...v1.4.2

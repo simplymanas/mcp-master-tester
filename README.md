@@ -19,7 +19,7 @@ Point it at a server, either a local command over stdio or a remote URL over Str
 
 **[Website and docs](https://simplymanas.github.io/mcp-master-tester/)** · **[Tutorial](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35)** · **[Video](https://www.youtube.com/watch?v=XXQ25jPZsh0)** · **[Survey: how much context 28 MCP servers use](https://simplymanas.github.io/mcp-master-tester/survey.html)**
 
-**New in 1.6:** a [GitHub Action](#github-action) that runs lint and the smoke test, with annotations and a summary on the job page. Earlier changes are in the [CHANGELOG](CHANGELOG.md).
+**New in 1.7:** import your servers from a Claude Desktop, Cursor or VS Code config; a result that breaks its outputSchema is shown with each problem listed; and the lint report copies as Markdown. 1.6 added the [GitHub Action](#github-action). Earlier changes are in the [CHANGELOG](CHANGELOG.md).
 
 Open source and looking for collaborators: see [Contributing](#contributing), first-timers welcome. If it's useful to you, a [star on GitHub](https://github.com/simplymanas/mcp-master-tester) helps other people find it.
 
@@ -72,7 +72,8 @@ Open source and looking for collaborators: see [Contributing](#contributing), fi
   - **From real calls:**
     - a badge and a warning when a result is over ~10k tokens
     - a badge and a warning when an `isError` result has no useful message for the model to recover from
-  - **The tab count** shows errors + warnings, coloured by the worst one, followed by the info findings in muted text. For example, `2 · 14` means 2 errors or warnings and 14 info suggestions.
+  - **The tab count** shows errors + warnings, coloured by the worst one, followed by the info findings in muted text. For example, `2 · 14`
+  - **Copy as Markdown** puts the report on the clipboard as a table, for an issue or a pull request means 2 errors or warnings and 14 info suggestions.
 - **Smoke test:** the **Smoke** tab calls every read-only tool once and shows which ones pass:
   - it fails a tool that doesn't answer in time, crashes the server, throws a protocol error, or returns a result that breaks its `outputSchema`
   - arguments come from your last run of the tool in this session, else from the schema's defaults, examples and enums, else they are made up (and an error for a made-up value is a warning, not a failure)
@@ -84,7 +85,7 @@ Open source and looking for collaborators: see [Contributing](#contributing), fi
   - the server's stderr
   - `notifications/message` log entries
   - a `logging/setLevel` control, available when the server declares the `logging` capability (otherwise it reads "no logging support")
-- **Profiles:** saved in your browser. Secrets are never stored, so the app asks for them when you connect.
+- **Profiles:** saved in your browser. Secrets are never stored, so the app asks for them when you connect. **Import** turns the `mcpServers` JSON from Claude Desktop, Cursor or VS Code into profiles, leaving out secret values.
 - **No build step:** Express on the backend and plain JavaScript in the browser. Light and dark themes follow your system setting, or pick one with the button at the top right; the choice is remembered. The ⓘ button next to it shows the version and project links, and the layout works on phone-sized screens.
 
 ## Lightweight
@@ -190,7 +191,7 @@ The outputs `lint` and `smoke` are `passed`, `failed`, `error` (it couldn't run)
 
 By default the smoke test only calls tools marked read-only, with made-up arguments. If the server in CI holds anything you care about, list the tools to run in `tools`.
 
-`@v1` follows the latest 1.x release. To stay on one version, use `@v1.6.0` or a commit SHA.
+`@v1` follows the latest 1.x release. To stay on one version, use `@v1.7.0` or a commit SHA.
 
 ## Lint in CI
 
@@ -335,40 +336,7 @@ Browser UI ──REST──▶ Express backend ──MCP──▶ your server (s
            ◀──SSE───  (one MCP Client per session; streams RPC frames, stderr, logs, elicitations)
 ```
 
-| File | Responsibility |
-|---|---|
-| `cli.js` | Command-line entry point: starts the web UI, or runs `lint` or `smoke` for CI |
-| `server.js` | Session lifecycle, transports, JSON-RPC tap, elicitation bridge, REST API |
-| `public/app.js` | Connection form, schema forms, result rendering, protocol log |
-| `public/theme.js` | Light/dark theme toggle (loaded in `<head>` so there's no flash of the wrong theme) |
-| `public/forms.js` | Argument forms built from a JSON Schema (pure functions that escape everything the server sends) |
-| `public/lint.js` | Lint rules (pure functions, shared by the UI, the CLI and the unit tests) |
-| `public/smoke.js` | Smoke test: which tools run, which arguments are sent, how answers are judged (pure functions, shared the same way) |
-| `public/style.css` | Theme tokens (light/dark) and layout |
-| `public/index.html` | Page shell |
-| `test/api.test.js` | Integration tests against the reference server (`npm test`) |
-| `test/lint.test.js` | Unit tests for every lint rule (`npm test`) |
-| `test/smoke.test.js` | Unit tests for the smoke test's planning and judging |
-| `test/forms.test.js` | Unit tests that hostile schema text never becomes markup in a form |
-| `test/package.test.js` | Weight budget: dependency list, package size and published files |
-| `test/cli.test.js` | Tests for `lint` and `smoke` from the command line, using fixture servers in `test/fixtures/` |
-
-### REST API
-
-All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on failure `{ ok: false, error, code, data, authRequired }`.
-
-| Endpoint | MCP method |
-|---|---|
-| `/api/sessions` | connect (`initialize`) |
-| `DELETE /api/sessions/:id` | close |
-| `GET /api/sessions/:id/events` | event stream (SSE) |
-| `/api/sessions/:id/ping` | `ping` |
-| `/api/sessions/:id/tools/list` · `tools/call` | `tools/*` |
-| `/api/sessions/:id/resources/list` · `resources/templates` · `resources/read` | `resources/*` |
-| `/api/sessions/:id/prompts/list` · `prompts/get` | `prompts/*` |
-| `/api/sessions/:id/logging/level` | `logging/setLevel` |
-| `/api/sessions/:id/elicit/:reqId` | answer to `elicitation/create` |
-| `GET /api/info` | none: returns `{ name, version }` of this app, unwrapped |
+The project layout, the REST API and how to run the tests are in [CONTRIBUTING.md](CONTRIBUTING.md#set-up).
 
 ## Security
 

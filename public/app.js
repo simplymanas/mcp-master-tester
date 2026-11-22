@@ -1,9 +1,10 @@
 // MCP Master Tester — UI
 // Author: @simplymanas
 
-import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, readOnlyDoubt, outputSchemaProblems, BIG_RESULT_CHARS, approxTokens } from './lint.js';
+import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, readOnlyDoubt, outputSchemaProblems, lintMarkdown, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 import { esc, SECRET_RE, formFields } from './forms.js';
 import { planSmoke, runSmoke, countSmoke } from './smoke.js';
+import { profilesFromConfig } from './config-import.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -711,7 +712,8 @@ function lintSummaryHtml() {
   const n = (sev) => state.lint.filter((l) => l.sev === sev).length;
   const cls = { error: 'err', warn: 'warn', info: 'info' };
   return `<h1 class="d-title">Lint report</h1>
-    <div class="badges"><span class="badge err">${n('error')} errors</span><span class="badge warn">${n('warn')} warnings</span><span class="badge info">${n('info')} info</span></div>
+    <div class="badges"><span class="badge err">${n('error')} errors</span><span class="badge warn">${n('warn')} warnings</span><span class="badge info">${n('info')} info</span>
+      <button class="btn tiny" data-act="copylint" title="A Markdown table, for pasting into an issue or a pull request">Copy as Markdown</button></div>
     <p class="hint">Static checks of tool definitions against the MCP spec and model-usability practice. Click a finding in the list to open the tool.</p>
     ${state.lint.length ? `<table class="grid"><tr><th>Severity</th><th>Tool</th><th>Finding</th></tr>
       ${state.lint.map((l) => `<tr><td><span class="badge ${cls[l.sev]}">${l.sev}</span></td><td><code>${esc(l.target)}</code></td><td>${esc(l.msg)}</td></tr>`).join('')}</table>`
@@ -898,6 +900,32 @@ function saveProfile() {
   });
 }
 
+// Paste a client's config ({ "mcpServers": … }) and get one profile per server. Secret values are
+// dropped by profilesFromConfig, so nothing secret reaches localStorage.
+function importProfiles() {
+  openModal(`<h3>Import servers</h3>
+    <p class="hint">Paste the JSON from Claude Desktop (<code>claude_desktop_config.json</code>), Cursor (<code>mcp.json</code>), VS Code (<code>.vscode/mcp.json</code>) or a similar client. Each server becomes a profile. Secret values are not imported: you'll be asked for them when you connect.</p>
+    <label>Config<textarea name="cfg" rows="10" spellcheck="false" placeholder='{ "mcpServers": { "github": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"] } } }'></textarea></label>
+    <div class="error-box" data-f="err" hidden></div>
+    <div class="actions"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="ok">Import</button></div>`,
+  (action, form) => {
+    if (action !== 'ok') return false;
+    let out;
+    try { out = profilesFromConfig(form.elements.cfg.value); } catch (err) {
+      const box = form.querySelector('[data-f="err"]'); box.textContent = err.message; box.hidden = false;
+      return false;
+    }
+    const names = new Set(out.profiles.map((p) => p.name));
+    storeProfiles([...loadProfiles().filter((p) => !names.has(p.name)), ...out.profiles]);
+    const lines = [`Imported ${out.profiles.length} profile${out.profiles.length === 1 ? '' : 's'}: ${[...names].join(', ')}.`];
+    for (const s of out.secrets) lines.push(`${s.name}: you'll be asked for ${s.keys.join(', ')} when you connect.`);
+    for (const s of out.skipped) lines.push(`Skipped ${s.name}: ${s.reason}.`);
+    setTimeout(() => openModal(`<h3>Import done</h3>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}
+      <div class="actions"><button class="btn primary" value="ok">OK</button></div>`, () => true));
+    return true;
+  });
+}
+
 function applyProfile(p) {
   setTransport(p.transport);
   $('#command').value = p.command ?? ''; $('#args').value = p.args ?? ''; $('#cwd').value = p.cwd ?? ''; $('#url').value = p.url ?? '';
@@ -926,6 +954,7 @@ $('#pingBtn').addEventListener('click', async () => {
   setTimeout(() => { b.textContent = 'Ping'; }, 2000);
 });
 $('#saveProfileBtn').addEventListener('click', saveProfile);
+$('#importProfilesBtn').addEventListener('click', importProfiles);
 $('#bearer').addEventListener('input', () => { state.bearerRequired = false; });
 
 document.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => {
@@ -981,6 +1010,12 @@ $('#detail').addEventListener('click', async (e) => {
   if (act === 'schema') $('#schemaView').hidden = !$('#schemaView').hidden;
   if (act === 'reveal') { const i = e.target.previousElementSibling; i.type = i.type === 'password' ? 'text' : 'password'; e.target.textContent = i.type === 'password' ? 'show' : 'hide'; }
   if (act === 'copy') navigator.clipboard.writeText(JSON.stringify(state.results[key], null, 2));
+  if (act === 'copylint') {
+    const b = e.target;
+    navigator.clipboard.writeText(lintMarkdown(state.lint, { serverInfo: state.session?.serverInfo, tools: state.tools.length }))
+      .then(() => { b.textContent = 'Copied'; }, () => { b.textContent = 'Copy failed'; })
+      .finally(() => setTimeout(() => { b.textContent = 'Copy as Markdown'; }, 1500));
+  }
   if (act === 'raw') {
     if (state.rawMode) {
       try { state.draft = JSON.parse($('#rawArgs').value || '{}'); } catch (err) { return alertResult(`Invalid JSON: ${err.message}`); }

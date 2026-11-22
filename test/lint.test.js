@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent, outputSchemaProblems,
+  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent, outputSchemaProblems, lintMarkdown,
   BIG_RESULT_CHARS,
 } from '../public/lint.js';
 
@@ -79,6 +79,22 @@ test('a description indented to match its source code is flagged; real nesting a
   // Over 200 characters, but a small share of a long description.
   const long = clean({ description: `Read a file. Do not use for searching. ${'word '.repeat(300)}\n${lines.slice(0, 10).join('\n')}` });
   assert.ok(!has(findings([long]), 'read_note', /indentation/));
+});
+
+test('lintMarkdown: a table for an issue or PR, safe from what the server sends', () => {
+  const md = lintMarkdown([
+    { sev: 'error', target: 'send_mail', msg: 'required "subject" is not defined in properties' },
+    { sev: 'warn', target: 'bad`name', msg: 'a | b\nsecond line' },
+  ], { serverInfo: { name: 'demo', version: '1.0.0' }, tools: 1 });
+  assert.equal(md, [
+    '### Lint report: demo v1.0.0', '',
+    '1 tool · 1 error, 1 warning, 0 info', '',
+    '| Level | Tool | Finding |', '|---|---|---|',
+    '| error | `send_mail` | required "subject" is not defined in properties |',
+    "| warn | `bad'name` | a \\| b second line |",
+    '', 'Checked with [MCP Master Tester](https://github.com/simplymanas/mcp-master-tester).',
+  ].join('\n'));
+  assert.match(lintMarkdown([], {}), /^### Lint report: MCP server\n\n0 errors, 0 warnings, 0 info\n\nNo findings\./);
 });
 
 test('outputSchemaProblems: one line per problem, named by the field it is about', () => {

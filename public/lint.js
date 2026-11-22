@@ -116,6 +116,25 @@ export function lintTools(tools, runtime = {}) {
   return out.sort((a, b) => order[a.sev] - order[b.sev] || (toolOrder.get(a.target) ?? 0) - (toolOrder.get(b.target) ?? 0));
 }
 
+// The lint report as Markdown, for pasting into an issue or a pull request. Server names, tool names
+// and messages come from the server, so table cells lose their pipes, newlines and backticks.
+export function lintMarkdown(findings, { serverInfo, tools } = {}) {
+  const cell = (s) => String(s ?? '').replace(/\r?\n/g, ' ').replace(/\|/g, '\\|').replace(/`/g, "'");
+  const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const n = (sev) => findings.filter((f) => f.sev === sev).length;
+  const name = serverInfo?.name ? `${cell(serverInfo.name)}${serverInfo.version ? ` v${cell(serverInfo.version)}` : ''}` : 'MCP server';
+  const out = [`### Lint report: ${name}`, ''];
+  out.push(`${tools === undefined ? '' : `${count(tools, 'tool')} · `}${count(n('error'), 'error')}, ${count(n('warn'), 'warning')}, ${n('info')} info`, '');
+  if (findings.length) {
+    out.push('| Level | Tool | Finding |', '|---|---|---|');
+    for (const f of findings) out.push(`| ${f.sev} | \`${cell(f.target)}\` | ${cell(f.msg)} |`);
+  } else {
+    out.push('No findings.');
+  }
+  out.push('', 'Checked with [MCP Master Tester](https://github.com/simplymanas/mcp-master-tester).');
+  return out.join('\n');
+}
+
 // ---------------------------------------------------------------- descriptions
 
 // Characters of indentation a dedent would remove, the way Python's inspect.cleandoc does: leading

@@ -87,6 +87,7 @@ code, pre { font-family: var(--mono); }
 
 .kv-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 11px; margin: 6px 0; }
 .kv-head h2 { margin: 0; }
+.kv-btns { display: flex; gap: 6px; }
 .kv { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
 .kv-row { display: grid; grid-template-columns: 1fr 1.3fr auto auto; gap: 4px; }
 .kv-row button { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; cursor: pointer; padding: 0 6px; }
