@@ -7,29 +7,21 @@
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![GitHub stars](https://img.shields.io/github/stars/simplymanas/mcp-master-tester?style=social)](https://github.com/simplymanas/mcp-master-tester/stargazers)
 
-**A local web UI to connect to, inspect and test any [Model Context Protocol](https://modelcontextprotocol.io) server.**
-
-You point it at a server, either a local command over stdio or a remote URL over Streamable HTTP or SSE. It lists the server's tools, resources and prompts and gives each one a form, so you can call it and see exactly what comes back, down to every JSON-RPC message.
-
-🌐 **Website and docs:** [simplymanas.github.io/mcp-master-tester](https://simplymanas.github.io/mcp-master-tester/)
-
-📖 **Tutorial:** [Testing any MCP server, step by step, with MCP Master Tester](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35) on Medium.
-
-🎬 **Video:** [MCP Master Tester: The Complete Setup Guide](https://www.youtube.com/watch?v=XXQ25jPZsh0) on YouTube.
-
-⭐ **Found it useful?** A [star on GitHub](https://github.com/simplymanas/mcp-master-tester) helps other people find it.
-
-🔒 **1.2.1 is a security fix:** a server could run script in the tester's page through a tool schema. Please update; `npx mcp-master-tester@latest` gets it. Details are in the [CHANGELOG](CHANGELOG.md#121---2026-11-12).
-
-🆕 **What's new in 1.6:** a [GitHub Action](#github-action), `uses: simplymanas/mcp-master-tester@v1`, runs lint and the smoke test with annotations and a summary on the job page. 1.5 added a lint warning for descriptions padded with indentation from the source code. In 1.4, the smoke test stopped taking a server's "read-only" label at its word: a tool marked read-only but named like a write (`cancel_booking`) is held back. 1.3 added the [smoke test](#smoke-test-in-ci) itself, in the **Smoke** tab and as `npx mcp-master-tester smoke -- <server command>` for CI; 1.2 added [lint in CI](#lint-in-ci). See the [CHANGELOG](CHANGELOG.md) or the [releases](https://github.com/simplymanas/mcp-master-tester/releases).
-
-> 🤝 **Open source and looking for collaborators.** Whether you build MCP servers, love clean UIs, or just found a bug, see [Contributing](#contributing). First-time contributors are welcome.
+**Debug any [MCP](https://modelcontextprotocol.io) server in a local web UI, then guard it in CI with lint and a smoke test.**
 
 ```bash
 npx mcp-master-tester
 ```
 
 ![MCP Master Tester demo: connecting to the reference server, the sidebar switching to Connected, running the echo and get-sum tools, the protocol log, a resource, the lint report and the server info](docs/demo.gif)
+
+Point it at a server, either a local command over stdio or a remote URL over Streamable HTTP or SSE. It lists the server's tools, resources and prompts and gives each one a form, so you can call it and see exactly what comes back, down to every JSON-RPC message. The same lint and smoke test run from the command line and as a [GitHub Action](#github-action).
+
+**[Website and docs](https://simplymanas.github.io/mcp-master-tester/)** · **[Tutorial](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35)** · **[Video](https://www.youtube.com/watch?v=XXQ25jPZsh0)** · **[Survey: how much context 28 MCP servers use](https://simplymanas.github.io/mcp-master-tester/survey.html)**
+
+**New in 1.6:** a [GitHub Action](#github-action) that runs lint and the smoke test, with annotations and a summary on the job page. Earlier changes are in the [CHANGELOG](CHANGELOG.md).
+
+Open source and looking for collaborators: see [Contributing](#contributing), first-timers welcome. If it's useful to you, a [star on GitHub](https://github.com/simplymanas/mcp-master-tester) helps other people find it.
 
 ---
 
@@ -147,15 +139,27 @@ Requires **Node.js 20+**. To use a different port, set `PORT`, for example `PORT
 
 ## GitHub Action
 
-Runs lint and the smoke test in one step. Each finding shows as an annotation on the workflow run, and the job page gets a summary table.
+Runs lint and the smoke test in one step. Each finding shows as an annotation on the workflow run, and the job page gets a summary table. Save this as `.github/workflows/mcp.yml`:
 
 ```yaml
-- uses: actions/checkout@v7
-- run: npm ci && npm run build
-- uses: simplymanas/mcp-master-tester@v1
-  with:
-    command: node dist/index.js
+name: MCP server checks
+on: [push, pull_request]
+
+jobs:
+  mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci && npm run build
+      - uses: simplymanas/mcp-master-tester@v1
+        with:
+          command: node dist/index.js
 ```
+
+For a server in another language, swap the setup and build steps for your own (for Python, `actions/setup-python` and `pip install .`) and set `command`, for example `python -m my_server`. The action itself needs Node.js 20 or newer, which GitHub-hosted runners already have.
 
 A remote server, with only lint, failing on warnings:
 
@@ -185,7 +189,7 @@ The outputs `lint` and `smoke` are `passed`, `failed`, `error` (it couldn't run)
 
 By default the smoke test only calls tools marked read-only, with made-up arguments. If the server in CI holds anything you care about, list the tools to run in `tools`.
 
-`@v1` follows the latest 1.x release. To stay on one version, use `@v1.6.0` or a commit SHA. It needs Node.js 20 or newer, which GitHub-hosted runners have.
+`@v1` follows the latest 1.x release. To stay on one version, use `@v1.6.0` or a commit SHA.
 
 ## Lint in CI
 

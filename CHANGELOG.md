@@ -2,6 +2,12 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- The README opens with what the tool does, `npx mcp-master-tester` and the demo, with the links in one line. The 1.2.1 security notice moved out of the top: versions up to 1.2.0 are deprecated on npm with that notice, and the details stay in this changelog. The GitHub Action section shows a complete workflow file to copy, as does the website's docs page. The npm description uses the same opening line.
+
 ## [1.6.0] - 2026-11-21
 
 ### Added
