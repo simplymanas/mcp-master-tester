@@ -2,6 +2,12 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **A result that breaks its outputSchema is shown, not hidden.** The SDK checks a tool's `structuredContent` against its `outputSchema` and throws when it doesn't fit, so the app only showed the error. It now runs the same check itself and shows the whole result, with each problem listed above it (`celsius: must be number`) and the outputSchema one click away. The result is marked "breaks its outputSchema" in red, and its dot in the tool list and history is red. A tool that declares an outputSchema but returns no `structuredContent` now shows its text too. The smoke test still fails both cases, in the app and from the command line. Suggested in an outside review of the project; it was on the roadmap.
+
 ## [1.6.0] - 2026-11-21
 
 ### Added

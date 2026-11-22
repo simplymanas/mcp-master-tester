@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent,
+  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent, outputSchemaProblems,
   BIG_RESULT_CHARS,
 } from '../public/lint.js';
 
@@ -79,6 +79,17 @@ test('a description indented to match its source code is flagged; real nesting a
   // Over 200 characters, but a small share of a long description.
   const long = clean({ description: `Read a file. Do not use for searching. ${'word '.repeat(300)}\n${lines.slice(0, 10).join('\n')}` });
   assert.ok(!has(findings([long]), 'read_note', /indentation/));
+});
+
+test('outputSchemaProblems: one line per problem, named by the field it is about', () => {
+  assert.deepEqual(
+    outputSchemaProblems("Structured content does not match the tool's output schema: data/celsius must be number, data must have required property 'city'"),
+    ['celsius: must be number', "must have required property 'city'"],
+  );
+  assert.deepEqual(outputSchemaProblems("MCP error -32602: Structured content does not match the tool's output schema: data/items/0/name must be string"), ['items/0/name: must be string']);
+  assert.deepEqual(outputSchemaProblems('Tool get_report has an output schema but did not return structured content'), ['The tool declares an outputSchema but returned no structuredContent.']);
+  // Text in an unexpected shape is shown as it is.
+  assert.deepEqual(outputSchemaProblems('something else, entirely'), ['something else, entirely']);
 });
 
 test('confusable names: plurals, casing, word order and filler words', () => {

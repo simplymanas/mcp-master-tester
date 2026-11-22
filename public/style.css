@@ -151,6 +151,9 @@ code, pre { font-family: var(--mono); }
 pre.json { margin: 0; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow: auto; max-height: 480px; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
 .content-item { margin-bottom: 10px; }
 .content-item .ctype { font: 10px var(--mono); color: var(--muted); margin-bottom: 3px; }
+.schema-errors { margin: 4px 0 6px; padding-left: 18px; font: 12px var(--mono); }
+.schema-errors li { margin: 2px 0; }
+.schema-errors code { color: var(--err); }
 .content-item img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; }
 .j-key { color: var(--accent); } .j-str { color: var(--ok); } .j-num { color: var(--warn); } .j-bool, .j-null { color: var(--info); }
 .j-esc { color: var(--muted); }

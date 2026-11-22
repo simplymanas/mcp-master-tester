@@ -59,6 +59,7 @@ npx mcp-master-tester
   - text (JSON is pretty-printed), images, audio, resource links and embedded resources
   - `structuredContent`, with multi-line strings broken at each `\n` so text blocks stay readable, and a hint when it only wraps the text output in one string (as Python FastMCP does when a tool returns a `str`)
   - an `isError` tool result shown separately from a protocol error
+  - a result whose `structuredContent` breaks the tool's `outputSchema`, shown in full with each problem listed above it (`celsius: must be number`)
   - how long the call took
 - **Resources:** static resources and URI templates (fill in the variables, then read). Both text and blob contents display.
 - **Prompts:** fill in the arguments and see the messages the prompt returns.
@@ -402,7 +403,6 @@ This project is better with more people testing more MCP servers. All contributi
 | Sampling (`sampling/createMessage`) with a manual or LLM-backed responder | Medium |
 | Roots support | Easy |
 | URL-mode elicitation: advertise it and show the link (http and https only) | Easy |
-| When `structuredContent` breaks its `outputSchema`, show the result next to the validation errors | Easy |
 | Smoke test: resources and prompts too, and several argument sets per tool | Medium |
 | Export and import a session (calls and results) as JSON | Easy |
 | Resource subscriptions (`resources/subscribe`) with live updates | Medium |

@@ -18,6 +18,7 @@ import {
   ToolListChangedNotificationSchema,
   ResourceListChangedNotificationSchema,
   PromptListChangedNotificationSchema,
+  CallToolResultSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
 // Report our real version to servers in the initialize handshake (clientInfo).
@@ -157,12 +158,17 @@ function getSession(req) {
   return s;
 }
 
+// A handler returns withFields(result, { … }) to add fields next to "result" in the response.
+const FIELDS = Symbol('fields');
+const withFields = (result, fields) => ({ [FIELDS]: fields, result });
+
 // Wrap async handlers; time every MCP call.
 const route = (fn) => async (req, res) => {
   const started = performance.now();
   try {
-    const result = await fn(req, res);
-    if (!res.headersSent) res.json({ ok: true, ms: Math.round(performance.now() - started), result });
+    const out = await fn(req, res);
+    const [result, fields] = out?.[FIELDS] ? [out.result, out[FIELDS]] : [out, {}];
+    if (!res.headersSent) res.json({ ok: true, ms: Math.round(performance.now() - started), result, ...fields });
   } catch (err) {
     const status = err.status ?? (isAuthError(err) ? 401 : 500);
     res.status(status).json({
@@ -267,7 +273,25 @@ app.post('/api/sessions/:id/elicit/:reqId', route(async (req) => {
 app.post('/api/sessions/:id/ping', route((req) => getSession(req).client.ping()));
 app.post('/api/sessions/:id/tools/list', route((req) => getSession(req).client.listTools(req.body?.cursor ? { cursor: req.body.cursor } : undefined)));
 app.post('/api/sessions/:id/tools/call', route((req) =>
-  getSession(req).client.callTool({ name: req.body.name, arguments: req.body.arguments ?? {} }, undefined, callOpts(req))));
+  callToolChecked(getSession(req).client, { name: req.body.name, arguments: req.body.arguments ?? {} }, callOpts(req))));
+
+// The SDK's callTool checks structuredContent against the tool's outputSchema, but throws when it
+// doesn't fit, and the result is lost. Run the same check here and return the result with the error
+// next to it ("outputSchemaError", same text as the SDK's), so the page can show which field is wrong.
+async function callToolChecked(client, params, options) {
+  const validate = typeof client.getToolOutputValidator === 'function' ? client.getToolOutputValidator(params.name) : undefined;
+  if (!validate || client.isToolTaskRequired?.(params.name)) return client.callTool(params, undefined, options);
+  const result = await client.request({ method: 'tools/call', params }, CallToolResultSchema, options);
+  if (result.isError) return result;
+  let outputSchemaError;
+  if (result.structuredContent === undefined) {
+    outputSchemaError = `Tool ${params.name} has an output schema but did not return structured content`;
+  } else {
+    const check = validate(result.structuredContent);
+    if (!check.valid) outputSchemaError = `Structured content does not match the tool's output schema: ${check.errorMessage}`;
+  }
+  return outputSchemaError ? withFields(result, { outputSchemaError }) : result;
+}
 app.post('/api/sessions/:id/resources/list', route((req) => getSession(req).client.listResources(req.body?.cursor ? { cursor: req.body.cursor } : undefined)));
 app.post('/api/sessions/:id/resources/templates', route((req) => getSession(req).client.listResourceTemplates()));
 app.post('/api/sessions/:id/resources/read', route((req) => getSession(req).client.readResource({ uri: req.body.uri }, callOpts(req))));

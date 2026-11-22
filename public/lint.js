@@ -145,6 +145,18 @@ export function resultChars(res) {
   return Math.max(text, structured);
 }
 
+// The problems in an outputSchema error, one per entry, from the message the SDK (and server.js)
+// builds around Ajv's text: "data/celsius must be number, data must have required property 'city'"
+// becomes ["celsius: must be number", "must have required property 'city'"].
+export function outputSchemaProblems(message) {
+  if (/did not return structured content/.test(message)) return ['The tool declares an outputSchema but returned no structuredContent.'];
+  const detail = message.replace(/^.*?output schema: /, '');
+  return detail.split(/, (?=data\b)/).map((p) => {
+    const m = /^data(\S*) (.*)$/.exec(p);
+    return m ? (m[1] ? `${m[1].replace(/^\//, '')}: ${m[2]}` : m[2]) : p;
+  });
+}
+
 const GENERIC_ERROR_RE = /^(error|errored|failed|failure|fail|internal( server)? error|unknown error|an error occurred|something went wrong|exception|undefined|null|none|\[object object\]|bad request|invalid( input| request| arguments?)?|not ok|false|-?1)[.!]?$/i;
 
 // For an isError result whose text doesn't help a model fix the call, returns that text ('' when

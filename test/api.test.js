@@ -121,6 +121,31 @@ test('streamable HTTP: connects and calls a tool', async () => {
   await api(`/sessions/${s.result.id}`, undefined, 'DELETE');
 });
 
+test('a result that breaks its outputSchema comes back with the error next to it, not instead of it', async () => {
+  const fixture = path.join(root, 'test/fixtures/smoke-server.js');
+  const { json: s } = await api('/sessions', { transport: 'stdio', command: process.execPath, args: [fixture, 'broken'] });
+  const id = s.result.id;
+  await api(`/sessions/${id}/tools/list`, {}); // the client learns each tool's outputSchema from the list
+
+  const bad = await api(`/sessions/${id}/tools/call`, { name: 'get_report', arguments: {} });
+  assert.equal(bad.json.ok, true);
+  assert.deepEqual(bad.json.result.structuredContent, { city: 'Pune', celsius: 'warm' });
+  assert.match(bad.json.outputSchemaError, /^Structured content does not match the tool's output schema: data\/celsius must be number$/);
+
+  const good = await api(`/sessions/${id}/tools/call`, { name: 'get_weather', arguments: { city: 'Oslo' } });
+  assert.equal(good.json.ok, true);
+  assert.equal(good.json.outputSchemaError, undefined);
+  await api(`/sessions/${id}`, undefined, 'DELETE');
+
+  const { json: u } = await api('/sessions', { transport: 'stdio', command: process.execPath, args: [fixture, 'unstructured'] });
+  await api(`/sessions/${u.result.id}/tools/list`, {});
+  const none = await api(`/sessions/${u.result.id}/tools/call`, { name: 'get_summary', arguments: {} });
+  assert.equal(none.json.ok, true);
+  assert.equal(none.json.result.content[0].text, 'Pune: 21');
+  assert.match(none.json.outputSchemaError, /has an output schema but did not return structured content/);
+  await api(`/sessions/${u.result.id}`, undefined, 'DELETE');
+});
+
 test('stdio failure returns the server stderr', async () => {
   const { status, json } = await api('/sessions', {
     transport: 'stdio',
