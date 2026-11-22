@@ -4,6 +4,7 @@
 //   crash          adds a tool that kills the server, followed by a healthy one that can then no longer run
 //   unmarked       one healthy tool with no annotations
 //   mislabelled    a healthy tool, plus two that claim to be read-only but whose name or annotations say otherwise
+//   unstructured   one tool that declares an outputSchema but answers with text only
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema, McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
@@ -56,7 +57,8 @@ const mislabelled = [
   { name: 'get_audit', description: 'Reads the audit log.', inputSchema: noArgs, annotations: { readOnlyHint: true, destructiveHint: true }, run: () => text('audit') },
 ];
 
-const tools = mode === 'unmarked' ? [{ name: 'do_thing', description: 'Does a thing.', inputSchema: noArgs, run: () => text('done') }]
+const tools = mode === 'unstructured' ? [{ name: 'get_summary', description: 'Returns a summary.', inputSchema: noArgs, outputSchema: weatherOut, annotations: readOnly, run: () => text('Pune: 21') }]
+  : mode === 'unmarked' ? [{ name: 'do_thing', description: 'Does a thing.', inputSchema: noArgs, run: () => text('done') }]
   : mode === 'broken' ? [...healthy, ...broken]
   : mode === 'crash' ? [healthy[0], ...crashing]
   : mode === 'mislabelled' ? [healthy[0], ...mislabelled]

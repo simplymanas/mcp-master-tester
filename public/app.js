@@ -1,7 +1,7 @@
 // MCP Master Tester — UI
 // Author: @simplymanas
 
-import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, readOnlyDoubt, BIG_RESULT_CHARS, approxTokens } from './lint.js';
+import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, readOnlyDoubt, outputSchemaProblems, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 import { esc, SECRET_RE, formFields } from './forms.js';
 import { planSmoke, runSmoke, countSmoke } from './smoke.js';
 
@@ -505,7 +505,7 @@ function render() {
   const sevDot = { error: 'err', warn: 'warn', info: '' };
   $('#itemList').innerHTML = items.map((it) => {
     const last = state.results[`${state.tab}:${it.key}`];
-    const dot = it.dot ?? (it.sev ? sevDot[it.sev] : last ? (last.ok && !last.result?.isError ? 'ok' : 'err') : '');
+    const dot = it.dot ?? (it.sev ? sevDot[it.sev] : last ? (last.ok && !last.result?.isError && !last.outputSchemaError ? 'ok' : 'err') : '');
     return `<li data-key="${esc(it.key)}" class="${it.key === state.selected ? 'active' : ''}">
       <div class="iname">${dot ? `<span class="dot ${dot}"></span>` : ''}${esc(it.name)}${it.template ? ' <span class="badge info">template</span>' : ''}</div>
       ${it.desc ? `<div class="idesc">${esc(it.desc)}</div>` : ''}
@@ -619,6 +619,14 @@ function resourceContentsHtml(rc) {
   return `<div class="ctype">${esc(rc.uri)} · blob ${bytes} bytes</div><a class="btn tiny" download="resource" href="data:${esc(rc.mimeType ?? 'application/octet-stream')};base64,${esc(rc.blob)}">Download</a>`;
 }
 
+// The tool answered, but its structuredContent doesn't fit its outputSchema: each problem on its own
+// line, above the result itself, with the schema one click away.
+function outputSchemaErrorHtml(message, schema) {
+  return `<div class="content-item"><div class="ctype"><span class="badge err">outputSchema errors</span></div>
+    <ul class="schema-errors">${outputSchemaProblems(message).map((p) => `<li><code>${esc(p)}</code></li>`).join('')}</ul>
+    ${schema ? `<details><summary class="hint">outputSchema</summary><pre class="json">${highlight(schema)}</pre></details>` : ''}</div>`;
+}
+
 function resultHtml(key) {
   const r = state.results[key];
   if (!r) return '';
@@ -630,12 +638,16 @@ function resultHtml(key) {
   } else {
     const res = r.result;
     const warnings = [];
-    if (tool?.outputSchema && res.structuredContent === undefined && !res.isError) warnings.push('<span class="badge warn">outputSchema declared but no structuredContent</span>');
+    if (!r.outputSchemaError && tool?.outputSchema && res.structuredContent === undefined && !res.isError) warnings.push('<span class="badge warn">outputSchema declared but no structuredContent</span>');
     const chars = resultChars(res);
     if (unhelpfulError(res) !== null) warnings.push('<span class="badge warn" title="A model can\'t recover from this: say what went wrong and how to fix the call.">error message not actionable</span>');
     if (chars > BIG_RESULT_CHARS) warnings.push(`<span class="badge warn" title="${chars.toLocaleString()} characters. Large results crowd out the client's context window.">~${approxTokens(chars)} tokens: very large</span>`);
-    status = `<span class="badge ${res.isError ? 'err' : 'ok'}">${res.isError ? 'tool error (isError)' : 'success'}</span>${warnings.join('')}`;
+    const main = res.isError ? ['err', 'tool error (isError)']
+      : r.outputSchemaError ? ['err', res.structuredContent === undefined ? 'no structuredContent for its outputSchema' : 'breaks its outputSchema']
+      : ['ok', 'success'];
+    status = `<span class="badge ${main[0]}">${main[1]}</span>${warnings.join('')}`;
     const parts = [];
+    if (r.outputSchemaError) parts.push(outputSchemaErrorHtml(r.outputSchemaError, tool?.outputSchema));
     (res.content ?? []).forEach((c) => parts.push(contentHtml(c)));
     (res.contents ?? []).forEach((c) => parts.push(`<div class="content-item">${resourceContentsHtml(c)}</div>`));
     (res.messages ?? []).forEach((m) => parts.push(`<div class="content-item"><div class="ctype">role: ${esc(m.role)}</div>${contentHtml(m.content)}</div>`));
@@ -789,6 +801,8 @@ async function runSmokeTest() {
       state.results[`tools:${name}`] = res;
       if (res.ok) noteForLint(name, res.result);
     }
+    // A result that breaks its outputSchema fails the smoke test, as it does from the command line.
+    if (res.ok && res.outputSchemaError) return { ok: false, error: res.outputSchemaError, code: -32602, ms: res.ms };
     return res.ok ? { ok: true, result: res.result, ms: res.ms } : { ok: false, error: res.error ?? res.message, code: res.code, ms: res.ms };
   };
   // state.smoke is replaced on disconnect; a run that is still finishing then stops updating the page.
@@ -850,7 +864,7 @@ async function execute() {
   state.results[key] = res;
   if (path === '/tools/call' && res.ok) noteForLint(body.name, res.result);
   state.draft = args;
-  (state.history[key] ??= []).unshift({ args, ok: res.ok && !res.result?.isError, ms: res.ms, ts: Date.now() });
+  (state.history[key] ??= []).unshift({ args, ok: res.ok && !res.result?.isError && !res.outputSchemaError, ms: res.ms, ts: Date.now() });
   state.history[key].length = Math.min(state.history[key].length, 20);
   render();
 }
