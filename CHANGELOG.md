@@ -8,6 +8,10 @@ All notable changes to MCP Master Tester. The format follows [Keep a Changelog](
 
 - **A result that breaks its outputSchema is shown, not hidden.** The SDK checks a tool's `structuredContent` against its `outputSchema` and throws when it doesn't fit, so the app only showed the error. It now runs the same check itself and shows the whole result, with each problem listed above it (`celsius: must be number`) and the outputSchema one click away. The result is marked "breaks its outputSchema" in red, and its dot in the tool list and history is red. A tool that declares an outputSchema but returns no `structuredContent` now shows its text too. The smoke test still fails both cases, in the app and from the command line. Suggested in an outside review of the project; it was on the roadmap.
 
+### Changed
+
+- The README opens with what the tool does, `npx mcp-master-tester` and the demo, with the links in one line. The 1.2.1 security notice moved out of the top: versions up to 1.2.0 are deprecated on npm with that notice, and the details stay in this changelog. The GitHub Action section shows a complete workflow file to copy, as does the website's docs page. The npm description uses the same opening line.
+
 ## [1.6.0] - 2026-11-21
 
 ### Added

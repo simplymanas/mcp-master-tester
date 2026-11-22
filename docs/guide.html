@@ -223,11 +223,23 @@ npx mcp-master-tester smoke --args smoke.json -- node dist/index.js</code></pre>
     <section id="ci">
       <h2>GitHub Actions</h2>
       <p>Build your server, then run the action against it. It runs lint and the smoke test, shows each finding as an annotation on the workflow run, and adds a summary table to the job page.</p>
-      <pre><code>- uses: actions/checkout@v7
-- run: npm ci &amp;&amp; npm run build
-- uses: simplymanas/mcp-master-tester@v1
-  with:
-    command: node dist/index.js</code></pre>
+      <p>Save this as <code>.github/workflows/mcp.yml</code>:</p>
+      <pre><code>name: MCP server checks
+on: [push, pull_request]
+
+jobs:
+  mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci &amp;&amp; npm run build
+      - uses: simplymanas/mcp-master-tester@v1
+        with:
+          command: node dist/index.js</code></pre>
+      <p>For a server in another language, swap the setup and build steps for your own (for Python, <code>actions/setup-python</code> and <code>pip install .</code>) and set <code>command</code>, for example <code>python -m my_server</code>.</p>
       <p>For a remote server, give <code>url</code> and <code>headers</code> (one <code>Name: value</code> per line, from the secrets context) instead of <code>command</code>. A stdio server doesn't see the step's environment apart from <code>PATH</code>, <code>HOME</code> and a few others, so pass what it needs in <code>env</code>, one <code>KEY=VALUE</code> per line. If the server in CI holds anything you care about, list the tools the smoke test may call in <code>tools</code>.</p>
       <div class="table-wrap">
         <table>
