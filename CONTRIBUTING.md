@@ -32,6 +32,7 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | `public/forms.js` | Argument forms built from a JSON Schema, as pure functions with no DOM access |
 | `public/lint.js` | Lint rules as pure functions, with no DOM access |
 | `public/smoke.js` | Smoke test logic as pure functions: what runs, what is sent, how answers are judged |
+| `public/config-import.js` | Turns a Claude Desktop, Cursor or VS Code config into profiles, as pure functions |
 | `public/style.css` | Theme and layout |
 | `test/api.test.js` | Integration tests (Node's built-in test runner) |
 | `test/lint.test.js` | Unit tests for the lint rules |
@@ -39,7 +40,29 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | `test/forms.test.js` | Unit tests that hostile schema text never becomes markup |
 | `test/package.test.js` | Weight budget: dependency list, package size and published files |
 | `test/cli.test.js` | Tests for `lint` and `smoke` from the command line |
+| `test/config-import.test.js` | Unit tests for config import, including that secret values are never kept |
+| `test/action.test.js` | Tests for the GitHub Action's inputs, summary and outputs |
+| `action.yml`, `action/run.mjs` | The GitHub Action (not in the npm package) |
 | `test/fixtures/` | Small MCP servers the tests run against (not test files themselves) |
+
+### REST API
+
+The page talks to the backend through these endpoints.
+
+All calls are `POST` with a JSON body. The reply is `{ ok, ms, result }`, or on failure `{ ok: false, error, code, data, authRequired }`. A `tools/call` whose `structuredContent` doesn't fit the tool's `outputSchema` still replies `ok: true`, with `outputSchemaError` next to `result`.
+
+| Endpoint | MCP method |
+|---|---|
+| `/api/sessions` | connect (`initialize`) |
+| `DELETE /api/sessions/:id` | close |
+| `GET /api/sessions/:id/events` | event stream (SSE) |
+| `/api/sessions/:id/ping` | `ping` |
+| `/api/sessions/:id/tools/list` · `tools/call` | `tools/*` |
+| `/api/sessions/:id/resources/list` · `resources/templates` · `resources/read` | `resources/*` |
+| `/api/sessions/:id/prompts/list` · `prompts/get` | `prompts/*` |
+| `/api/sessions/:id/logging/level` | `logging/setLevel` |
+| `/api/sessions/:id/elicit/:reqId` | answer to `elicitation/create` |
+| `GET /api/info` | none: returns `{ name, version }` of this app, unwrapped |
 
 ## Make a change
 

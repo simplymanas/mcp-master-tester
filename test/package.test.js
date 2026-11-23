@@ -11,7 +11,9 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-const MAX_TARBALL_BYTES = 60_000;    // the .tgz that npm downloads (55 kB at 1.4.0)
+// Raised from 60 kB at 1.7.0 (60.0 kB on Linux), after config import, the outputSchema result view and
+// Markdown copy, and after moving contributor docs out of the README to make room.
+const MAX_TARBALL_BYTES = 64_000;    // the .tgz that npm downloads (55 kB at 1.4.0, 60 kB at 1.7.0)
 const MAX_UNPACKED_BYTES = 200_000;  // the files once installed (173 kB at 1.4.0)
 
 // What `npm publish` would upload, without writing a file.
