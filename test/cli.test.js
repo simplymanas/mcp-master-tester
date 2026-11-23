@@ -330,3 +330,59 @@ test('lint: warns about read-only tools whose name or annotations contradict the
   // The reference server's read-only tools are named like lookups.
   assert.doesNotMatch((await run('lint', '--', 'node', everything)).stdout, /marked read-only/);
 });
+
+test('snapshot writes a lockfile once, and says when it is already up to date', async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'mmt-lock-'));
+  const lock = path.join(dir, 'tools.lock.json');
+  try {
+    const first = await run('snapshot', '--out', lock, '--', 'node', smokeFixture);
+    assert.equal(first.code, 0, first.stderr);
+    assert.match(first.stdout, /Wrote .*tools\.lock\.json: 4 tools from smoke-fixture/);
+    const text = readFileSync(lock, 'utf8');
+    assert.deepEqual(Object.keys(JSON.parse(text).tools), ['delete_user', 'find_user', 'get_weather', 'ping_db']);
+    const again = await run('snapshot', '--out', lock, '--', 'node', smokeFixture);
+    assert.match(again.stdout, /is up to date/);
+    assert.equal(readFileSync(lock, 'utf8'), text);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('diff: no changes pass; additions pass; removals fail; --fail-on sets the bar', async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'mmt-lock-'));
+  const lock = path.join(dir, 'tools.lock.json');
+  try {
+    await run('snapshot', '--out', lock, '--', 'node', smokeFixture);
+    const same = await run('diff', '--lock', lock, '--', 'node', smokeFixture);
+    assert.equal(same.code, 0);
+    assert.match(same.stdout, /no changes since/);
+
+    const added = await run('diff', '--lock', lock, '--', 'node', smokeFixture, 'broken');
+    assert.equal(added.code, 0, 'new tools are not breaking');
+    assert.match(added.stdout, /info\s+get_report\s+new tool/);
+    assert.equal((await run('diff', '--lock', lock, '--fail-on', 'info', '--', 'node', smokeFixture, 'broken')).code, 1);
+
+    const removed = await run('diff', '--lock', lock, '--', 'node', smokeFixture, 'unstructured');
+    assert.equal(removed.code, 1);
+    assert.match(removed.stdout, /breaking\s+ping_db\s+tool removed/);
+    assert.match(removed.stdout, /✖ failed: 4 breaking, 0 warnings, 1 info\. Failing on: breaking\./);
+
+    const gh = await run('diff', '--lock', lock, '--format', 'github', '--', 'node', smokeFixture, 'unstructured');
+    assert.match(gh.stdout, /^::error title=MCP diff%3A ping_db::tool removed$/m);
+    assert.match(gh.stdout, /^MCP diff: 4 breaking, 0 warnings, 1 info\. Failing on: breaking\.$/m);
+
+    const js = JSON.parse((await run('diff', '--lock', lock, '--format', 'json', '--', 'node', smokeFixture, 'unstructured')).stdout);
+    assert.deepEqual([js.passed, js.counts, js.tools], [false, { breaking: 4, warn: 0, info: 1 }, { before: 4, after: 1 }]);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('diff: a missing or broken lockfile exits 2 and says what to do', async () => {
+  const missing = await run('diff', '--lock', 'no-such.lock.json', '--', 'node', smokeFixture);
+  assert.equal(missing.code, 2);
+  assert.match(missing.stderr, /No lockfile at no-such\.lock\.json\. Create one with "mcp-master-tester snapshot"/);
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'mmt-lock-'));
+  try {
+    writeFileSync(path.join(dir, 'bad.json'), '{"tools": {}}');
+    const bad = await run('diff', '--lock', path.join(dir, 'bad.json'), '--', 'node', smokeFixture);
+    assert.equal(bad.code, 2);
+    assert.match(bad.stderr, /lockfileVersion undefined is not supported/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

@@ -51,6 +51,7 @@
           <li><a href="#smoke-options">Options</a></li>
         </ul>
       </li>
+      <li><a href="#diff">Breaking changes</a></li>
       <li><a href="#ci">GitHub Actions</a></li>
       <li><a href="#security">Security</a></li>
       <li><a href="#limitations">Limitations</a></li>
@@ -220,6 +221,31 @@ npx mcp-master-tester smoke --args smoke.json -- node dist/index.js</code></pre>
       <p><code>--format</code>, <code>--env</code>, <code>--cwd</code>, <code>--url</code>, <code>--sse</code> and <code>--header</code> work as they do for lint, and so do the exit codes. A misspelt tool name in <code>--tool</code>, <code>--skip</code> or the <code>--args</code> file is an error (exit 2), so a renamed tool can't quietly drop out of the test.</p>
     </section>
 
+    <section id="diff">
+      <h2>Breaking changes</h2>
+      <p>A lockfile records your server's tools. In CI, <code>diff</code> compares the live server with it, so a pull request that renames a parameter or drops a tool fails before your users' agents do.</p>
+      <pre><code># writes mcp-tools.lock.json; commit it
+npx mcp-master-tester snapshot -- node dist/index.js
+
+# in CI: exit 1 on a breaking change
+npx mcp-master-tester diff -- node dist/index.js</code></pre>
+      <pre><code>  breaking  get_user     parameter "org": new required parameter, so existing calls without it fail
+  breaking  get_weather  output field "celsius": no longer always present
+  warn      search       description changed (412 → 980 characters): models read it on every request, so check the new text
+  info      export_csv   new tool</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Level</th><th>What counts</th></tr></thead>
+          <tbody>
+            <tr><td><code>breaking</code></td><td>A tool or parameter removed; a new required parameter; a narrower type, enum or limit on an input; an output field removed, no longer always present, or of a new type; the outputSchema removed</td></tr>
+            <tr><td><code>warn</code></td><td>A changed description (models act on it, and a changed description is how a tool can be repurposed), annotation or default, or a schema change it can't classify</td></tr>
+            <tr><td><code>info</code></td><td>A new tool, optional parameter or output field; a wider type</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>--fail-on breaking</code> is the default; <code>warn</code>, <code>info</code> and <code>never</code> are the others. <code>--lock &lt;file&gt;</code> reads another lockfile, and <code>snapshot --out &lt;file&gt;</code> writes one. When a change is intended, run <code>snapshot</code> again and commit the new lockfile in the same pull request. The lockfile has no dates or server version, so it only changes when the tools do.</p>
+    </section>
+
     <section id="ci">
       <h2>GitHub Actions</h2>
       <p>Build your server, then run the action against it. It runs lint and the smoke test, shows each finding as an annotation on the workflow run, and adds a summary table to the job page.</p>
@@ -248,7 +274,8 @@ jobs:
             <tr><td><code>command</code></td><td>Command that starts a stdio server. Split on spaces and run without a shell.</td></tr>
             <tr><td><code>url</code>, <code>sse</code>, <code>headers</code></td><td>A remote server instead</td></tr>
             <tr><td><code>env</code>, <code>cwd</code></td><td>Environment and working directory for a stdio server</td></tr>
-            <tr><td><code>checks</code></td><td><code>lint, smoke</code> (default), <code>lint</code> or <code>smoke</code></td></tr>
+            <tr><td><code>checks</code></td><td>Any of <code>lint</code>, <code>smoke</code>, <code>diff</code>. Left empty: <code>lint</code> and <code>smoke</code>, plus <code>diff</code> when the lockfile exists</td></tr>
+            <tr><td><code>lockfile</code>, <code>diff-fail-on</code></td><td>For <code>diff</code>: the lockfile (default <code>mcp-tools.lock.json</code>), and <code>breaking</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
             <tr><td><code>lint-fail-on</code></td><td><code>error</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
             <tr><td><code>smoke-fail-on</code></td><td><code>fail</code> (default), <code>warn</code>, <code>skip</code> or <code>never</code></td></tr>
             <tr><td><code>tools</code>, <code>skip</code>, <code>all</code>, <code>args</code></td><td>Which tools the smoke test calls, and with what arguments, as in <a href="#smoke-args">the smoke test options</a></td></tr>
@@ -256,7 +283,7 @@ jobs:
           </tbody>
         </table>
       </div>
-      <p>The outputs <code>lint</code> and <code>smoke</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.7.0</code> or a commit SHA to stay on one version.</p>
+      <p>The outputs <code>lint</code>, <code>smoke</code> and <code>diff</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.8.0</code> or a commit SHA to stay on one version.</p>
       <p>On another CI system, or to control every flag, run the commands directly. With <code>--format github</code>, findings still show as annotations on GitHub. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
       <pre><code>- run: npm ci &amp;&amp; npm run build
 - run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js

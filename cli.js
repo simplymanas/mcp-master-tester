@@ -3,10 +3,12 @@
 //   mcp-master-tester                 start the web UI (server.js)
 //   mcp-master-tester lint [...]      check a server's tool definitions
 //   mcp-master-tester smoke [...]     call each read-only tool once and check the answers
-// lint and smoke exit non-zero on findings, for CI.
+//   mcp-master-tester snapshot [...]  save the tool list to a lockfile
+//   mcp-master-tester diff [...]      compare the tool list with the lockfile, flag breaking changes
+// lint, smoke and diff exit non-zero on findings, for CI.
 // Author: @simplymanas
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -14,6 +16,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { lintTools } from './public/lint.js';
 import { planSmoke, runSmoke, countSmoke, smokeFailed, untestedTools, NOT_READ_ONLY } from './public/smoke.js';
+import { snapshotTools, lockfileText, parseLockfile, diffTools, DEFAULT_LOCKFILE, DIFF_LEVELS } from './public/diff.js';
 
 const VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 const SEVERITIES = ['error', 'warn', 'info'];
@@ -21,15 +24,17 @@ const SEVERITIES = ['error', 'warn', 'info'];
 const HELP = `MCP Master Tester ${VERSION}
 
 Usage:
-  mcp-master-tester                            Start the web UI (http://127.0.0.1:6280, or set PORT)
-  mcp-master-tester lint  [options] <server>   Check the server's tool definitions
-  mcp-master-tester smoke [options] <server>   Call each read-only tool once and check the answers
+  mcp-master-tester                               Start the web UI (http://127.0.0.1:6280, or set PORT)
+  mcp-master-tester lint     [options] <server>   Check the server's tool definitions
+  mcp-master-tester smoke    [options] <server>   Call each read-only tool once and check the answers
+  mcp-master-tester snapshot [options] <server>   Save the tool list to a lockfile, to commit
+  mcp-master-tester diff     [options] <server>   Compare the tool list with the lockfile
 
 <server> is one of:
   -- <command> [args...]   A stdio server, for example: -- node dist/index.js
   --url <url>              A Streamable HTTP server (add --sse for the legacy SSE transport)
 
-Options for lint and smoke:
+Options for lint, smoke, snapshot and diff:
   --format <format>     text (default), json, or github (GitHub Actions annotations)
   --env KEY=VALUE       Environment variable for a stdio server (repeatable)
   --cwd <dir>           Working directory for a stdio server
@@ -55,6 +60,15 @@ smoke options:
                         the ones before it; skip also fails when a tool went untested and
                         you didn't leave it out yourself with --skip or --tool.
 
+snapshot options:
+  --out <file>          Where to write the lockfile (default ${DEFAULT_LOCKFILE})
+
+diff options:
+  --lock <file>         The lockfile to compare with (default ${DEFAULT_LOCKFILE})
+  --fail-on <level>     Exit 1 on: breaking (default), warn, info, or never. breaking: a change
+                        that can fail existing callers or clients. warn: a changed description,
+                        annotation or default, or a change it can't classify. info: additions.
+
 Exit codes: 0 passed, 1 findings or failures at or above --fail-on, 2 usage or connection error.
 
 Examples:
@@ -64,6 +78,8 @@ Examples:
   npx mcp-master-tester smoke -- node dist/index.js
   npx mcp-master-tester smoke --print-args -- node dist/index.js > smoke.json
   npx mcp-master-tester smoke --args smoke.json -- node dist/index.js
+  npx mcp-master-tester snapshot -- node dist/index.js
+  npx mcp-master-tester diff -- node dist/index.js
 `;
 
 class UsageError extends Error {}
@@ -350,9 +366,66 @@ const runSmokeCommand = (argv) => runCommand('smoke', argv, {
   });
 });
 
+// ---------- snapshot and diff ----------
+
+const runSnapshot = (argv) => runCommand('snapshot', argv, {
+  failLevels: ['never'],
+  options: { out: { type: 'string', default: DEFAULT_LOCKFILE } },
+}, async ({ values, config, timeout }) => {
+  const { tools, server } = await withServer(config, timeout, (s) => s);
+  const text = lockfileText(snapshotTools(tools, server));
+  const file = values.out;
+  const before = existsSync(file) ? readFileSync(file, 'utf8') : null;
+  if (before === text) {
+    console.log(`${file} is up to date: ${plural(tools.length, 'tool')} from ${server.name ?? 'the server'}.`);
+  } else {
+    writeFileSync(file, text);
+    console.log(`${before === null ? 'Wrote' : 'Updated'} ${file}: ${plural(tools.length, 'tool')} from ${server.name ?? 'the server'}. Commit it, and run "mcp-master-tester diff" in CI.`);
+  }
+  return 0;
+});
+
+const DIFF_LABEL = { breaking: paint('31;1', 'breaking'), warn: paint('33', 'warn    '), info: paint('2', 'info    ') };
+const diffSummary = (c) => `${c.breaking} breaking, ${plural(c.warn, 'warning')}, ${c.info} info`;
+
+const runDiff = (argv) => runCommand('diff', argv, {
+  failLevels: [...DIFF_LEVELS, 'never'],
+  options: { lock: { type: 'string', default: DEFAULT_LOCKFILE } },
+}, async ({ values, config, failOn, format, timeout }) => {
+  const file = values.lock;
+  if (!existsSync(file)) throw new UsageError(`No lockfile at ${file}. Create one with "mcp-master-tester snapshot" and the same server options, and commit it.`);
+  let lock;
+  try { lock = parseLockfile(readFileSync(file, 'utf8')); } catch (err) { throw new UsageError(`${file} is ${err.message}`); }
+  const { tools, server } = await withServer(config, timeout, (s) => s);
+  const changes = diffTools(lock, snapshotTools(tools, server));
+  const counts = { breaking: 0, warn: 0, info: 0 };
+  for (const c of changes) counts[c.sev]++;
+  const worst = failOn === 'never' ? -1 : DIFF_LEVELS.indexOf(failOn);
+  const failed = changes.some((c) => DIFF_LEVELS.indexOf(c.sev) <= worst);
+  const before = Object.keys(lock.tools).length;
+
+  if (format === 'json') {
+    console.log(JSON.stringify({ server: serverJson(server), transport: config.transport, lockfile: file, tools: { before, after: tools.length }, counts, failOn, passed: !failed, changes }, null, 2));
+  } else if (format === 'github') {
+    const kind = { breaking: 'error', warn: 'warning', info: 'notice' };
+    for (const c of changes) console.log(ghAnnotation(kind[c.sev], `MCP diff: ${c.target}`, c.msg));
+    console.log(`MCP diff: ${changes.length ? diffSummary(counts) : 'no changes'}. Failing on: ${failOn}.`);
+  } else {
+    console.log(header('diff', server, tools.length, config));
+    console.log(`Compared with ${file} (${plural(before, 'tool')}).\n`);
+    const width = Math.min(40, Math.max(0, ...changes.map((c) => c.target.length)));
+    for (const c of changes) console.log(`  ${DIFF_LABEL[c.sev]}  ${c.target.padEnd(width)}  ${c.msg}`);
+    if (changes.length) console.log('');
+    if (!changes.length) console.log(`${paint('32;1', '✔ passed')}: no changes since ${file}.`);
+    else console.log(`${failed ? paint('31;1', '✖ failed') : paint('32;1', '✔ passed')}: ${diffSummary(counts)}. Failing on: ${failOn}.`);
+    if (changes.length) console.log(`If these changes are intended, update the lockfile with "mcp-master-tester snapshot" and commit it.`);
+  }
+  return failed ? 1 : 0;
+});
+
 // ---------- dispatch ----------
 
-const COMMANDS = { lint: runLint, smoke: runSmokeCommand };
+const COMMANDS = { lint: runLint, smoke: runSmokeCommand, snapshot: runSnapshot, diff: runDiff };
 const [sub, ...rest] = process.argv.slice(2);
 if (Object.hasOwn(COMMANDS, sub)) {
   // Exit explicitly (a remote transport can keep the event loop alive), but only after stdout has

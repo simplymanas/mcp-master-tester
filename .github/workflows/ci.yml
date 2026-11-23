@@ -29,18 +29,29 @@ jobs:
         id: healthy
         with:
           command: node test/fixtures/smoke-server.js
+          lockfile: test/fixtures/smoke-server.lock.json
       - uses: ./
         id: broken
         continue-on-error: true
         with:
           command: node test/fixtures/lint-server.js
           checks: lint
+      - uses: ./
+        id: changed
+        continue-on-error: true
+        with:
+          command: node test/fixtures/smoke-server.js unstructured
+          checks: diff
+          lockfile: test/fixtures/smoke-server.lock.json
       - name: Check the results
         env:
           HEALTHY_LINT: ${{ steps.healthy.outputs.lint }}
           HEALTHY_SMOKE: ${{ steps.healthy.outputs.smoke }}
+          HEALTHY_DIFF: ${{ steps.healthy.outputs.diff }}
+          CHANGED_DIFF: ${{ steps.changed.outputs.diff }}
           BROKEN_LINT: ${{ steps.broken.outputs.lint }}
           BROKEN_OUTCOME: ${{ steps.broken.outcome }}
         run: |
-          test "$HEALTHY_LINT" = passed && test "$HEALTHY_SMOKE" = passed
+          test "$HEALTHY_LINT" = passed && test "$HEALTHY_SMOKE" = passed && test "$HEALTHY_DIFF" = passed
+          test "$CHANGED_DIFF" = failed
           test "$BROKEN_LINT" = failed && test "$BROKEN_OUTCOME" = failure

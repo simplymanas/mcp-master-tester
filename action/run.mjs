@@ -6,18 +6,21 @@
 // step outputs. Not part of the npm package. The pure functions are exported for test/action.test.js.
 
 import { spawn } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const CLI = fileURLToPath(new URL('../cli.js', import.meta.url));
 const LINT_FAIL = ['error', 'warn', 'info', 'never'];
 const SMOKE_FAIL = ['fail', 'warn', 'skip', 'never'];
+const DIFF_FAIL = ['breaking', 'warn', 'info', 'never'];
+const CHECKS = ['lint', 'smoke', 'diff'];
 const MAX_ROWS = 50;
 
 export class InputError extends Error {}
 
-// The argument lists for cli.js, one per check, from the MMT_* variables action.yml sets.
-export function planRuns(env) {
+// The argument lists for cli.js, one per check, from the MMT_* variables action.yml sets. `exists` is
+// how it checks for the lockfile (a parameter so the tests don't need one on disk).
+export function planRuns(env, { exists = existsSync } = {}) {
   const get = (name) => (env[`MMT_${name}`] ?? '').trim();
   const lines = (name) => get(name).split('\n').map((s) => s.trim()).filter(Boolean);
   const items = (name) => get(name).split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
@@ -34,8 +37,10 @@ export function planRuns(env) {
   };
 
   const checks = items('CHECKS').map((c) => c.toLowerCase());
-  for (const c of checks) if (c !== 'lint' && c !== 'smoke') throw new InputError(`checks can only list lint and smoke (got "${c}")`);
-  const wanted = checks.length ? checks : ['lint', 'smoke'];
+  for (const c of checks) if (!CHECKS.includes(c)) throw new InputError(`checks can only list lint, smoke and diff (got "${c}")`);
+  const lockfile = get('LOCKFILE') || 'mcp-tools.lock.json';
+  // Left empty: lint and smoke, and diff too once a lockfile has been committed.
+  const wanted = checks.length ? checks : ['lint', 'smoke', ...(exists(lockfile) ? ['diff'] : [])];
 
   const command = get('COMMAND');
   const url = get('URL');
@@ -66,6 +71,7 @@ export function planRuns(env) {
     if (get('ARGS')) opts.push('--args', get('ARGS'));
     runs.push({ check: 'smoke', argv: ['smoke', ...common, ...tail(opts)] });
   }
+  if (wanted.includes('diff')) runs.push({ check: 'diff', argv: ['diff', ...common, '--lock', lockfile, '--fail-on', oneOf('DIFF_FAIL_ON', DIFF_FAIL, 'breaking'), ...tail([])] });
   return runs;
 }
 
@@ -91,7 +97,8 @@ export function summarize(check, stdout, stderr, code) {
     const title = unescape(m[2]);
     const target = title.includes(': ') ? title.slice(title.indexOf(': ') + 2) : '';
     const tool = target && !NOT_A_TOOL.has(target) ? `\`${cell(target)}\`` : '';
-    rows.push(`| ${m[1]} | ${tool} | ${asInputs(cell(unescape(m[3])))} |`);
+    const level = check === 'diff' ? { error: 'breaking', warning: 'warn' }[m[1]] : m[1];
+    rows.push(`| ${level} | ${tool} | ${asInputs(cell(unescape(m[3])))} |`);
   }
   const out = [`### MCP ${check}: ${label}`, ''];
   if (total) out.push(total, '');
@@ -105,6 +112,7 @@ export function summarize(check, stdout, stderr, code) {
     out.push('');
   }
   if (notices) out.push(`${notices} info ${notices === 1 ? 'finding is' : 'findings are'} listed as notices on the run.`, '');
+  if (check === 'diff' && (rows.length || notices)) out.push('If these changes are intended, run `npx mcp-master-tester snapshot` with the same server and commit the lockfile.', '');
   return { result, markdown: out.join('\n') };
 }
 
@@ -134,7 +142,7 @@ async function main() {
     console.log(`::error title=MCP Master Tester::${err.message}`);
     return 2;
   }
-  const results = { lint: 'skipped', smoke: 'skipped' };
+  const results = { lint: 'skipped', smoke: 'skipped', diff: 'skipped' };
   let worst = 0;
   for (const { check, argv } of runs) {
     console.log(`::group::MCP ${check}`);
@@ -145,7 +153,7 @@ async function main() {
     worst = Math.max(worst, code);
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`);
   }
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `lint=${results.lint}\nsmoke=${results.smoke}\n`);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `lint=${results.lint}\nsmoke=${results.smoke}\ndiff=${results.diff}\n`);
   return worst;
 }
 

@@ -2,6 +2,24 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] - 2026-11-23
+
+### Added
+
+- **Catch breaking changes with a tool lockfile.** `mcp-master-tester snapshot` writes `mcp-tools.lock.json`, the server's tools in a stable, sorted form with no dates or server version, so it only changes when the tools do. Commit it. `mcp-master-tester diff` compares the live server with it and grades each change:
+  - **breaking:** a tool or parameter removed, a new required parameter, an optional parameter made required, a narrower type, enum or limit on an input, and for outputs a field removed, no longer always present or of a new type, or the outputSchema removed
+  - **warn:** a changed description (models act on it, and a changed description is how a tool can be repurposed), annotation or default, or a schema change it can't classify
+  - **info:** a new tool, optional parameter or output field, or a wider type
+  
+  It exits 1 on a breaking change, or at the level set with `--fail-on` (`breaking`, `warn`, `info`, `never`), and supports `--format text|json|github` and `--lock <file>`. Nested objects and array items are compared too, with a path such as `filter.tags[]`.
+- **The GitHub Action runs `diff`** as a third check. With `checks` left empty, it runs lint and smoke, plus diff once `mcp-tools.lock.json` is in the repo. New inputs `lockfile` and `diff-fail-on`, and a `diff` output. In the job summary, the Level column says `breaking` and the summary says how to update the lockfile. CI runs the action against a committed fixture lockfile, and against a changed server that must fail.
+
+### Changed
+
+- The website's home page shows four jobs, adding Diff, and its docs page has a Breaking changes section.
+- The README's detailed smoke-test reference (how arguments are chosen, how answers are judged, expected skips) now lives only on the website's docs page, with a link.
+- The package size budget is 70 kB (1.8.0 is 64 kB) and the installed-size budget 220 kB (1.8.0 is 203 kB). Still two runtime dependencies.
+
 ## [1.7.0] - 2026-11-22
 
 ### Added
@@ -189,6 +207,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.8.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.4.2...v1.5.0
