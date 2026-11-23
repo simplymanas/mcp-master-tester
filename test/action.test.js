@@ -29,7 +29,13 @@ test('planRuns: a stdio server gets lint then smoke, with the command after --',
   assert.deepEqual(runs.map((r) => r.check), ['lint', 'smoke']);
   assert.deepEqual(runs[0].argv, ['lint', '--format', 'github', '--timeout', '30000', '--fail-on', 'error', '--', 'node', 'dist/index.js', '--port', '0']);
   assert.deepEqual(runs[1].argv, ['smoke', '--format', 'github', '--timeout', '30000', '--fail-on', 'fail', '--', 'node', 'dist/index.js', '--port', '0']);
-  assert.deepEqual(planRuns({ MMT_COMMAND: 'node s.js' }).map((r) => r.check), ['lint', 'smoke'], 'both by default');
+  const none = { exists: () => false };
+  const lockOnDisk = { exists: (f) => f === 'mcp-tools.lock.json' };
+  assert.deepEqual(planRuns({ MMT_COMMAND: 'node s.js' }, none).map((r) => r.check), ['lint', 'smoke'], 'lint and smoke by default');
+  assert.deepEqual(planRuns({ MMT_COMMAND: 'node s.js' }, lockOnDisk).map((r) => r.check), ['lint', 'smoke', 'diff'], 'and diff once a lockfile is committed');
+  assert.deepEqual(planRuns({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'lint' }, lockOnDisk).map((r) => r.check), ['lint'], 'an explicit list wins');
+  assert.deepEqual(planRuns({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'diff', MMT_LOCKFILE: 'srv/tools.lock.json', MMT_DIFF_FAIL_ON: 'warn' }, none)[0].argv,
+    ['diff', '--format', 'github', '--timeout', '30000', '--lock', 'srv/tools.lock.json', '--fail-on', 'warn', '--', 'node', 's.js']);
   assert.deepEqual(planRuns({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'smoke' }).map((r) => r.check), ['smoke']);
 });
 
@@ -54,7 +60,8 @@ test('planRuns: wrong inputs are explained in the action\'s own terms', () => {
   const fails = (env, re) => assert.throws(() => planRuns(env), (err) => err instanceof InputError && re.test(err.message));
   fails({}, /set command .* or url/);
   fails({ MMT_COMMAND: 'node s.js', MMT_URL: 'https://x' }, /either command or url/);
-  fails({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'lint, test' }, /only list lint and smoke \(got "test"\)/);
+  fails({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'lint, test' }, /only list lint, smoke and diff \(got "test"\)/);
+  fails({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'diff', MMT_DIFF_FAIL_ON: 'error' }, /diff-fail-on must be breaking, warn, info, never/);
   fails({ MMT_COMMAND: 'node s.js', MMT_LINT_FAIL_ON: 'warning' }, /lint-fail-on must be error, warn, info, never/);
   fails({ MMT_COMMAND: 'node s.js', MMT_SMOKE_FAIL_ON: 'error' }, /smoke-fail-on must be fail, warn, skip, never/);
   fails({ MMT_COMMAND: 'node s.js', MMT_ALL: 'yes' }, /all must be true or false/);
@@ -78,6 +85,9 @@ test('summarize: warnings and errors become a table; info findings are only coun
 });
 
 test('summarize: a run that could not start shows why', () => {
+  const d = summarize('diff', '::error title=MCP diff%3A ping_db::tool removed\nMCP diff: 1 breaking, 0 warnings, 0 info. Failing on: breaking.', '', 1);
+  assert.match(d.markdown, /\| breaking \| `ping_db` \| tool removed \|/);
+  assert.match(d.markdown, /If these changes are intended, run `npx mcp-master-tester snapshot`/);
   const { result, markdown } = summarize('smoke', '', 'mcp-master-tester smoke: could not connect: spawn nope ENOENT\n', 2);
   assert.equal(result, 'error');
   assert.match(markdown, /### MCP smoke: could not run/);
@@ -111,7 +121,7 @@ test('the action passes on a healthy server: annotations in the log, a summary, 
   assert.match(r.stdout, /::warning title=MCP smoke%3A find_user::/);
   assert.match(r.summary, /### MCP lint: passed/);
   assert.match(r.summary, /### MCP smoke: passed\n\n0 failed, 1 warning, 2 passed, 1 skipped/);
-  assert.equal(r.output, 'lint=passed\nsmoke=passed\n');
+  assert.equal(r.output, 'lint=passed\nsmoke=passed\ndiff=skipped\n');
 });
 
 test('the action fails when lint fails, and still runs the smoke test', async () => {
@@ -119,15 +129,15 @@ test('the action fails when lint fails, and still runs the smoke test', async ()
   assert.equal(r.code, 1);
   assert.match(r.summary, /### MCP lint: failed[\s\S]*\| error \| `read_note` \| duplicate tool name \|/);
   assert.match(r.summary, /### MCP smoke:/);
-  assert.match(r.output, /^lint=failed\nsmoke=\w+\n$/);
+  assert.match(r.output, /^lint=failed\nsmoke=\w+\ndiff=skipped\n$/);
 });
 
 test('the action stops with exit 2 on bad inputs or a server that will not start', async () => {
   const bad = await runAction({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'test' });
   assert.equal(bad.code, 2);
-  assert.match(bad.stdout, /^::error title=MCP Master Tester::checks can only list lint and smoke/m);
+  assert.match(bad.stdout, /^::error title=MCP Master Tester::checks can only list lint, smoke and diff/m);
   const missing = await runAction({ MMT_COMMAND: 'node test/fixtures/does-not-exist.js', MMT_CHECKS: 'lint' });
   assert.equal(missing.code, 2);
   assert.match(missing.summary, /### MCP lint: could not run/);
-  assert.equal(missing.output, 'lint=error\nsmoke=skipped\n');
+  assert.equal(missing.output, 'lint=error\nsmoke=skipped\ndiff=skipped\n');
 });

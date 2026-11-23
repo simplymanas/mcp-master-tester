@@ -1,0 +1,93 @@
+{
+  "lockfileVersion": 1,
+  "server": "smoke-fixture",
+  "tools": {
+    "delete_user": {
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false
+      },
+      "description": "Deletes one user by id.",
+      "inputSchema": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      }
+    },
+    "find_user": {
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Looks up one user by id.",
+      "inputSchema": {
+        "properties": {
+          "id": {
+            "description": "User id, e.g. \"u_1\"",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      }
+    },
+    "get_weather": {
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Current weather for a city.",
+      "inputSchema": {
+        "properties": {
+          "city": {
+            "enum": [
+              "Pune",
+              "Oslo"
+            ],
+            "type": "string"
+          },
+          "units": {
+            "default": "c",
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "celsius": {
+            "type": "number"
+          },
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "city",
+          "celsius"
+        ],
+        "type": "object"
+      }
+    },
+    "ping_db": {
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Checks the database answers.",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    }
+  }
+}

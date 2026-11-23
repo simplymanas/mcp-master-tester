@@ -1,5 +1,5 @@
 name: MCP Master Tester
-description: Lint an MCP server's tool definitions and smoke-test its read-only tools, with annotations and a job summary.
+description: Lint an MCP server's tools, smoke-test the read-only ones, and catch breaking changes, with annotations and a summary.
 author: simplymanas
 branding:
   icon: check-circle
@@ -31,9 +31,11 @@ inputs:
     description: Working directory for a stdio server. Defaults to the workspace.
     required: false
   checks:
-    description: Which checks to run, comma-separated. lint, smoke, or both.
+    description: >-
+      Which checks to run, comma-separated: lint, smoke, diff. Left empty, it runs lint and smoke,
+      plus diff when the lockfile exists.
     required: false
-    default: lint, smoke
+    default: ''
   lint-fail-on:
     description: Fail on lint findings at this level or worse. error, warn, info or never.
     required: false
@@ -44,6 +46,14 @@ inputs:
       with skip or tools), or never.
     required: false
     default: fail
+  lockfile:
+    description: Tool lockfile that diff compares with. Create it with "npx mcp-master-tester snapshot" and commit it.
+    required: false
+    default: mcp-tools.lock.json
+  diff-fail-on:
+    description: Fail diff on breaking (default), warn, info, or never.
+    required: false
+    default: breaking
   tools:
     description: >-
       Smoke-test only these tools, comma- or newline-separated, whether or not they are marked
@@ -71,6 +81,9 @@ outputs:
   smoke:
     description: passed, failed, error (couldn't run) or skipped
     value: ${{ steps.run.outputs.smoke }}
+  diff:
+    description: passed, failed, error (couldn't run) or skipped
+    value: ${{ steps.run.outputs.diff }}
 
 runs:
   using: composite
@@ -92,6 +105,8 @@ runs:
         MMT_CHECKS: ${{ inputs.checks }}
         MMT_LINT_FAIL_ON: ${{ inputs.lint-fail-on }}
         MMT_SMOKE_FAIL_ON: ${{ inputs.smoke-fail-on }}
+        MMT_LOCKFILE: ${{ inputs.lockfile }}
+        MMT_DIFF_FAIL_ON: ${{ inputs.diff-fail-on }}
         MMT_TOOLS: ${{ inputs.tools }}
         MMT_SKIP: ${{ inputs.skip }}
         MMT_ALL: ${{ inputs.all }}

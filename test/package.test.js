@@ -11,10 +11,11 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-// Raised from 60 kB at 1.7.0 (60.0 kB on Linux), after config import, the outputSchema result view and
-// Markdown copy, and after moving contributor docs out of the README to make room.
-const MAX_TARBALL_BYTES = 64_000;    // the .tgz that npm downloads (55 kB at 1.4.0, 60 kB at 1.7.0)
-const MAX_UNPACKED_BYTES = 200_000;  // the files once installed (173 kB at 1.4.0)
+// Raised from 60 kB at 1.7.0 (config import, outputSchema results, Markdown copy), and again at 1.8.0
+// for the lockfile diff (public/diff.js, 10 kB of source). Contributor docs and the detailed smoke-test
+// reference moved out of the README to the website and CONTRIBUTING.md to keep the README itself small.
+const MAX_TARBALL_BYTES = 70_000;    // the .tgz that npm downloads (55 kB at 1.4.0, 64 kB at 1.8.0)
+const MAX_UNPACKED_BYTES = 220_000;  // the files once installed (173 kB at 1.4.0, 203 kB at 1.8.0)
 
 // What `npm publish` would upload, without writing a file.
 const [packed] = JSON.parse(execSync('npm pack --dry-run --json', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));

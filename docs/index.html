@@ -58,7 +58,7 @@
 
   <section class="band first">
     <div class="wrap">
-      <h2>One tool, three jobs</h2>
+      <h2>One tool, four jobs</h2>
       <p class="intro">Point it at a server, either a local command over stdio or a remote URL. Use the web UI while you build, and the same checks from the command line in CI.</p>
       <div class="trio">
         <div class="card">
@@ -75,6 +75,11 @@
           <span class="tag">Smoke test</span>
           <h3>Prove the tools answer</h3>
           <p>Calls each read-only tool once and fails on timeouts, crashes, protocol errors and results that break their output schema.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Diff</span>
+          <h3>Catch breaking changes</h3>
+          <p>A lockfile of your tools, checked in CI. A removed parameter, a new required one or a narrower type fails the pull request; a changed description gets flagged for review.</p>
         </div>
       </div>
 
