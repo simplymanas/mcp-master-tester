@@ -98,7 +98,7 @@
   </figure>
   <p>Each of the four is large for a different reason:</p>
   <ul>
-    <li><strong>Firecrawl (~24,600):</strong> 28 tools with detailed input schemas. <code>firecrawl_search</code> alone is about 2,600.</li>
+    <li><strong>Firecrawl (~24,600):</strong> 28 tools, each with an output schema as well as an input schema. Output schemas are about 9,400 of it, input schemas about 8,200 and descriptions about 5,200. <code>firecrawl_search</code> alone is about 2,600. A client that doesn't pass output schemas to the model sends about 15,200 (see the method).</li>
     <li><strong>Azure (~19,800):</strong> 74 tools, the most in the survey. Descriptions make up 44% of it.</li>
     <li><strong>Notion (~19,000):</strong> its tools are generated from Notion's API spec, and 98% of the size is input schemas.</li>
     <li><strong>Desktop Commander (~13,400):</strong> descriptions are 76% of it, and eight of them are over 500 tokens each. About a quarter of all its characters are indentation inside the description text.</li>
@@ -182,6 +182,7 @@
     <li><strong>Remote servers</strong> were reached over Streamable HTTP without signing in.</li>
     <li><strong>Only tool lists were read.</strong> No tool was called on any vendor's server. The tool lists were checked with MCP Master Tester 1.4.2's lint.</li>
     <li><strong>Tokens are estimated</strong> as the characters of each tool definition, as compact JSON, divided by four. That is the estimate lint uses. Real tokenizers differ by model, and runs of spaces usually cost less than this suggests, so read the figures as approximate and compare servers with each other. Clients also wrap tool lists in their own format, which adds a little.</li>
+    <li><strong>Output schemas are counted.</strong> The figures include each tool's <code>outputSchema</code>, since it is part of the tool list a server sends. Whether a client passes it on to the model varies: some send only the name, description and input schema. For those clients, the 12 servers that declare output schemas send less. The biggest differences are Firecrawl (about 15,200 instead of 24,600), Hugging Face (about 2,400 instead of 5,000) and AWS Documentation (about 4,100 instead of 5,800). All four servers over 10,000 stay over it either way. Thanks to a reader on r/mcp whose question led to this note.</li>
     <li><strong>Settings change the numbers.</strong> Several servers can expose fewer tools through their options. These figures are for the defaults.</li>
     <li><strong>Not included:</strong> Supabase, Sentry, Stripe and Brave Search need an API key just to list their tools, and Semgrep's remote server refused the connection.</li>
   </ul>
