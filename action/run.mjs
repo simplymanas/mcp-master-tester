@@ -1,7 +1,7 @@
 // MCP Master Tester — GitHub Action entry point (action.yml at the repo root runs this).
 // Author: @simplymanas
 //
-// Turns the action's inputs into `cli.js lint` and `cli.js smoke` runs with --format github, passes
+// Turns the action's inputs into `cli.js lint`, `smoke`, `diff` and `eval` runs with --format github, passes
 // their output through (so the annotations appear on the run), and writes a job summary and the
 // step outputs. Not part of the npm package. The pure functions are exported for test/action.test.js.
 
@@ -13,7 +13,8 @@ const CLI = fileURLToPath(new URL('../cli.js', import.meta.url));
 const LINT_FAIL = ['error', 'warn', 'info', 'never'];
 const SMOKE_FAIL = ['fail', 'warn', 'skip', 'never'];
 const DIFF_FAIL = ['breaking', 'warn', 'info', 'never'];
-const CHECKS = ['lint', 'smoke', 'diff'];
+const EVAL_FAIL = ['fail', 'never'];
+const CHECKS = ['lint', 'smoke', 'diff', 'eval'];
 const MAX_ROWS = 50;
 
 export class InputError extends Error {}
@@ -37,10 +38,14 @@ export function planRuns(env, { exists = existsSync } = {}) {
   };
 
   const checks = items('CHECKS').map((c) => c.toLowerCase());
-  for (const c of checks) if (!CHECKS.includes(c)) throw new InputError(`checks can only list lint, smoke and diff (got "${c}")`);
+  for (const c of checks) if (!CHECKS.includes(c)) throw new InputError(`checks can only list lint, smoke, diff and eval (got "${c}")`);
   const lockfile = get('LOCKFILE') || 'mcp-tools.lock.json';
-  // Left empty: lint and smoke, and diff too once a lockfile has been committed.
-  const wanted = checks.length ? checks : ['lint', 'smoke', ...(exists(lockfile) ? ['diff'] : [])];
+  const cases = get('EVAL_CASES') || 'mcp-evals.json';
+  const apiKey = get('ANTHROPIC_API_KEY');
+  // Left empty: lint and smoke, diff once a lockfile has been committed, and eval once there is a
+  // cases file and a key (eval calls the Anthropic API, which costs money, so it needs both).
+  const wanted = checks.length ? checks : ['lint', 'smoke', ...(exists(lockfile) ? ['diff'] : []), ...(apiKey && exists(cases) ? ['eval'] : [])];
+  if (wanted.includes('eval') && !apiKey) throw new InputError('eval needs anthropic-api-key, for example: anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}');
 
   const command = get('COMMAND');
   const url = get('URL');
@@ -72,6 +77,13 @@ export function planRuns(env, { exists = existsSync } = {}) {
     runs.push({ check: 'smoke', argv: ['smoke', ...common, ...tail(opts)] });
   }
   if (wanted.includes('diff')) runs.push({ check: 'diff', argv: ['diff', ...common, '--lock', lockfile, '--fail-on', oneOf('DIFF_FAIL_ON', DIFF_FAIL, 'breaking'), ...tail([])] });
+  if (wanted.includes('eval')) {
+    const opts = ['--cases', cases, '--fail-on', oneOf('EVAL_FAIL_ON', EVAL_FAIL, 'fail'), '--pass-rate', get('EVAL_PASS_RATE') || '100'];
+    if (get('EVAL_MODEL')) opts.push('--model', get('EVAL_MODEL'));
+    if (get('EVAL_EFFORT')) opts.push('--effort', get('EVAL_EFFORT'));
+    // The key goes to the eval run only, as the variable the Anthropic SDK reads.
+    runs.push({ check: 'eval', argv: ['eval', ...common, ...tail(opts)], env: { ANTHROPIC_API_KEY: apiKey } });
+  }
   return runs;
 }
 
@@ -81,7 +93,7 @@ const cell = (s) => s.replace(/\r?\n/g, ' ').replace(/\|/g, '\\|');
 const INPUT_FOR_FLAG = [[/--fail-on skip\b/g, '`smoke-fail-on: skip`'], [/--all\b/g, '`all: true`'], [/--tool\b/g, '`tools`'], [/--skip\b/g, '`skip`'], [/--args\b/g, '`args`']];
 const asInputs = (msg) => INPUT_FOR_FLAG.reduce((s, [re, input]) => s.replace(re, input), msg);
 // Annotation titles that name a part of the run rather than a tool.
-const NOT_A_TOOL = new Set(['untested tools']);
+const NOT_A_TOOL = new Set(['untested tools', 'mixed up']);
 
 // Markdown for the job summary from one run's output and exit code.
 export function summarize(check, stdout, stderr, code) {
@@ -116,9 +128,9 @@ export function summarize(check, stdout, stderr, code) {
   return { result, markdown: out.join('\n') };
 }
 
-function run(argv) {
+function run(argv, env = {}) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [CLI, ...argv], { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [CLI, ...argv], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...env } });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (d) => { stdout += d; process.stdout.write(d); });
@@ -142,18 +154,18 @@ async function main() {
     console.log(`::error title=MCP Master Tester::${err.message}`);
     return 2;
   }
-  const results = { lint: 'skipped', smoke: 'skipped', diff: 'skipped' };
+  const results = { lint: 'skipped', smoke: 'skipped', diff: 'skipped', eval: 'skipped' };
   let worst = 0;
-  for (const { check, argv } of runs) {
+  for (const { check, argv, env } of runs) {
     console.log(`::group::MCP ${check}`);
-    const { code, stdout, stderr } = await run(argv);
+    const { code, stdout, stderr } = await run(argv, env);
     console.log('::endgroup::');
     const { result, markdown } = summarize(check, stdout, stderr, code);
     results[check] = result;
     worst = Math.max(worst, code);
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`);
   }
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `lint=${results.lint}\nsmoke=${results.smoke}\ndiff=${results.diff}\n`);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${Object.entries(results).map(([k, v]) => `${k}=${v}`).join('\n')}\n`);
   return worst;
 }
 

@@ -1,0 +1,7 @@
+{
+  "cases": [
+    { "prompt": "What is the weather? Use get_weather with {\"city\": \"Pune\"}", "expect": "get_weather", "args": { "city": "pune" } },
+    { "prompt": "Is the database answering? ping_db", "expect": "ping_db" },
+    { "name": "small talk", "prompt": "Thanks, that is all.", "expect": null }
+  ]
+}

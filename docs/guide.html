@@ -52,6 +52,7 @@
         </ul>
       </li>
       <li><a href="#diff">Breaking changes</a></li>
+      <li><a href="#evals">Tool-selection evals</a></li>
       <li><a href="#ci">GitHub Actions</a></li>
       <li><a href="#security">Security</a></li>
       <li><a href="#limitations">Limitations</a></li>
@@ -246,6 +247,49 @@ npx mcp-master-tester diff -- node dist/index.js</code></pre>
       <p><code>--fail-on breaking</code> is the default; <code>warn</code>, <code>info</code> and <code>never</code> are the others. <code>--lock &lt;file&gt;</code> reads another lockfile, and <code>snapshot --out &lt;file&gt;</code> writes one. When a change is intended, run <code>snapshot</code> again and commit the new lockfile in the same pull request. The lockfile has no dates or server version, so it only changes when the tools do.</p>
     </section>
 
+    <section id="evals">
+      <h2>Tool-selection evals</h2>
+      <p>Lint checks how your tools are written. <code>eval</code> checks whether a model actually picks the right one, for the requests your users make. It is the test to run after rewriting descriptions, merging two similar tools, or trimming a long tool list.</p>
+      <p>List the requests and the tool each should lead to in <code>mcp-evals.json</code>:</p>
+      <pre><code>[
+  { "prompt": "What's the weather in Paris tomorrow?", "expect": "get_forecast", "args": { "city": "Paris" } },
+  { "prompt": "Find the user with email ana@example.com", "expect": ["find_user", "search_users"] },
+  { "prompt": "Thanks, that's all", "expect": null }
+]</code></pre>
+      <pre><code>export ANTHROPIC_API_KEY=...
+npx -p mcp-master-tester -p @anthropic-ai/sdk mcp-master-tester eval -- node dist/index.js</code></pre>
+      <pre><code>  pass   get_forecast              What's the weather in Paris tomorrow?
+  fail   find_user / search_users  Find the user with email ana@example.com
+                                   → called "get_user", expected "find_user" or "search_users"
+  pass   (no tool)                 Thanks, that's all
+
+✖ failed: 2 of 3 passed (66%), 1 failed, 0 errors; needs 100%. Failing on: fail.
+Mixed up: find_user/search_users → get_user. Clearer descriptions usually fix this.
+Tokens: 14,670 in, 930 out.</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Field</th><th>What it means</th></tr></thead>
+          <tbody>
+            <tr><td><code>prompt</code></td><td>What the user asks</td></tr>
+            <tr><td><code>expect</code></td><td>The tool that should be called, a list of acceptable tools, or <code>null</code> when no tool fits and the model should just answer</td></tr>
+            <tr><td><code>args</code></td><td>Optional: values the call must have. Strings match ignoring case; arguments not listed are ignored.</td></tr>
+            <tr><td><code>name</code></td><td>Optional: a label for the report</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The file can also be an object, <code>{ "model": "...", "cases": [...] }</code>, to choose the model for everyone who runs it.</p>
+      <h3>What is sent</h3>
+      <p>One request per case to the Anthropic API: your server's real tool list (name, description and input schema), the request, and a short neutral system prompt, so the result reflects your tools, not the prompt. The model may answer without a tool, which is what <code>null</code> cases test. Nothing is called on the server, so it is safe on servers whose tools change data. Each case is billed to your key; the report shows the tokens used.</p>
+      <h3>Options</h3>
+      <ul>
+        <li><code>--cases &lt;file&gt;</code>: the cases file (default <code>mcp-evals.json</code>).</li>
+        <li><code>--model &lt;id&gt;</code>: the model to test with (default <code>claude-opus-5-5</code>, or <code>"model"</code> in the file). <code>--effort low|medium|high|xhigh|max</code> sets its effort.</li>
+        <li><code>--pass-rate &lt;percent&gt;</code>: pass when at least this share of cases pass (default 100). Models vary a little between runs, so a large suite may want 90.</li>
+        <li><code>--fail-on fail|never</code> and <code>--format text|json|github</code>, as for the other commands. A bad key or model stops the run with exit code 2.</li>
+      </ul>
+      <p>The Anthropic SDK is an optional dependency, installed only for <code>eval</code>, so everything else keeps two dependencies. Use <code>npx -p</code> as above, or <code>npm install --save-dev @anthropic-ai/sdk</code> in your project. The GitHub Action installs it for you.</p>
+    </section>
+
     <section id="ci">
       <h2>GitHub Actions</h2>
       <p>Build your server, then run the action against it. It runs lint and the smoke test, shows each finding as an annotation on the workflow run, and adds a summary table to the job page.</p>
@@ -274,16 +318,17 @@ jobs:
             <tr><td><code>command</code></td><td>Command that starts a stdio server. Split on spaces and run without a shell.</td></tr>
             <tr><td><code>url</code>, <code>sse</code>, <code>headers</code></td><td>A remote server instead</td></tr>
             <tr><td><code>env</code>, <code>cwd</code></td><td>Environment and working directory for a stdio server</td></tr>
-            <tr><td><code>checks</code></td><td>Any of <code>lint</code>, <code>smoke</code>, <code>diff</code>. Left empty: <code>lint</code> and <code>smoke</code>, plus <code>diff</code> when the lockfile exists</td></tr>
+            <tr><td><code>checks</code></td><td>Any of <code>lint</code>, <code>smoke</code>, <code>diff</code>, <code>eval</code>. Left empty: <code>lint</code> and <code>smoke</code>, plus <code>diff</code> when the lockfile exists, plus <code>eval</code> when the cases file exists and <code>anthropic-api-key</code> is set</td></tr>
             <tr><td><code>lockfile</code>, <code>diff-fail-on</code></td><td>For <code>diff</code>: the lockfile (default <code>mcp-tools.lock.json</code>), and <code>breaking</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
             <tr><td><code>lint-fail-on</code></td><td><code>error</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
             <tr><td><code>smoke-fail-on</code></td><td><code>fail</code> (default), <code>warn</code>, <code>skip</code> or <code>never</code></td></tr>
             <tr><td><code>tools</code>, <code>skip</code>, <code>all</code>, <code>args</code></td><td>Which tools the smoke test calls, and with what arguments, as in <a href="#smoke-args">the smoke test options</a></td></tr>
+            <tr><td><code>anthropic-api-key</code>, <code>eval-cases</code></td><td>For <code>eval</code>: a key from the secrets context, passed to the eval run only, and the cases file (default <code>mcp-evals.json</code>). Also <code>eval-model</code>, <code>eval-effort</code>, <code>eval-pass-rate</code> and <code>eval-fail-on</code>, as in <a href="#evals">evals</a>.</td></tr>
             <tr><td><code>timeout</code></td><td>Milliseconds for connecting, listing tools, or one tool call (default 30000)</td></tr>
           </tbody>
         </table>
       </div>
-      <p>The outputs <code>lint</code>, <code>smoke</code> and <code>diff</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.8.0</code> or a commit SHA to stay on one version.</p>
+      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.9.0</code> or a commit SHA to stay on one version.</p>
       <p>On another CI system, or to control every flag, run the commands directly. With <code>--format github</code>, findings still show as annotations on GitHub. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
       <pre><code>- run: npm ci &amp;&amp; npm run build
 - run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js

@@ -73,6 +73,16 @@ section.band > .wrap > p.intro { color: var(--muted); max-width: 65ch; font-size
 /* Three uses */
 .trio { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 1.6em; }
 @media (max-width: 1000px) { .trio { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Five jobs: three cards, then two centred under them */
+.trio.jobs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.trio.jobs > .card { grid-column: span 2; }
+.trio.jobs > .card:nth-child(4) { grid-column: 2 / span 2; }
+@media (max-width: 1000px) {
+  .trio.jobs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trio.jobs > .card, .trio.jobs > .card:nth-child(4) { grid-column: auto; }
+  .trio.jobs > .card:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 860px) { .trio.jobs { grid-template-columns: minmax(0, 1fr); } }
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
 .card h3 { margin-top: 0; }
 .card p:last-child, .card ul:last-child { margin-bottom: 0; }
