@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^1.13.0",
-    "@modelcontextprotocol/server-everything": "^2026.8.31"
+    "@modelcontextprotocol/server-everything": "^2026.8.31",
+    "gpt-tokenizer": "^4.1.2"
   }
 }

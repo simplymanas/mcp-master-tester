@@ -94,6 +94,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      # For the o200k tokenizer (a dev dependency). This job runs no server, so the usual install is fine.
+      - run: npm ci --ignore-scripts
       - uses: actions/download-artifact@v8
         with:
           name: plan
