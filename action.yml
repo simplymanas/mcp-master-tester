@@ -41,6 +41,14 @@ inputs:
     description: Fail on lint findings at this level or worse. error, warn, info or never.
     required: false
     default: error
+  max-tokens:
+    description: Token budget for the whole tool list. lint fails when the list grows past it. Estimated as characters / 4.
+    required: false
+    default: ''
+  max-tool-tokens:
+    description: Token budget for any one tool definition. lint fails when a tool grows past it.
+    required: false
+    default: ''
   smoke-fail-on:
     description: >-
       Fail the smoke test on fail, warn, skip (a tool went untested and you didn't leave it out
@@ -139,6 +147,8 @@ runs:
         MMT_CWD: ${{ inputs.cwd }}
         MMT_CHECKS: ${{ inputs.checks }}
         MMT_LINT_FAIL_ON: ${{ inputs.lint-fail-on }}
+        MMT_MAX_TOKENS: ${{ inputs.max-tokens }}
+        MMT_MAX_TOOL_TOKENS: ${{ inputs.max-tool-tokens }}
         MMT_SMOKE_FAIL_ON: ${{ inputs.smoke-fail-on }}
         MMT_LOCKFILE: ${{ inputs.lockfile }}
         MMT_DIFF_FAIL_ON: ${{ inputs.diff-fail-on }}

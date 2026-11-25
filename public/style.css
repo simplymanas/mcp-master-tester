@@ -127,6 +127,9 @@ code, pre { font-family: var(--mono); }
 .d-title { font: 700 16px var(--mono); margin: 0 0 4px; word-break: break-all; }
 .d-desc { color: var(--muted); white-space: pre-wrap; margin: 6px 0 12px; }
 .badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+/* Lint report: the tool list's size, largest tools and parameters, one line each. */
+.size-lines { list-style: none; padding: 0; margin: 8px 0 10px; font: 12px var(--mono, monospace); color: var(--text); }
+.size-lines li { margin: 2px 0; overflow-wrap: anywhere; }
 .badge { font: 10px var(--mono); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; color: var(--muted); }
 .badge.ok { color: var(--ok); border-color: var(--ok); } .badge.err { color: var(--err); border-color: var(--err); }
 .badge.warn { color: var(--warn); border-color: var(--warn); } .badge.info { color: var(--info); border-color: var(--info); }

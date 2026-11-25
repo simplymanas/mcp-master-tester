@@ -72,6 +72,32 @@ test('lint: --format json is machine-readable', async () => {
   assert.deepEqual(j.findings[0], { sev: 'error', target: 'read_note', msg: 'duplicate tool name' });
 });
 
+test('lint: the summary says how big the tool list is, its largest tools and parameters without a description', async () => {
+  const r = await run('lint', '--', 'node', smokeFixture);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^Tool list: ~[\d,]+ tokens \(descriptions ~\d+, input schemas ~\d+, output schemas ~\d+, other ~\d+\)$/m);
+  assert.match(r.stdout, /^Largest: get_weather ~\d+, /m);
+  assert.match(r.stdout, /^Parameters: 3 of 4 have no description$/m);
+  const j = JSON.parse((await run('lint', '--format', 'json', '--', 'node', smokeFixture)).stdout);
+  assert.equal(j.size.tools[0].name, 'get_weather');
+  assert.deepEqual([j.size.params, j.size.paramsNoDescription], [4, 3]);
+  assert.equal(j.budget, undefined);
+});
+
+test('lint: --max-tokens and --max-tool-tokens fail the run when the list or a tool is over budget', async () => {
+  const over = await run('lint', '--max-tokens', '100', '--max-tool-tokens', '60', '--', 'node', smokeFixture);
+  assert.equal(over.code, 1);
+  assert.match(over.stdout, /error +get_weather +all 4 tool definitions add up to ~\d+ tokens, over the budget of 100; largest: get_weather/);
+  assert.match(over.stdout, /error +get_weather +definition is ~\d+ tokens, over the per-tool budget of 60/);
+  assert.match(over.stdout, /^Tool list: ~\d+ tokens, budget 100 \(/m);
+  assert.equal((await run('lint', '--max-tokens', '100000', '--', 'node', smokeFixture)).code, 0);
+  const j = JSON.parse((await run('lint', '--format', 'json', '--max-tokens', '100', '--', 'node', smokeFixture)).stdout);
+  assert.deepEqual(j.budget, { maxTokens: 100 });
+  const bad = await run('lint', '--max-tokens', '10k', '--', 'node', smokeFixture);
+  assert.equal(bad.code, 2);
+  assert.match(bad.stderr, /--max-tokens must be a whole number of tokens above 0 \(got "10k"\)/);
+});
+
 test('lint: --format github prints workflow annotations', async () => {
   const r = await run('lint', '--format', 'github', '--', 'node', fixture);
   const lines = r.stdout.trim().split('\n');
@@ -79,6 +105,7 @@ test('lint: --format github prints workflow annotations', async () => {
   assert.ok(lines.some((l) => l.startsWith('::warning title=MCP lint%3A send_mail::missing description')));
   assert.ok(lines.some((l) => l.startsWith('::notice ')));
   assert.equal(lines.at(-1), 'MCP lint: 2 errors, 2 warnings, 3 info. Failing on: error.');
+  assert.match(lines.at(-2), /^MCP lint: Tool list: ~\d+ tokens \(descriptions/);
 });
 
 test('lint: Streamable HTTP via --url', async () => {

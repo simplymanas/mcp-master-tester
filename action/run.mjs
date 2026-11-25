@@ -67,7 +67,16 @@ export function planRuns(env, { exists = existsSync } = {}) {
   const tail = (opts) => [...opts, ...server];
 
   const runs = [];
-  if (wanted.includes('lint')) runs.push({ check: 'lint', argv: ['lint', ...common, '--fail-on', oneOf('LINT_FAIL_ON', LINT_FAIL, 'error'), ...tail([])] });
+  if (wanted.includes('lint')) {
+    const budget = [];
+    for (const [name, flag] of [['MAX_TOKENS', '--max-tokens'], ['MAX_TOOL_TOKENS', '--max-tool-tokens']]) {
+      const v = get(name);
+      if (!v) continue;
+      if (!/^[1-9]\d*$/.test(v)) throw new InputError(`${name.toLowerCase().replace(/_/g, '-')} must be a whole number of tokens above 0 (got "${v}")`);
+      budget.push(flag, v);
+    }
+    runs.push({ check: 'lint', argv: ['lint', ...common, '--fail-on', oneOf('LINT_FAIL_ON', LINT_FAIL, 'error'), ...budget, ...tail([])] });
+  }
   if (wanted.includes('smoke')) {
     const opts = ['--fail-on', oneOf('SMOKE_FAIL_ON', SMOKE_FAIL, 'fail')];
     for (const t of items('TOOLS')) opts.push('--tool', t);
@@ -101,10 +110,10 @@ export function summarize(check, stdout, stderr, code) {
   const label = { passed: 'passed', failed: 'failed', error: 'could not run' }[result];
   const rows = [];
   let notices = 0;
-  let total = '';
+  const totals = [];  // the "MCP lint: ..." lines: the size, then the counts
   for (const line of stdout.split('\n')) {
     const m = /^::(error|warning|notice) title=([^:]*)::(.*)$/.exec(line);
-    if (!m) { if (line.startsWith(`MCP ${check}:`)) total = line.slice(`MCP ${check}:`.length).trim(); continue; }
+    if (!m) { if (line.startsWith(`MCP ${check}:`)) totals.push(line.slice(`MCP ${check}:`.length).trim()); continue; }
     if (m[1] === 'notice') { notices++; continue; }
     const title = unescape(m[2]);
     const target = title.includes(': ') ? title.slice(title.indexOf(': ') + 2) : '';
@@ -113,7 +122,7 @@ export function summarize(check, stdout, stderr, code) {
     rows.push(`| ${level} | ${tool} | ${asInputs(cell(unescape(m[3])))} |`);
   }
   const out = [`### MCP ${check}: ${label}`, ''];
-  if (total) out.push(total, '');
+  for (const t of [...totals].reverse()) out.push(t, '');  // the counts first
   if (result === 'error') {
     const reason = stderr.trim().split('\n').filter(Boolean).slice(-5).join('\n');
     out.push('The check stopped before it could finish:', '', '```text', reason || `exit code ${code}`, '```', '');

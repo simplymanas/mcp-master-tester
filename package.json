@@ -1,6 +1,6 @@
 {
   "name": "mcp-master-tester",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Debug any MCP server in a local web UI, then guard it in CI with lint and a smoke test. stdio, Streamable HTTP and SSE; schema-driven tool forms, elicitation, auth prompts and a live JSON-RPC log; a GitHub Action.",
   "type": "module",
   "bin": {

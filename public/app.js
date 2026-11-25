@@ -1,7 +1,7 @@
 // MCP Master Tester — UI
 // Author: @simplymanas
 
-import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, readOnlyDoubt, outputSchemaProblems, lintMarkdown, BIG_RESULT_CHARS, approxTokens } from './lint.js';
+import { lintTools, resultChars, unhelpfulError, wrapsTextOnly, readOnlyDoubt, outputSchemaProblems, lintMarkdown, toolListSize, sizeLines, BIG_RESULT_CHARS, approxTokens } from './lint.js';
 import { esc, SECRET_RE, formFields } from './forms.js';
 import { planSmoke, runSmoke, countSmoke } from './smoke.js';
 import { profilesFromConfig } from './config-import.js';
@@ -714,6 +714,7 @@ function lintSummaryHtml() {
   return `<h1 class="d-title">Lint report</h1>
     <div class="badges"><span class="badge err">${n('error')} errors</span><span class="badge warn">${n('warn')} warnings</span><span class="badge info">${n('info')} info</span>
       <button class="btn tiny" data-act="copylint" title="A Markdown table, for pasting into an issue or a pull request">Copy as Markdown</button></div>
+    ${state.tools.length ? `<ul class="size-lines">${Object.values(sizeLines(toolListSize(state.tools))).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}
     <p class="hint">Static checks of tool definitions against the MCP spec and model-usability practice. Click a finding in the list to open the tool.</p>
     ${state.lint.length ? `<table class="grid"><tr><th>Severity</th><th>Tool</th><th>Finding</th></tr>
       ${state.lint.map((l) => `<tr><td><span class="badge ${cls[l.sev]}">${l.sev}</span></td><td><code>${esc(l.target)}</code></td><td>${esc(l.msg)}</td></tr>`).join('')}</table>`
@@ -1012,7 +1013,7 @@ $('#detail').addEventListener('click', async (e) => {
   if (act === 'copy') navigator.clipboard.writeText(JSON.stringify(state.results[key], null, 2));
   if (act === 'copylint') {
     const b = e.target;
-    navigator.clipboard.writeText(lintMarkdown(state.lint, { serverInfo: state.session?.serverInfo, tools: state.tools.length }))
+    navigator.clipboard.writeText(lintMarkdown(state.lint, { serverInfo: state.session?.serverInfo, tools: state.tools.length, size: state.tools.length ? toolListSize(state.tools) : undefined }))
       .then(() => { b.textContent = 'Copied'; }, () => { b.textContent = 'Copy failed'; })
       .finally(() => setTimeout(() => { b.textContent = 'Copy as Markdown'; }, 1500));
   }
