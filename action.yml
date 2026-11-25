@@ -1,5 +1,5 @@
 name: MCP Master Tester
-description: Lint an MCP server's tools, smoke-test the read-only ones, catch breaking changes, and check that a model picks the right tool.
+description: Lint an MCP server's tools, smoke-test the read-only ones, catch breaking changes, and check which tool a model picks.
 author: simplymanas
 branding:
   icon: check-circle

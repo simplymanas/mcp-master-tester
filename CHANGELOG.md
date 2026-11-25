@@ -2,6 +2,12 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.9.1] - 2026-11-25
+
+### Fixed
+
+- The action's description in `action.yml` is under 125 characters again, so the release can be listed on the GitHub Marketplace. A test now checks the Marketplace limits. No change to the CLI or the npm package's behaviour.
+
 ## [1.9.0] - 2026-11-25
 
 ### Added
@@ -219,6 +225,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.9.1]: https://github.com/simplymanas/mcp-master-tester/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.6.0...v1.7.0
