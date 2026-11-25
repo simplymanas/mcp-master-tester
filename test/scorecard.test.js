@@ -189,6 +189,9 @@ test('the workflow keeps the job that runs servers away from write access and ca
   assert.match(scan, /docker run/, 'servers run inside the container');
   assert.doesNotMatch(job('publish'), /scan\.mjs|docker/, 'the job that can write never runs a server');
   assert.match(readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'), /^\s+workflow_dispatch:/m, 'CI can be started on the scorecard pull request');
+  const reminder = readFileSync(path.join(root, '.github/workflows/scorecard-reminder.yml'), 'utf8');
+  assert.match(reminder, /cron: '0 9 28 \* \*'/, 'the reminder comes before the 1st');
+  assert.deepEqual([...reminder.matchAll(/^\s+(\w[\w-]*): (?:write|read)$/gm)].map((m) => m[1]), ['issues'], 'it can only open issues');
 });
 
 const node = (args, opts = {}) => new Promise((resolve) => {
