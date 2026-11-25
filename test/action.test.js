@@ -51,6 +51,21 @@ test('planRuns: env, cwd and the smoke options', () => {
   ]);
 });
 
+test('planRuns: eval runs only with a key, and gets the key as ANTHROPIC_API_KEY', () => {
+  const casesOnDisk = { exists: (f) => f === 'mcp-evals.json' };
+  const key = { MMT_COMMAND: 'node s.js', MMT_ANTHROPIC_API_KEY: 'sk-test' };
+  assert.deepEqual(planRuns({ MMT_COMMAND: 'node s.js' }, casesOnDisk).map((r) => r.check), ['lint', 'smoke'], 'a cases file alone is not enough: eval costs money');
+  assert.deepEqual(planRuns(key, { exists: () => false }).map((r) => r.check), ['lint', 'smoke'], 'a key alone is not enough either');
+  const runs = planRuns(key, casesOnDisk);
+  assert.deepEqual(runs.map((r) => r.check), ['lint', 'smoke', 'eval']);
+  assert.deepEqual(runs[2].argv, ['eval', '--format', 'github', '--timeout', '30000', '--cases', 'mcp-evals.json', '--fail-on', 'fail', '--pass-rate', '100', '--', 'node', 's.js']);
+  assert.deepEqual(runs[2].env, { ANTHROPIC_API_KEY: 'sk-test' });
+  assert.equal(runs[0].env, undefined, 'the other checks never see the key');
+  const [custom] = planRuns({ ...key, MMT_CHECKS: 'eval', MMT_EVAL_CASES: 'evals/tools.json', MMT_EVAL_MODEL: 'claude-sonnet-5-5', MMT_EVAL_EFFORT: 'low', MMT_EVAL_PASS_RATE: '90', MMT_EVAL_FAIL_ON: 'never' });
+  assert.deepEqual(custom.argv.slice(5, -3), ['--cases', 'evals/tools.json', '--fail-on', 'never', '--pass-rate', '90', '--model', 'claude-sonnet-5-5', '--effort', 'low']);
+  assert.throws(() => planRuns({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'eval' }), /eval needs anthropic-api-key/);
+});
+
 test('planRuns: a remote server gets --url, --sse and one --header per line, commas and all', () => {
   const [lint] = planRuns({ MMT_URL: 'https://example.com/sse', MMT_SSE: 'true', MMT_HEADERS: 'Authorization: Bearer x\nAccept: a, b', MMT_CHECKS: 'lint' });
   assert.deepEqual(lint.argv, ['lint', '--format', 'github', '--timeout', '30000', '--fail-on', 'error', '--url', 'https://example.com/sse', '--sse', '--header', 'Authorization: Bearer x', '--header', 'Accept: a, b']);
@@ -60,7 +75,7 @@ test('planRuns: wrong inputs are explained in the action\'s own terms', () => {
   const fails = (env, re) => assert.throws(() => planRuns(env), (err) => err instanceof InputError && re.test(err.message));
   fails({}, /set command .* or url/);
   fails({ MMT_COMMAND: 'node s.js', MMT_URL: 'https://x' }, /either command or url/);
-  fails({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'lint, test' }, /only list lint, smoke and diff \(got "test"\)/);
+  fails({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'lint, test' }, /only list lint, smoke, diff and eval \(got "test"\)/);
   fails({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'diff', MMT_DIFF_FAIL_ON: 'error' }, /diff-fail-on must be breaking, warn, info, never/);
   fails({ MMT_COMMAND: 'node s.js', MMT_LINT_FAIL_ON: 'warning' }, /lint-fail-on must be error, warn, info, never/);
   fails({ MMT_COMMAND: 'node s.js', MMT_SMOKE_FAIL_ON: 'error' }, /smoke-fail-on must be fail, warn, skip, never/);
@@ -121,7 +136,7 @@ test('the action passes on a healthy server: annotations in the log, a summary, 
   assert.match(r.stdout, /::warning title=MCP smoke%3A find_user::/);
   assert.match(r.summary, /### MCP lint: passed/);
   assert.match(r.summary, /### MCP smoke: passed\n\n0 failed, 1 warning, 2 passed, 1 skipped/);
-  assert.equal(r.output, 'lint=passed\nsmoke=passed\ndiff=skipped\n');
+  assert.equal(r.output, 'lint=passed\nsmoke=passed\ndiff=skipped\neval=skipped\n');
 });
 
 test('the action fails when lint fails, and still runs the smoke test', async () => {
@@ -129,15 +144,15 @@ test('the action fails when lint fails, and still runs the smoke test', async ()
   assert.equal(r.code, 1);
   assert.match(r.summary, /### MCP lint: failed[\s\S]*\| error \| `read_note` \| duplicate tool name \|/);
   assert.match(r.summary, /### MCP smoke:/);
-  assert.match(r.output, /^lint=failed\nsmoke=\w+\ndiff=skipped\n$/);
+  assert.match(r.output, /^lint=failed\nsmoke=\w+\ndiff=skipped\neval=skipped\n$/);
 });
 
 test('the action stops with exit 2 on bad inputs or a server that will not start', async () => {
   const bad = await runAction({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'test' });
   assert.equal(bad.code, 2);
-  assert.match(bad.stdout, /^::error title=MCP Master Tester::checks can only list lint, smoke and diff/m);
+  assert.match(bad.stdout, /^::error title=MCP Master Tester::checks can only list lint, smoke, diff and eval/m);
   const missing = await runAction({ MMT_COMMAND: 'node test/fixtures/does-not-exist.js', MMT_CHECKS: 'lint' });
   assert.equal(missing.code, 2);
   assert.match(missing.summary, /### MCP lint: could not run/);
-  assert.equal(missing.output, 'lint=error\nsmoke=skipped\ndiff=skipped\n');
+  assert.equal(missing.output, 'lint=error\nsmoke=skipped\ndiff=skipped\neval=skipped\n');
 });

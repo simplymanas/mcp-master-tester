@@ -19,7 +19,7 @@ Point it at a server, either a local command over stdio or a remote URL over Str
 
 **[Website and docs](https://simplymanas.github.io/mcp-master-tester/)** · **[Tutorial](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35)** · **[Video](https://www.youtube.com/watch?v=XXQ25jPZsh0)** · **[Survey: how much context 28 MCP servers use](https://simplymanas.github.io/mcp-master-tester/survey.html)**
 
-**New in 1.8:** [catch breaking changes](#breaking-changes) to your tools in CI with a lockfile. 1.7 added importing servers from a Claude Desktop, Cursor or VS Code config, and 1.6 the [GitHub Action](#github-action). Earlier changes are in the [CHANGELOG](CHANGELOG.md).
+**New in 1.9:** [tool-selection evals](#tool-selection-evals): check that a model picks the right tool for the requests your users make. 1.8 added [catching breaking changes](#breaking-changes) with a lockfile, and 1.6 the [GitHub Action](#github-action). Earlier changes are in the [CHANGELOG](CHANGELOG.md).
 
 Open source and looking for collaborators: see [Contributing](#contributing), first-timers welcome. If it's useful to you, a [star on GitHub](https://github.com/simplymanas/mcp-master-tester) helps other people find it.
 
@@ -102,7 +102,7 @@ Staying small is a goal of this project, and the test suite enforces it.
 
 Measured on 2026-11-12 with `npm install <package>` in an empty folder on macOS. The two tools differ in scope, so this compares install weight only.
 
-- **Two dependencies:** the official MCP SDK and Express. Nearly all of the 27 MB is the SDK's own dependency tree; this project's code is a 64 kB download.
+- **Two dependencies:** the official MCP SDK and Express. (`eval` also needs the Anthropic SDK, installed only when you use it.) Nearly all of the 27 MB is the SDK's own dependency tree; this project's code is a 70 kB download.
 - **No build step, no frontend framework, no install scripts.**
 - **Nothing loads from the internet:** no CDN, fonts or analytics. The page's Content-Security-Policy blocks it.
 - **A weight budget in the tests** (`test/package.test.js`): a pull request that adds a dependency or pushes the package past its size limit fails CI.
@@ -181,15 +181,16 @@ A remote server, with only lint, failing on warnings:
 | `command` | Command that starts a stdio server, e.g. `node dist/index.js`. Split on spaces and run without a shell; use a script if an argument has a space in it. |
 | `url`, `sse`, `headers` | A remote server instead: its URL, `sse: true` for the legacy transport, and one `Name: value` header per line |
 | `env`, `cwd` | One `KEY=VALUE` per line for a stdio server, and its working directory. The server doesn't see the step's `env:`, apart from `PATH`, `HOME` and a few others, so put what it needs here. |
-| `checks` | Any of `lint`, `smoke`, `diff`. Left empty: `lint` and `smoke`, plus `diff` when the lockfile exists |
+| `checks` | Any of `lint`, `smoke`, `diff`, `eval`. Left empty: `lint` and `smoke`, plus `diff` when the lockfile exists, plus `eval` when the cases file exists and `anthropic-api-key` is set |
 | `lockfile`, `diff-fail-on` | For `diff`: the lockfile (default `mcp-tools.lock.json`), and `breaking` (default), `warn`, `info` or `never` |
 | `lint-fail-on` | `error` (default), `warn`, `info` or `never` |
 | `smoke-fail-on` | `fail` (default), `warn`, `skip` or `never` |
 | `tools` | Smoke-test only these tools, comma- or newline-separated, read-only or not. The safest way to choose what runs. |
 | `skip`, `all`, `args` | Leave tools out; also run tools that aren't clearly read-only; a JSON file of arguments. As in the [smoke test](#smoke-test-in-ci). |
+| `anthropic-api-key`, `eval-cases` | For `eval`: a key from your secrets, and the cases file (default `mcp-evals.json`). Also `eval-model`, `eval-effort`, `eval-pass-rate` and `eval-fail-on`, as in [evals](#tool-selection-evals). |
 | `timeout` | Milliseconds for connecting, listing tools, or one tool call (default 30000) |
 
-The outputs `lint`, `smoke` and `diff` are `passed`, `failed`, `error` (it couldn't run) or `skipped`. Every check runs even when an earlier one fails, and the step fails if any does.
+The outputs `lint`, `smoke`, `diff` and `eval` are `passed`, `failed`, `error` (it couldn't run) or `skipped`. Every check runs even when an earlier one fails, and the step fails if any does.
 
 By default the smoke test only calls tools marked read-only, with made-up arguments. If the server in CI holds anything you care about, list the tools to run in `tools`.
 
@@ -317,6 +318,40 @@ npx mcp-master-tester diff -- node dist/index.js       # in CI: exit 1 on a brea
 `--fail-on breaking` is the default; `warn`, `info` and `never` are the others. `--lock <file>` reads another lockfile, and `snapshot --out <file>` writes one. When a change is intended, run `snapshot` again and commit the new lockfile in the same pull request. The [GitHub Action](#github-action) runs `diff` by itself once `mcp-tools.lock.json` is in the repo.
 
 The lockfile has no dates or server version, so it only changes when the tools do.
+
+## Tool-selection evals
+
+Lint checks how your tools are written; `eval` checks whether a model actually picks the right one. List requests a user might make and the tool each should lead to, in `mcp-evals.json`:
+
+```json
+[
+  { "prompt": "What's the weather in Paris tomorrow?", "expect": "get_forecast", "args": { "city": "Paris" } },
+  { "prompt": "Find the user with email ana@example.com", "expect": ["find_user", "search_users"] },
+  { "prompt": "Thanks, that's all", "expect": null }
+]
+```
+
+```bash
+export ANTHROPIC_API_KEY=...
+npx -p mcp-master-tester -p @anthropic-ai/sdk mcp-master-tester eval -- node dist/index.js
+```
+
+```text
+  pass   get_forecast              What's the weather in Paris tomorrow?
+  fail   find_user / search_users  Find the user with email ana@example.com
+                                   → called "get_user", expected "find_user" or "search_users"
+  pass   (no tool)                 Thanks, that's all
+
+✖ failed: 2 of 3 passed (66%), 1 failed, 0 errors; needs 100%. Failing on: fail.
+Mixed up: find_user/search_users → get_user. Clearer descriptions usually fix this.
+Tokens: 14,670 in, 930 out.
+```
+
+Each case is one request to the Anthropic API, with your server's real tool list and a short neutral system prompt. Nothing is called on the server. `expect` is a tool, a list of acceptable tools, or `null` when no tool fits; `args` lists values the call must have (strings ignore case; other arguments are ignored).
+
+- `--model` picks the model (default `claude-opus-5-5`, or `"model"` in the cases file); `--effort` sets its effort.
+- Models vary a little between runs, so `--pass-rate 90` passes when 90% of cases do. `--fail-on never` only reports.
+- The Anthropic SDK is installed only for `eval`, so everything else keeps two dependencies: use `npx -p` as above, or `npm install --save-dev @anthropic-ai/sdk`. The [GitHub Action](#github-action) installs it for you.
 
 ## Connecting to servers
 

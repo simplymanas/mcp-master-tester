@@ -2,6 +2,18 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.9.0] - 2026-11-25
+
+### Added
+
+- **Tool-selection evals.** `mcp-master-tester eval` checks that a model picks the right tool. A cases file (`mcp-evals.json` by default) lists requests a user might make and the tool each should lead to: a name, a list of acceptable names, or `null` when no tool fits, plus optional argument values the call must have. Each case is sent to the Anthropic API once, with the server's real tool list and a short neutral system prompt; nothing is called on the server. The report says which cases passed, what the model called instead, which tools it mixed up, and the tokens used. Options: `--model` (default `claude-opus-5-5`, or `"model"` in the cases file), `--effort`, `--pass-rate` (pass when at least this share of cases do, since models vary a little between runs), `--fail-on fail|never`, and `--format text|json|github`. A bad key or model stops the run with one message and exit code 2. Tool names the API doesn't accept (dots, slashes) are renamed for the request and reported under their real names.
+- **The GitHub Action runs `eval`** as a fourth check, when it is listed in `checks`, or when `checks` is empty, the cases file exists and `anthropic-api-key` is set. New inputs `anthropic-api-key`, `eval-cases`, `eval-model`, `eval-effort`, `eval-pass-rate` and `eval-fail-on`, and an `eval` output. The key is passed to the eval run only. CI runs it against a fake Anthropic API.
+
+### Changed
+
+- The Anthropic SDK (`@anthropic-ai/sdk`) is an optional peer dependency, loaded only by `eval`. npm doesn't install it, so the web UI, lint, smoke and diff keep two runtime dependencies. Run eval with `npx -p mcp-master-tester -p @anthropic-ai/sdk mcp-master-tester eval`, or add the SDK to your project; without it, eval says how. The action installs it only when eval may run.
+- The package size budget is 76 kB and the installed-size budget 240 kB, for `public/evals.js` and the eval command.
+
 ## [1.8.0] - 2026-11-23
 
 ### Added
@@ -207,6 +219,7 @@ These fixes are from [#6](https://github.com/simplymanas/mcp-master-tester/pull/
 
 First release: a local web UI to connect to, inspect and test any MCP server over stdio, Streamable HTTP or SSE, with schema-driven tool forms, auth and key prompts, elicitation, lint, and a live JSON-RPC log.
 
+[1.9.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/simplymanas/mcp-master-tester/compare/v1.5.0...v1.6.0

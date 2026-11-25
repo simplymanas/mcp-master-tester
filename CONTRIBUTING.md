@@ -33,6 +33,8 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | `public/lint.js` | Lint rules as pure functions, with no DOM access |
 | `public/smoke.js` | Smoke test logic as pure functions: what runs, what is sent, how answers are judged |
 | `public/config-import.js` | Turns a Claude Desktop, Cursor or VS Code config into profiles, as pure functions |
+| `public/diff.js` | The tool lockfile and how each change between two snapshots is graded, as pure functions |
+| `public/evals.js` | Tool-selection evals: the cases file, the tool list sent to the model, and grading, as pure functions. The API call is in `cli.js`, which loads the Anthropic SDK only inside `eval` |
 | `public/style.css` | Theme and layout |
 | `test/api.test.js` | Integration tests (Node's built-in test runner) |
 | `test/lint.test.js` | Unit tests for the lint rules |
@@ -41,6 +43,9 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | `test/package.test.js` | Weight budget: dependency list, package size and published files |
 | `test/cli.test.js` | Tests for `lint` and `smoke` from the command line |
 | `test/config-import.test.js` | Unit tests for config import, including that secret values are never kept |
+| `test/diff.test.js` | Unit tests for the lockfile and the breaking-change rules |
+| `test/evals.test.js` | Unit tests for eval cases and grading |
+| `test/eval-cli.test.js` | Tests for `eval` from the command line, against a fake Anthropic API (`test/fixtures/fake-anthropic.js`), so no key is needed |
 | `test/action.test.js` | Tests for the GitHub Action's inputs, summary and outputs |
 | `action.yml`, `action/run.mjs` | The GitHub Action (not in the npm package) |
 | `test/fixtures/` | Small MCP servers the tests run against (not test files themselves) |

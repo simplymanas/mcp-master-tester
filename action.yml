@@ -1,5 +1,5 @@
 name: MCP Master Tester
-description: Lint an MCP server's tools, smoke-test the read-only ones, and catch breaking changes, with annotations and a summary.
+description: Lint an MCP server's tools, smoke-test the read-only ones, catch breaking changes, and check that a model picks the right tool.
 author: simplymanas
 branding:
   icon: check-circle
@@ -32,8 +32,9 @@ inputs:
     required: false
   checks:
     description: >-
-      Which checks to run, comma-separated: lint, smoke, diff. Left empty, it runs lint and smoke,
-      plus diff when the lockfile exists.
+      Which checks to run, comma-separated: lint, smoke, diff, eval. Left empty, it runs lint and
+      smoke, plus diff when the lockfile exists, plus eval when the cases file exists and
+      anthropic-api-key is set.
     required: false
     default: ''
   lint-fail-on:
@@ -69,6 +70,31 @@ inputs:
   args:
     description: 'JSON file of smoke-test arguments: { "tool_name": { "param": "value" } }.'
     required: false
+  eval-cases:
+    description: >-
+      Tool-selection test cases for eval: requests a user might make and the tool each should lead
+      to, as JSON. See "mcp-master-tester eval --help".
+    required: false
+    default: mcp-evals.json
+  anthropic-api-key:
+    description: >-
+      Anthropic API key for eval, from the secrets context. eval sends each case to the model with
+      your tool list; it calls nothing on the server. Each case is one API request, billed to this key.
+    required: false
+  eval-model:
+    description: Model for eval. Defaults to "model" in the cases file, else claude-opus-5-5.
+    required: false
+  eval-effort:
+    description: Effort for the eval model (low, medium, high, xhigh or max). Defaults to the model's own.
+    required: false
+  eval-pass-rate:
+    description: Pass eval when at least this percentage of cases pass. Models vary a little from run to run.
+    required: false
+    default: '100'
+  eval-fail-on:
+    description: Fail eval below eval-pass-rate (fail), or never.
+    required: false
+    default: fail
   timeout:
     description: Milliseconds to wait for connecting, listing tools, or one tool call.
     required: false
@@ -84,6 +110,9 @@ outputs:
   diff:
     description: passed, failed, error (couldn't run) or skipped
     value: ${{ steps.run.outputs.diff }}
+  eval:
+    description: passed, failed, error (couldn't run) or skipped
+    value: ${{ steps.run.outputs.eval }}
 
 runs:
   using: composite
@@ -91,6 +120,12 @@ runs:
     - name: Install MCP Master Tester
       shell: bash
       run: cd "$GITHUB_ACTION_PATH" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error
+    # eval needs the Anthropic SDK, an optional peer that the install above leaves out. The full
+    # install adds it (pinned by the lockfile) along with the test packages; only when eval may run.
+    - name: Install the Anthropic SDK for eval
+      if: contains(inputs.checks, 'eval') || (inputs.checks == '' && inputs.anthropic-api-key != '')
+      shell: bash
+      run: cd "$GITHUB_ACTION_PATH" && npm ci --ignore-scripts --no-audit --no-fund --loglevel=error
     - name: Run checks
       id: run
       shell: bash
@@ -111,5 +146,11 @@ runs:
         MMT_SKIP: ${{ inputs.skip }}
         MMT_ALL: ${{ inputs.all }}
         MMT_ARGS: ${{ inputs.args }}
+        MMT_EVAL_CASES: ${{ inputs.eval-cases }}
+        MMT_ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        MMT_EVAL_MODEL: ${{ inputs.eval-model }}
+        MMT_EVAL_EFFORT: ${{ inputs.eval-effort }}
+        MMT_EVAL_PASS_RATE: ${{ inputs.eval-pass-rate }}
+        MMT_EVAL_FAIL_ON: ${{ inputs.eval-fail-on }}
         MMT_TIMEOUT: ${{ inputs.timeout }}
       run: node "$GITHUB_ACTION_PATH/action/run.mjs"

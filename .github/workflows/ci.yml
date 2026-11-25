@@ -43,8 +43,21 @@ jobs:
           command: node test/fixtures/smoke-server.js unstructured
           checks: diff
           lockfile: test/fixtures/smoke-server.lock.json
+      # eval against a stand-in for the Anthropic API: tests the on-demand SDK install without a real key.
+      - name: Start a fake Anthropic API
+        run: node test/fixtures/fake-anthropic.js 4991 > fake-anthropic.log 2>&1 &
+      - uses: ./
+        id: eval
+        env:
+          ANTHROPIC_BASE_URL: http://127.0.0.1:4991
+        with:
+          command: node test/fixtures/smoke-server.js
+          checks: eval
+          eval-cases: test/fixtures/smoke-server.evals.json
+          anthropic-api-key: test-key
       - name: Check the results
         env:
+          EVAL: ${{ steps.eval.outputs.eval }}
           HEALTHY_LINT: ${{ steps.healthy.outputs.lint }}
           HEALTHY_SMOKE: ${{ steps.healthy.outputs.smoke }}
           HEALTHY_DIFF: ${{ steps.healthy.outputs.diff }}
@@ -55,3 +68,4 @@ jobs:
           test "$HEALTHY_LINT" = passed && test "$HEALTHY_SMOKE" = passed && test "$HEALTHY_DIFF" = passed
           test "$CHANGED_DIFF" = failed
           test "$BROKEN_LINT" = failed && test "$BROKEN_OUTCOME" = failure
+          test "$EVAL" = passed
