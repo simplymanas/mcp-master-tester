@@ -164,8 +164,16 @@ export function checkScanResult(raw, id) {
 const size = (x) => JSON.stringify(x ?? null).length;
 const tokens = (chars) => Math.round(chars / 4);
 
-// The numbers the scorecard shows for one server: the same measures as the first survey.
-export function serverMetrics(tools) {
+// The token count the page shows: a real o200k count when there is one, else the characters / 4
+// estimate that lint and the first survey use.
+export const shownTokens = (m) => m.o200k ?? m.tokens;
+export const shownTokensWithoutOutputSchemas = (m) => m.o200kWithoutOutputSchemas ?? m.tokensWithoutOutputSchemas;
+
+// The numbers the scorecard shows for one server: the same measures as the first survey, plus a real
+// token count when a counter is given (build.mjs passes OpenAI's o200k tokenizer).
+export function serverMetrics(tools, { count } = {}) {
+  const withoutOut = tools.map((t) => (t.outputSchema === undefined ? t : { ...t, outputSchema: undefined }));
+  const real = (list) => (count ? count(list.map((t) => JSON.stringify(t)).join('')) : undefined);
   const findings = (() => { try { return lintTools(tools); } catch { return []; } })();
   const params = tools.flatMap((t) => Object.values(t.inputSchema?.properties ?? {}));
   const big = tools.reduce((a, t) => (!a || size(t) > size(a) ? t : a), null);
@@ -174,7 +182,9 @@ export function serverMetrics(tools) {
     tools: tools.length,
     tokens: tokens(tools.reduce((n, t) => n + size(t), 0)),
     // Some clients don't pass outputSchema on to the model; for them, this is the cost.
-    tokensWithoutOutputSchemas: tokens(tools.reduce((n, t) => n + size(t.outputSchema === undefined ? t : { ...t, outputSchema: undefined }), 0)),
+    tokensWithoutOutputSchemas: tokens(withoutOut.reduce((n, t) => n + size(t), 0)),
+    o200k: real(tools),
+    o200kWithoutOutputSchemas: real(withoutOut),
     largest: big ? { name: big.name, tokens: tokens(size(big)) } : null,
     labelled: tools.filter((t) => t.annotations && Object.keys(t.annotations).length).length,
     readOnly: tools.filter((t) => ann(t).readOnlyHint === true).length,
@@ -195,7 +205,8 @@ export function changeSince(prev, cur) {
   if (!prev?.metrics || !cur?.metrics) return null;
   const before = new Set(prev.metrics.toolNames ?? []), after = new Set(cur.metrics.toolNames ?? []);
   return {
-    tokens: cur.metrics.tokens - prev.metrics.tokens,
+    // Compare like with like: real counts when both months have them, else the estimates.
+    tokens: prev.metrics.o200k !== undefined && cur.metrics.o200k !== undefined ? cur.metrics.o200k - prev.metrics.o200k : cur.metrics.tokens - prev.metrics.tokens,
     tools: cur.metrics.tools - prev.metrics.tools,
     added: [...after].filter((n) => !before.has(n)),
     removed: [...before].filter((n) => !after.has(n)),

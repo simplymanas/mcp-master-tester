@@ -1,6 +1,8 @@
 // Monthly scorecard: render docs/scorecard.html from one month's data and the month before.
 // Every string from a server or the registry is escaped, and the page loads nothing but site.css,
 // under the same Content-Security-Policy as the rest of the site.
+import { shownTokens as tok, shownTokensWithoutOutputSchemas as tokNoOut } from './lib.mjs';
+
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const n = (x) => (x === null || x === undefined ? '' : Number(x).toLocaleString('en-US'));
 const signed = (x) => (x > 0 ? `+${n(x)}` : x < 0 ? `−${n(-x)}` : '0');
@@ -98,7 +100,7 @@ function changes(d) {
     for (const r of moved) {
       const c = r.change;
       const detail = [c.added.length ? `${plural(c.added.length, 'tool')} added` : '', c.removed.length ? `${n(c.removed.length)} removed` : ''].filter(Boolean).join(', ');
-      out.push(`    <li><strong>${esc(r.name)}:</strong> ${signed(c.tokens)} tokens, now ~${n(r.metrics.tokens)}${detail ? ` (${detail})` : ''}.</li>`);
+      out.push(`    <li><strong>${esc(r.name)}:</strong> ${signed(c.tokens)} tokens, now ${n(tok(r.metrics))}${detail ? ` (${detail})` : ''}.</li>`);
     }
     out.push('  </ul>');
   }
@@ -114,9 +116,9 @@ export function renderPage(d) {
   const labelled = measured.reduce((k, r) => k + r.metrics.labelled, 0);
   const params = measured.reduce((k, r) => k + r.metrics.params, 0);
   const paramsNo = measured.reduce((k, r) => k + r.metrics.paramsNoDescription, 0);
-  const over = measured.filter((r) => r.metrics.tokens > 10000);
+  const over = measured.filter((r) => tok(r.metrics) > 10000);
   const reg = d.registry;
-  const sorted = [...measured].sort((a, b) => b.metrics.tokens - a.metrics.tokens || a.name.localeCompare(b.name));
+  const sorted = [...measured].sort((a, b) => tok(b.metrics) - tok(a.metrics) || a.name.localeCompare(b.name));
   const topCount = rows.filter((r) => r.rank).length;
   const specErrors = measured.filter((r) => r.metrics.lint.error);
 
@@ -124,7 +126,7 @@ export function renderPage(d) {
     const m = r.metrics;
     return `<tr><td>${esc(r.name)}<span class="pkg">${esc(pkgLine(r))}</span></td>`
       + `<td class="num">${r.rank ? `${n(r.rank)}<span class="pkg">${n(r.downloads)}</span>` : '<span class="muted">survey</span>'}</td>`
-      + `<td class="num">${n(m.tools)}</td><td class="num">${n(m.tokens)}${m.tokensWithoutOutputSchemas !== undefined && m.tokensWithoutOutputSchemas < m.tokens ? `<span class="pkg">${n(m.tokensWithoutOutputSchemas)} without output schemas</span>` : ''}</td>${changeCell(r.change)}`
+      + `<td class="num">${n(m.tools)}</td><td class="num">${n(tok(m))}${tokNoOut(m) !== undefined && tokNoOut(m) < tok(m) ? `<span class="pkg wrap">${n(tokNoOut(m))} without output schemas</span>` : ''}</td>${changeCell(r.change)}`
       + `<td class="num">${n(m.labelled)} of ${n(m.tools)}</td><td class="num">${n(m.paramsNoDescription)} of ${n(m.params)}</td>`
       + `<td class="num">${m.lint.error ? `<strong>${n(m.lint.error)}</strong>` : '0'} / ${n(m.lint.warn)}</td></tr>`;
   }).join('\n');
@@ -140,7 +142,7 @@ export function renderPage(d) {
   <ul class="stats">
     <li><strong>${n(measured.length)}</strong><span>servers measured, ${plural(tools, 'tool')}</span></li>
     <li><strong>${n(over.length)}</strong><span>over 10,000 tokens</span></li>
-    <li><strong>~${n(d.summary.medianTokens)}</strong><span>tokens for the median server</span></li>
+    <li><strong>${n(d.summary.medianTokens)}</strong><span>tokens for the median server</span></li>
     <li><strong>${pct(labelled, tools)}%</strong><span>of tools have safety labels</span></li>
   </ul>
 
@@ -148,7 +150,7 @@ export function renderPage(d) {
 ${changes(d)}
   <h2>What the numbers say</h2>
   <ul>
-    <li><strong>Size:</strong> ${plural(over.length, 'server')} send${over.length === 1 ? 's' : ''} over 10,000 tokens with every request${over.length ? `: ${over.sort((a, b) => b.metrics.tokens - a.metrics.tokens).slice(0, 6).map((r) => `${esc(r.name)} (~${n(r.metrics.tokens)})`).join(', ')}${over.length > 6 ? ' and others' : ''}` : ''}. Lint warns above that.</li>
+    <li><strong>Size:</strong> ${plural(over.length, 'server')} send${over.length === 1 ? 's' : ''} over 10,000 tokens with every request${over.length ? `: ${over.sort((a, b) => tok(b.metrics) - tok(a.metrics)).slice(0, 6).map((r) => `${esc(r.name)} (${n(tok(r.metrics))})`).join(', ')}${over.length > 6 ? ' and others' : ''}` : ''}. Lint warns at about the same point, by its own estimate.</li>
     <li><strong>Safety labels:</strong> ${n(labelled)} of ${plural(tools, 'tool')} have annotations such as <code>readOnlyHint</code>. ${plural(measured.filter((r) => r.metrics.tools && !r.metrics.labelled).length, 'server')} label none of ${measured.filter((r) => r.metrics.tools && !r.metrics.labelled).length === 1 ? 'its' : 'their'} tools.</li>
     <li><strong>Parameters:</strong> ${n(paramsNo)} of ${plural(params, 'parameter')} have no description of their own.</li>
     <li><strong>Spec errors:</strong> ${specErrors.length ? `${plural(specErrors.length, 'server')} ${specErrors.length === 1 ? 'has' : 'have'} at least one lint error, such as an input schema that isn't an object or a duplicate tool name: ${specErrors.map((r) => esc(r.name)).join(', ')}.` : 'no server has a lint error, such as an input schema that isn\'t an object or a duplicate tool name.'}</li>
@@ -161,7 +163,7 @@ ${changes(d)}
   <p>Largest first. Rank is by downloads in the last 30 days, shown under it; "survey" marks a server from the first survey that isn't in the top ${n(d.topN)}. Change is in tokens since the last scorecard.</p>
   <div class="table-wrap">
 <table class="data wide">
-<thead><tr><th>Server and package</th><th class="num">Rank</th><th class="num">Tools</th><th class="num">Est. tokens</th><th class="num">Change</th><th class="num">Labelled</th><th class="num">Params with no description</th><th class="num">Lint errors / warnings</th></tr></thead>
+<thead><tr><th>Server and package</th><th class="num">Rank</th><th class="num">Tools</th><th class="num">Tokens</th><th class="num">Change</th><th class="num">Labelled</th><th class="num">Params with no description</th><th class="num">Lint errors / warnings</th></tr></thead>
 <tbody>
 ${table}
 </tbody></table>
@@ -179,7 +181,8 @@ ${failed}
     <li><strong>Which servers:</strong> the ${n(topCount)} registry servers whose npm or PyPI package had the most downloads in the last 30 days, run over stdio, plus the servers from the first survey. Download counts come from npm's public API (for scoped packages, from npm's search results, which cover the ${n(d.method.npmSearchDepth)} most relevant "mcp" packages) and from the public PyPI download dataset. Downloads count every install of a package, so a large tool that also includes an MCP server, such as a cloud provider's command line, ranks by all its users. Remote-only servers have no download counts, so only the survey's remote servers are included.${(d.method.notes ?? []).map((x) => ` ${esc(x)}`).join('')}</li>
     <li><strong>How:</strong> each package is the version the registry lists, run with <code>npx</code> or <code>uvx</code> and only the arguments and environment defaults its registry entry gives, read the way the registry's schema defines them. A server whose entry doesn't give a working command is listed as not started; its publisher can fix the entry. No key or token is supplied. Each runs inside a container with no access to the repository's credentials, and its output is checked before use.</li>
     <li><strong>Only tool lists were read.</strong> Each server got <code>initialize</code> and <code>tools/list</code>, nothing else. The lists were checked with MCP Master Tester ${esc(d.lintVersion)}'s lint.</li>
-    <li><strong>Tokens are estimated</strong> as the characters of each tool definition, as compact JSON, divided by four, the same estimate lint and the first survey use. It includes output schemas, which not every client passes to the model; where a server declares them, the table also gives the count without them. Real tokenizers differ by model, so compare servers with each other rather than reading the figures as exact.</li>
+    <li><strong>Tokens are counted</strong> with OpenAI's o200k tokenizer (the one GPT-4o and later use), over each tool definition as compact JSON. Claude's tokenizer isn't published, and other models count differently, so compare servers with each other rather than reading a figure as exact for every model. Clients also wrap tool lists in their own format, which adds a little. The counts include output schemas, which not every client passes to the model; where a server declares them, the table also gives the count without them.</li>
+    <li><strong>Earlier figures were estimates.</strong> The first survey, and lint, estimate tokens as characters divided by four, which comes out about 13% higher than o200k across the survey's servers. The data files keep both. Thanks to a reader on LinkedIn whose question led to the real counts.</li>
     <li><strong>Settings change the numbers.</strong> Several servers can expose fewer tools through their options. These figures are for the defaults.</li>
     <li><strong>The data:</strong> every month's numbers are in <a href="https://github.com/simplymanas/mcp-master-tester/tree/main/docs/scorecard" target="_blank" rel="noopener">docs/scorecard</a> as JSON.</li>
   </ul>

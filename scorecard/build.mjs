@@ -6,7 +6,8 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { checkScanResult, serverMetrics, changeSince, median } from './lib.mjs';
+import { countTokens } from 'gpt-tokenizer/encoding/o200k_base';
+import { checkScanResult, serverMetrics, changeSince, median, shownTokens } from './lib.mjs';
 import { renderPage } from './page.mjs';
 
 const MAX_RESULT_BYTES = 20 * 1024 * 1024;
@@ -48,13 +49,13 @@ export function buildScorecard(plan, scanDir, prev, lintVersion) {
     if (!r) return { ...row, reason: 'missing' };
     if (!r.ok) return { ...row, reason: reasonFor(r.error) };
     const server = { name: r.server.name, version: VERSION_RE.test(r.server.version ?? '') ? r.server.version : null };
-    const withMetrics = { ...row, needs: [], server, metrics: serverMetrics(r.tools) };
+    const withMetrics = { ...row, needs: [], server, metrics: serverMetrics(r.tools, { count: countTokens }) };
     return { ...withMetrics, change: changeSince(before.get(s.id), withMetrics) };
   });
   const measured = servers.filter((r) => r.metrics);
   return {
     date: plan.date, topN: plan.topN, previous: prev?.date ?? null, previousKind: prev?.kind ?? (prev ? 'scorecard' : null), lintVersion, registry: plan.registry, method: plan.method,
-    summary: { planned: servers.length, measured: measured.length, medianTokens: median(measured.map((r) => r.metrics.tokens)) },
+    summary: { planned: servers.length, measured: measured.length, medianTokens: median(measured.map((r) => shownTokens(r.metrics))) },
     servers,
   };
 }

@@ -10,8 +10,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   activeServers, packageCandidates, commandFor, pickTop, planServers, registryStats, pypiName, packageId,
-  checkScanResult, serverMetrics, changeSince, median,
+  checkScanResult, serverMetrics, changeSince, median, shownTokens,
 } from '../scorecard/lib.mjs';
+import { countTokens } from 'gpt-tokenizer/encoding/o200k_base';
 import { reasonFor, buildScorecard } from '../scorecard/build.mjs';
 import { renderPage, REASONS } from '../scorecard/page.mjs';
 
@@ -122,6 +123,12 @@ test('serverMetrics: the first survey\'s measures, plus what changed since last 
   assert.equal(m.largest.name, 'read_doc');
   assert.equal(m.tokensWithoutOutputSchemas, Math.round(tools.reduce((k, t) => k + JSON.stringify({ ...t, outputSchema: undefined }).length, 0) / 4));
   assert.ok(m.tokensWithoutOutputSchemas < m.tokens);
+  assert.equal(m.o200k, undefined, 'no real count without a counter');
+  const counted = serverMetrics(tools, { count: countTokens });
+  assert.equal(counted.o200k, countTokens(tools.map((t) => JSON.stringify(t)).join('')));
+  assert.ok(counted.o200kWithoutOutputSchemas < counted.o200k);
+  assert.equal(shownTokens(counted), counted.o200k, 'the page shows the real count when there is one');
+  assert.equal(shownTokens(m), m.tokens);
   assert.deepEqual([m.labelled, m.readOnly, m.destructive, m.noDescription, m.params, m.paramsNoDescription, m.outputSchemas], [2, 1, 1, 1, 3, 2, 1]);
   assert.equal(m.lint.error, 1, 'the input schema that is not an object');
   assert.deepEqual(m.toolNames, ['bad', 'delete_doc', 'read_doc']);
@@ -233,6 +240,7 @@ test('end to end: scan the fixture servers, then build the data and the page', a
     assert.equal(data.previous, '2026-11-01');
     const by = Object.fromEntries(data.servers.map((r) => [r.id, r]));
     assert.deepEqual(by.smoke.change.added, ['delete_user']);
+    assert.equal(by.smoke.metrics.o200k, countTokens(smokeTools.map((t) => JSON.stringify(t)).join('')), 'build counts with o200k');
     assert.ok(by.lint.metrics.lint.error > 0);
     assert.deepEqual([by.hangs.reason, by.missing.reason, by.setup.reason], ['timeout', 'exited', 'setup']);
     const html = readFileSync(path.join(docs, 'scorecard.html'), 'utf8');

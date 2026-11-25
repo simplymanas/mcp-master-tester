@@ -23,6 +23,8 @@
     "tools": 13,
     "tokens": 1910,
     "tokensWithoutOutputSchemas": 1811,
+    "o200k": 1708,
+    "o200kWithoutOutputSchemas": 1632,
     "largest": {
      "name": "gzip-file-as-resource",
      "tokens": 285
@@ -76,6 +78,8 @@
     "tools": 14,
     "tokens": 3275,
     "tokensWithoutOutputSchemas": 2493,
+    "o200k": 2849,
+    "o200kWithoutOutputSchemas": 2133,
     "largest": {
      "name": "read_media_file",
      "tokens": 318
@@ -130,6 +134,8 @@
     "tools": 9,
     "tokens": 2764,
     "tokensWithoutOutputSchemas": 1486,
+    "o200k": 2428,
+    "o200kWithoutOutputSchemas": 1318,
     "largest": {
      "name": "create_entities",
      "tokens": 410
@@ -179,6 +185,8 @@
     "tools": 1,
     "tokens": 1160,
     "tokensWithoutOutputSchemas": 1053,
+    "o200k": 999,
+    "o200kWithoutOutputSchemas": 903,
     "largest": {
      "name": "sequentialthinking",
      "tokens": 1160
@@ -220,6 +228,8 @@
     "tools": 3,
     "tokens": 1082,
     "tokensWithoutOutputSchemas": 600,
+    "o200k": 1052,
+    "o200kWithoutOutputSchemas": 584,
     "largest": {
      "name": "convert_time",
      "tokens": 542
@@ -263,6 +273,8 @@
     "tools": 14,
     "tokens": 1925,
     "tokensWithoutOutputSchemas": 1925,
+    "o200k": 1841,
+    "o200kWithoutOutputSchemas": 1841,
     "largest": {
      "name": "git_log",
      "tokens": 272
@@ -317,6 +329,8 @@
     "tools": 1,
     "tokens": 362,
     "tokensWithoutOutputSchemas": 362,
+    "o200k": 324,
+    "o200kWithoutOutputSchemas": 324,
     "largest": {
      "name": "fetch",
      "tokens": 362
@@ -358,6 +372,8 @@
     "tools": 25,
     "tokens": 5293,
     "tokensWithoutOutputSchemas": 5293,
+    "o200k": 4570,
+    "o200kWithoutOutputSchemas": 4570,
     "largest": {
      "name": "browser_take_screenshot",
      "tokens": 437
@@ -423,6 +439,8 @@
     "tools": 33,
     "tokens": 7866,
     "tokensWithoutOutputSchemas": 7866,
+    "o200k": 6983,
+    "o200kWithoutOutputSchemas": 6983,
     "largest": {
      "name": "emulate",
      "tokens": 615
@@ -496,6 +514,8 @@
     "tools": 1,
     "tokens": 105,
     "tokensWithoutOutputSchemas": 68,
+    "o200k": 96,
+    "o200kWithoutOutputSchemas": 62,
     "largest": {
      "name": "convert_to_markdown",
      "tokens": 105
@@ -537,6 +557,8 @@
     "tools": 74,
     "tokens": 19814,
     "tokensWithoutOutputSchemas": 19814,
+    "o200k": 15635,
+    "o200kWithoutOutputSchemas": 15635,
     "largest": {
      "name": "resiliencyagent",
      "tokens": 530
@@ -651,6 +673,8 @@
     "tools": 5,
     "tokens": 5809,
     "tokensWithoutOutputSchemas": 4082,
+    "o200k": 5213,
+    "o200kWithoutOutputSchemas": 3575,
     "largest": {
      "name": "search_documentation",
      "tokens": 2161
@@ -696,6 +720,8 @@
     "tools": 2,
     "tokens": 1304,
     "tokensWithoutOutputSchemas": 1304,
+    "o200k": 1129,
+    "o200kWithoutOutputSchemas": 1129,
     "largest": {
      "name": "resolve-library-id",
      "tokens": 759
@@ -738,6 +764,8 @@
     "tools": 24,
     "tokens": 19048,
     "tokensWithoutOutputSchemas": 19048,
+    "o200k": 17474,
+    "o200kWithoutOutputSchemas": 17474,
     "largest": {
      "name": "API-update-page-markdown",
      "tokens": 1466
@@ -802,6 +830,8 @@
     "tools": 28,
     "tokens": 24568,
     "tokensWithoutOutputSchemas": 15084,
+    "o200k": 22019,
+    "o200kWithoutOutputSchemas": 13901,
     "largest": {
      "name": "firecrawl_search",
      "tokens": 2585
@@ -870,6 +900,8 @@
     "tools": 2,
     "tokens": 545,
     "tokensWithoutOutputSchemas": 545,
+    "o200k": 495,
+    "o200kWithoutOutputSchemas": 495,
     "largest": {
      "name": "web_search_exa",
      "tokens": 330
@@ -912,6 +944,8 @@
     "tools": 5,
     "tokens": 1922,
     "tokensWithoutOutputSchemas": 1922,
+    "o200k": 1651,
+    "o200kWithoutOutputSchemas": 1651,
     "largest": {
      "name": "tavily_search",
      "tokens": 723
@@ -957,6 +991,8 @@
     "tools": 9,
     "tokens": 1333,
     "tokensWithoutOutputSchemas": 1333,
+    "o200k": 1133,
+    "o200kWithoutOutputSchemas": 1133,
     "largest": {
      "name": "browserbase_stagehand_observe",
      "tokens": 308
@@ -1006,6 +1042,8 @@
     "tools": 23,
     "tokens": 5971,
     "tokensWithoutOutputSchemas": 5971,
+    "o200k": 5283,
+    "o200kWithoutOutputSchemas": 5283,
     "largest": {
      "name": "kubectl_create",
      "tokens": 971
@@ -1069,6 +1107,8 @@
     "tools": 25,
     "tokens": 13389,
     "tokensWithoutOutputSchemas": 13389,
+    "o200k": 10196,
+    "o200kWithoutOutputSchemas": 10196,
     "largest": {
      "name": "start_search",
      "tokens": 1762
@@ -1131,6 +1171,8 @@
     "tools": 3,
     "tokens": 426,
     "tokensWithoutOutputSchemas": 332,
+    "o200k": 395,
+    "o200kWithoutOutputSchemas": 305,
     "largest": {
      "name": "ask_wiki_question",
      "tokens": 178
@@ -1171,6 +1213,8 @@
     "tools": 2,
     "tokens": 1304,
     "tokensWithoutOutputSchemas": 1304,
+    "o200k": 1129,
+    "o200kWithoutOutputSchemas": 1129,
     "largest": {
      "name": "resolve-library-id",
      "tokens": 759
@@ -1210,6 +1254,8 @@
     "tools": 2,
     "tokens": 433,
     "tokensWithoutOutputSchemas": 285,
+    "o200k": 404,
+    "o200kWithoutOutputSchemas": 281,
     "largest": {
      "name": "search_cloudflare_documentation",
      "tokens": 358
@@ -1249,6 +1295,8 @@
     "tools": 3,
     "tokens": 1214,
     "tokensWithoutOutputSchemas": 1063,
+    "o200k": 970,
+    "o200kWithoutOutputSchemas": 825,
     "largest": {
      "name": "microsoft_code_sample_search",
      "tokens": 495
@@ -1289,6 +1337,8 @@
     "tools": 5,
     "tokens": 1976,
     "tokensWithoutOutputSchemas": 1976,
+    "o200k": 1938,
+    "o200kWithoutOutputSchemas": 1938,
     "largest": {
      "name": "aws___read_documentation",
      "tokens": 702
@@ -1331,6 +1381,8 @@
     "tools": 4,
     "tokens": 4965,
     "tokensWithoutOutputSchemas": 2345,
+    "o200k": 5171,
+    "o200kWithoutOutputSchemas": 2282,
     "largest": {
      "name": "hf_fs",
      "tokens": 2336
@@ -1372,6 +1424,8 @@
     "tools": 4,
     "tokens": 451,
     "tokensWithoutOutputSchemas": 451,
+    "o200k": 369,
+    "o200kWithoutOutputSchemas": 369,
     "largest": {
      "name": "search_typescript_sdk_code",
      "tokens": 149
@@ -1413,6 +1467,8 @@
     "tools": 1,
     "tokens": 79,
     "tokensWithoutOutputSchemas": 79,
+    "o200k": 69,
+    "o200kWithoutOutputSchemas": 69,
     "largest": {
      "name": "search_astro_docs",
      "tokens": 79
