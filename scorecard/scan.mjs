@@ -5,7 +5,7 @@
 //   node scorecard/scan.mjs <plan.json> <out dir> [--jobs N] [--timeout ms]
 //
 // Writes <out dir>/<id>.json for each server: { id, ok, ms, server, tools } or { id, ok: false, error }.
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -24,6 +24,8 @@ const work = process.env.SCORECARD_WORK ?? path.join(os.tmpdir(), 'scorecard-wor
 mkdirSync(path.join(work, 'files'), { recursive: true });
 mkdirSync(path.join(work, 'repo'), { recursive: true });
 if (!existsSync(path.join(work, 'files', 'hello.txt'))) writeFileSync(path.join(work, 'files', 'hello.txt'), 'hello\n');
+// The Git server refuses a folder that isn't a repository.
+if (!existsSync(path.join(work, 'repo', '.git'))) spawnSync('git', ['init', '-q', path.join(work, 'repo')], { stdio: 'ignore' });
 mkdirSync(outDir, { recursive: true });
 
 const plan = JSON.parse(readFileSync(planFile, 'utf8'));
