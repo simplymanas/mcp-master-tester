@@ -24,6 +24,17 @@ test('action.yml passes every input to the script, and only through env', () => 
   for (const line of yml.split('\n').filter((l) => /^\s+run:/.test(l))) assert.ok(!line.includes('${{'), line);
 });
 
+// The Marketplace refuses to list a release whose action.yml breaks these rules (1.9.0 did).
+test('action.yml meets the Marketplace rules: a name, a short description, an icon and a color', () => {
+  const yml = readFileSync(path.join(root, 'action.yml'), 'utf8');
+  const field = (key) => new RegExp(`^${key}: *(.+)$`, 'm').exec(yml)?.[1].trim();
+  assert.ok(field('name'), 'name is required');
+  const description = field('description');
+  assert.ok(description, 'description is required');
+  assert.ok(description.length < 125, `description is ${description.length} characters; the Marketplace allows fewer than 125`);
+  assert.match(yml, /^branding:\n {2}icon: \S+\n {2}color: \S+$/m);
+});
+
 test('planRuns: a stdio server gets lint then smoke, with the command after --', () => {
   const runs = planRuns({ MMT_COMMAND: 'node dist/index.js --port  0', MMT_CHECKS: 'lint, smoke' });
   assert.deepEqual(runs.map((r) => r.check), ['lint', 'smoke']);
