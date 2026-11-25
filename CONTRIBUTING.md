@@ -47,7 +47,9 @@ There's no build step. Edit a file and reload the browser (restart `npm start` a
 | `test/evals.test.js` | Unit tests for eval cases and grading |
 | `test/eval-cli.test.js` | Tests for `eval` from the command line, against a fake Anthropic API (`test/fixtures/fake-anthropic.js`), so no key is needed |
 | `test/action.test.js` | Tests for the GitHub Action's inputs, summary and outputs |
+| `test/scorecard.test.js` | Tests for the monthly scorecard, including an end-to-end run against the fixture servers |
 | `action.yml`, `action/run.mjs` | The GitHub Action (not in the npm package) |
+| `scorecard/` | The monthly scorecard (not in the npm package): `select.mjs` picks the servers from the registry and download counts, `scan.mjs` lists their tools inside the container in `Dockerfile`, `build.mjs` and `page.mjs` write `docs/scorecard/<date>.json` and `docs/scorecard.html`. Run by `.github/workflows/scorecard.yml` on the 1st of each month |
 | `test/fixtures/` | Small MCP servers the tests run against (not test files themselves) |
 
 ### REST API

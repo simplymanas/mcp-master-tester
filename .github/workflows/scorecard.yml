@@ -1,0 +1,139 @@
+# The monthly MCP server scorecard (docs/scorecard.html). Three jobs, so the one that runs other
+# people's packages never holds a token that can write:
+#   select   reads the registry and download counts, and plans the run       (read-only token)
+#   scan     lists each server's tools inside a container                     (read-only token, not passed in)
+#   publish  checks the results, builds the page, opens a pull request        (can write; runs no server)
+# A pull request that changes the scorecard code runs a small version (5 servers) and opens nothing.
+name: Scorecard
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'   # 06:00 UTC on the 1st of each month
+  workflow_dispatch:
+    inputs:
+      top:
+        description: How many of the most downloaded servers to include
+        default: '100'
+  pull_request:
+    paths:
+      - 'scorecard/**'
+      - '.github/workflows/scorecard.yml'
+
+permissions: {}
+
+concurrency:
+  group: scorecard-${{ github.event_name == 'pull_request' && github.ref || 'monthly' }}
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Plan the run
+        env:
+          TOP: ${{ github.event_name == 'pull_request' && '5' || inputs.top || '100' }}
+        run: node scorecard/select.mjs plan.json --top "$TOP"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: plan
+          path: plan.json
+          retention-days: 30
+
+  scan:
+    needs: select
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # No cache here on purpose: this job runs untrusted code, and a cache it wrote could be restored
+      # by other workflows.
+      - run: npm ci --ignore-scripts --omit=dev
+      - uses: actions/download-artifact@v8
+        with:
+          name: plan
+          path: plan
+      - name: Build the scan container
+        run: docker build -t scorecard-scan scorecard
+      - name: List each server's tools
+        run: |
+          mkdir -p scan && chmod 777 scan
+          docker run --rm --memory 6g --pids-limit 4096 \
+            -v "$PWD:/app:ro" -v "$PWD/scan:/out" \
+            scorecard-scan node /app/scorecard/scan.mjs /app/plan/plan.json /out --jobs 4
+      - uses: actions/upload-artifact@v7
+        with:
+          name: scan
+          path: scan
+          retention-days: 30
+
+  publish:
+    needs: scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # push the scorecard branch
+      pull-requests: write   # open its pull request
+      actions: write         # start CI on it (pull requests opened by a workflow don't start other workflows)
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v8
+        with:
+          name: plan
+          path: plan
+      - uses: actions/download-artifact@v8
+        with:
+          name: scan
+          path: scan
+      - name: Build the page
+        run: node scorecard/build.mjs plan/plan.json scan docs
+      - name: Upload the page (pull request runs)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: page
+          path: |
+            docs/scorecard.html
+            docs/scorecard/
+          retention-days: 14
+      - name: Open a pull request
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DATE=$(node -p "require('./plan/plan.json').date")
+          BRANCH="scorecard/$DATE"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$BRANCH"
+          git add docs/scorecard.html docs/scorecard
+          git commit -m "Scorecard for $DATE"
+          git push --force origin "$BRANCH"
+          SUMMARY=$(node -e "const d=require('./docs/scorecard/$DATE.json');console.log(d.summary.measured+' of '+d.summary.planned+' servers measured, median ~'+d.summary.medianTokens+' tokens.')")
+          BODY="The monthly scorecard for $DATE. $SUMMARY
+
+          Review docs/scorecard.html before merging: it goes live on the website when merged."
+          if gh pr create --base main --head "$BRANCH" --title "Scorecard for $DATE" --body "$BODY"; then
+            gh workflow run ci.yml --ref "$BRANCH"
+          else
+            URL="https://github.com/$GITHUB_REPOSITORY/compare/main...$BRANCH?expand=1"
+            echo "::warning title=Scorecard::Could not open the pull request (is 'Allow GitHub Actions to create and approve pull requests' on?). Open it here: $URL"
+            echo "Open the pull request: $URL" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The monthly scorecard workflow starts CI this way on the pull request it opens, since a pull
+  # request opened by a workflow doesn't start other workflows by itself.
+  workflow_dispatch:
 
 jobs:
   test:

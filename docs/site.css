@@ -176,4 +176,8 @@ table.data .pkg { display: block; font: .76rem var(--mono); color: var(--muted);
 table.data th.num { width: 6.5em; }
 table.data .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 table.data tfoot td { font-weight: 600; border-bottom: 0; }
+/* The scorecard's table has eight columns: narrower number columns, headers that wrap, a readable name column. */
+table.data.wide { font-size: .82rem; }
+table.data.wide th.num { width: auto; white-space: normal; font-size: .76rem; line-height: 1.25; vertical-align: bottom; }
+table.data.wide td:first-child { min-width: 11.5em; }
 @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .article { padding-top: 32px; } }
