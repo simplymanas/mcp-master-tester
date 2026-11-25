@@ -173,6 +173,8 @@ export function serverMetrics(tools) {
   return {
     tools: tools.length,
     tokens: tokens(tools.reduce((n, t) => n + size(t), 0)),
+    // Some clients don't pass outputSchema on to the model; for them, this is the cost.
+    tokensWithoutOutputSchemas: tokens(tools.reduce((n, t) => n + size(t.outputSchema === undefined ? t : { ...t, outputSchema: undefined }), 0)),
     largest: big ? { name: big.name, tokens: tokens(size(big)) } : null,
     labelled: tools.filter((t) => t.annotations && Object.keys(t.annotations).length).length,
     readOnly: tools.filter((t) => ann(t).readOnlyHint === true).length,

@@ -120,6 +120,8 @@ test('serverMetrics: the first survey\'s measures, plus what changed since last 
   assert.equal(m.tools, 3);
   assert.equal(m.tokens, Math.round(tools.reduce((k, t) => k + JSON.stringify(t).length, 0) / 4));
   assert.equal(m.largest.name, 'read_doc');
+  assert.equal(m.tokensWithoutOutputSchemas, Math.round(tools.reduce((k, t) => k + JSON.stringify({ ...t, outputSchema: undefined }).length, 0) / 4));
+  assert.ok(m.tokensWithoutOutputSchemas < m.tokens);
   assert.deepEqual([m.labelled, m.readOnly, m.destructive, m.noDescription, m.params, m.paramsNoDescription, m.outputSchemas], [2, 1, 1, 1, 3, 2, 1]);
   assert.equal(m.lint.error, 1, 'the input schema that is not an object');
   assert.deepEqual(m.toolNames, ['bad', 'delete_doc', 'read_doc']);

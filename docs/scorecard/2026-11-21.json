@@ -22,6 +22,7 @@
    "metrics": {
     "tools": 13,
     "tokens": 1910,
+    "tokensWithoutOutputSchemas": 1811,
     "largest": {
      "name": "gzip-file-as-resource",
      "tokens": 285
@@ -74,6 +75,7 @@
    "metrics": {
     "tools": 14,
     "tokens": 3275,
+    "tokensWithoutOutputSchemas": 2493,
     "largest": {
      "name": "read_media_file",
      "tokens": 318
@@ -127,6 +129,7 @@
    "metrics": {
     "tools": 9,
     "tokens": 2764,
+    "tokensWithoutOutputSchemas": 1486,
     "largest": {
      "name": "create_entities",
      "tokens": 410
@@ -175,6 +178,7 @@
    "metrics": {
     "tools": 1,
     "tokens": 1160,
+    "tokensWithoutOutputSchemas": 1053,
     "largest": {
      "name": "sequentialthinking",
      "tokens": 1160
@@ -215,6 +219,7 @@
    "metrics": {
     "tools": 3,
     "tokens": 1082,
+    "tokensWithoutOutputSchemas": 600,
     "largest": {
      "name": "convert_time",
      "tokens": 542
@@ -257,6 +262,7 @@
    "metrics": {
     "tools": 14,
     "tokens": 1925,
+    "tokensWithoutOutputSchemas": 1925,
     "largest": {
      "name": "git_log",
      "tokens": 272
@@ -310,6 +316,7 @@
    "metrics": {
     "tools": 1,
     "tokens": 362,
+    "tokensWithoutOutputSchemas": 362,
     "largest": {
      "name": "fetch",
      "tokens": 362
@@ -350,6 +357,7 @@
    "metrics": {
     "tools": 25,
     "tokens": 5293,
+    "tokensWithoutOutputSchemas": 5293,
     "largest": {
      "name": "browser_take_screenshot",
      "tokens": 437
@@ -414,6 +422,7 @@
    "metrics": {
     "tools": 33,
     "tokens": 7866,
+    "tokensWithoutOutputSchemas": 7866,
     "largest": {
      "name": "emulate",
      "tokens": 615
@@ -486,6 +495,7 @@
    "metrics": {
     "tools": 1,
     "tokens": 105,
+    "tokensWithoutOutputSchemas": 68,
     "largest": {
      "name": "convert_to_markdown",
      "tokens": 105
@@ -526,6 +536,7 @@
    "metrics": {
     "tools": 74,
     "tokens": 19814,
+    "tokensWithoutOutputSchemas": 19814,
     "largest": {
      "name": "resiliencyagent",
      "tokens": 530
@@ -639,6 +650,7 @@
    "metrics": {
     "tools": 5,
     "tokens": 5809,
+    "tokensWithoutOutputSchemas": 4082,
     "largest": {
      "name": "search_documentation",
      "tokens": 2161
@@ -683,6 +695,7 @@
    "metrics": {
     "tools": 2,
     "tokens": 1304,
+    "tokensWithoutOutputSchemas": 1304,
     "largest": {
      "name": "resolve-library-id",
      "tokens": 759
@@ -724,6 +737,7 @@
    "metrics": {
     "tools": 24,
     "tokens": 19048,
+    "tokensWithoutOutputSchemas": 19048,
     "largest": {
      "name": "API-update-page-markdown",
      "tokens": 1466
@@ -787,6 +801,7 @@
    "metrics": {
     "tools": 28,
     "tokens": 24568,
+    "tokensWithoutOutputSchemas": 15084,
     "largest": {
      "name": "firecrawl_search",
      "tokens": 2585
@@ -854,6 +869,7 @@
    "metrics": {
     "tools": 2,
     "tokens": 545,
+    "tokensWithoutOutputSchemas": 545,
     "largest": {
      "name": "web_search_exa",
      "tokens": 330
@@ -895,6 +911,7 @@
    "metrics": {
     "tools": 5,
     "tokens": 1922,
+    "tokensWithoutOutputSchemas": 1922,
     "largest": {
      "name": "tavily_search",
      "tokens": 723
@@ -939,6 +956,7 @@
    "metrics": {
     "tools": 9,
     "tokens": 1333,
+    "tokensWithoutOutputSchemas": 1333,
     "largest": {
      "name": "browserbase_stagehand_observe",
      "tokens": 308
@@ -987,6 +1005,7 @@
    "metrics": {
     "tools": 23,
     "tokens": 5971,
+    "tokensWithoutOutputSchemas": 5971,
     "largest": {
      "name": "kubectl_create",
      "tokens": 971
@@ -1049,6 +1068,7 @@
    "metrics": {
     "tools": 25,
     "tokens": 13389,
+    "tokensWithoutOutputSchemas": 13389,
     "largest": {
      "name": "start_search",
      "tokens": 1762
@@ -1110,6 +1130,7 @@
    "metrics": {
     "tools": 3,
     "tokens": 426,
+    "tokensWithoutOutputSchemas": 332,
     "largest": {
      "name": "ask_wiki_question",
      "tokens": 178
@@ -1149,6 +1170,7 @@
    "metrics": {
     "tools": 2,
     "tokens": 1304,
+    "tokensWithoutOutputSchemas": 1304,
     "largest": {
      "name": "resolve-library-id",
      "tokens": 759
@@ -1187,6 +1209,7 @@
    "metrics": {
     "tools": 2,
     "tokens": 433,
+    "tokensWithoutOutputSchemas": 285,
     "largest": {
      "name": "search_cloudflare_documentation",
      "tokens": 358
@@ -1225,6 +1248,7 @@
    "metrics": {
     "tools": 3,
     "tokens": 1214,
+    "tokensWithoutOutputSchemas": 1063,
     "largest": {
      "name": "microsoft_code_sample_search",
      "tokens": 495
@@ -1264,6 +1288,7 @@
    "metrics": {
     "tools": 5,
     "tokens": 1976,
+    "tokensWithoutOutputSchemas": 1976,
     "largest": {
      "name": "aws___read_documentation",
      "tokens": 702
@@ -1305,6 +1330,7 @@
    "metrics": {
     "tools": 4,
     "tokens": 4965,
+    "tokensWithoutOutputSchemas": 2345,
     "largest": {
      "name": "hf_fs",
      "tokens": 2336
@@ -1345,6 +1371,7 @@
    "metrics": {
     "tools": 4,
     "tokens": 451,
+    "tokensWithoutOutputSchemas": 451,
     "largest": {
      "name": "search_typescript_sdk_code",
      "tokens": 149
@@ -1385,6 +1412,7 @@
    "metrics": {
     "tools": 1,
     "tokens": 79,
+    "tokensWithoutOutputSchemas": 79,
     "largest": {
      "name": "search_astro_docs",
      "tokens": 79
