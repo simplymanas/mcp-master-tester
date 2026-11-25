@@ -1,0 +1,41 @@
+# A few days before the monthly scorecard (scorecard.yml, on the 1st), open an issue assigned to the
+# repository owner, so the publishing date doesn't arrive unnoticed.
+name: Scorecard reminder
+
+on:
+  schedule:
+    - cron: '0 9 28 * *'   # 09:00 UTC on the 28th, which every month has
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    timeout-minutes: 5
+    steps:
+      - name: Open the reminder issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          NEXT=$(date -u -d "$(date -u +%Y-%m-01) +1 month" +'%-d %B %Y')
+          TITLE="Scorecard for $NEXT"
+          if gh issue list --state open --search "\"$TITLE\" in:title" --json number -q '.[].number' | grep -q .; then
+            echo "Already open: $TITLE"; exit 0
+          fi
+          gh issue create --assignee "$OWNER" --title "$TITLE" --body "The monthly scorecard runs on $NEXT at 06:00 UTC and opens a pull request when it finishes (about 20 minutes).
+
+          Before then:
+          - [ ] Anything to change in scorecard/baseline.json or the scorecard code? Merge it before the 1st.
+
+          On the day:
+          - [ ] Open the scorecard pull request and check docs/scorecard.html: the numbers, the changes since last month, and the servers not measured.
+          - [ ] Merge it, once CI is green, to publish the page.
+          - [ ] Post the highlights, if any are worth sharing.
+          - [ ] Close this issue.
+
+          If no pull request appears, check the Scorecard workflow run in the Actions tab."
