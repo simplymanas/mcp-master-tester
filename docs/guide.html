@@ -328,7 +328,7 @@ jobs:
           </tbody>
         </table>
       </div>
-      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.9.1</code> or a commit SHA to stay on one version.</p>
+      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.9.0</code> or a commit SHA to stay on one version.</p>
       <p>On another CI system, or to control every flag, run the commands directly. With <code>--format github</code>, findings still show as annotations on GitHub. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
       <pre><code>- run: npm ci &amp;&amp; npm run build
 - run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
