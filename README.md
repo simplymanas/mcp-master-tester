@@ -19,7 +19,7 @@ Point it at a server, either a local command over stdio or a remote URL over Str
 
 **[Website and docs](https://simplymanas.github.io/mcp-master-tester/)** · **[Tutorial](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35)** · **[Video](https://www.youtube.com/watch?v=XXQ25jPZsh0)** · **[Survey: how much context 28 MCP servers use](https://simplymanas.github.io/mcp-master-tester/survey.html)**
 
-**New in 1.9:** [tool-selection evals](#tool-selection-evals): check that a model picks the right tool for the requests your users make. 1.8 added [catching breaking changes](#breaking-changes) with a lockfile, and 1.6 the [GitHub Action](#github-action). Earlier changes are in the [CHANGELOG](CHANGELOG.md).
+**New in 1.10:** a [token budget](#token-budget) that fails CI when your tool list grows past it, and lint now shows where the size comes from. 1.9 added [tool-selection evals](#tool-selection-evals), to check that a model picks the right tool, and 1.8 [catching breaking changes](#breaking-changes) with a lockfile, and 1.6 the [GitHub Action](#github-action). Earlier changes are in the [CHANGELOG](CHANGELOG.md).
 
 Open source and looking for collaborators: see [Contributing](#contributing), first-timers welcome. If it's useful to you, a [star on GitHub](https://github.com/simplymanas/mcp-master-tester) helps other people find it.
 
@@ -184,6 +184,7 @@ A remote server, with only lint, failing on warnings:
 | `checks` | Any of `lint`, `smoke`, `diff`, `eval`. Left empty: `lint` and `smoke`, plus `diff` when the lockfile exists, plus `eval` when the cases file exists and `anthropic-api-key` is set |
 | `lockfile`, `diff-fail-on` | For `diff`: the lockfile (default `mcp-tools.lock.json`), and `breaking` (default), `warn`, `info` or `never` |
 | `lint-fail-on` | `error` (default), `warn`, `info` or `never` |
+| `max-tokens`, `max-tool-tokens` | A [token budget](#token-budget) for the whole tool list, and for any one tool. lint fails when either is exceeded. |
 | `smoke-fail-on` | `fail` (default), `warn`, `skip` or `never` |
 | `tools` | Smoke-test only these tools, comma- or newline-separated, read-only or not. The safest way to choose what runs. |
 | `skip`, `all`, `args` | Leave tools out; also run tools that aren't clearly read-only; a JSON file of arguments. As in the [smoke test](#smoke-test-in-ci). |
@@ -194,7 +195,7 @@ The outputs `lint`, `smoke`, `diff` and `eval` are `passed`, `failed`, `error` (
 
 By default the smoke test only calls tools marked read-only, with made-up arguments. If the server in CI holds anything you care about, list the tools to run in `tools`.
 
-`@v1` follows the latest 1.x release. To stay on one version, use `@v1.8.0` or a commit SHA.
+`@v1` follows the latest 1.x release. To stay on one version, use `@v1.10.0` or a commit SHA.
 
 ## Lint in CI
 
@@ -215,6 +216,10 @@ mcp-master-tester lint · my-server v1.4.0 · 12 tools · stdio
   warn   get_user     name is very close to "getUsers" — models may confuse them; …
   warn   send_mail    missing description — models cannot tell when to use it
 
+Tool list: ~3,150 tokens (descriptions ~1,020, input schemas ~1,690, other ~440)
+Largest: send_mail ~610, search_mail ~480, get_user ~350, list_folders ~300, get_thread ~290
+Parameters: 6 of 31 have no description
+
 ✖ failed: 1 error, 2 warnings, 9 info (add --show-info to list the info findings). Failing on: error.
 ```
 
@@ -223,6 +228,7 @@ mcp-master-tester lint · my-server v1.4.0 · 12 tools · stdio
 | `--fail-on <level>` | Exit 1 at `error` (default), `warn` or `info` findings, or `never` |
 | `--format <format>` | `text` (default), `json`, or `github` for GitHub Actions annotations |
 | `--show-info` | List info findings too (they're always counted) |
+| `--max-tokens <n>`, `--max-tool-tokens <n>` | A [token budget](#token-budget) for the whole tool list, and for any one tool. Over it is an error. |
 | `--env KEY=VALUE`, `--cwd <dir>` | Environment and working directory for a stdio server |
 | `--url <url>`, `--sse`, `--header "Name: value"` | Connect to a remote server |
 | `--timeout <ms>` | Give up after this long (default 30000) |
@@ -237,6 +243,20 @@ Exit codes: `0` passed, `1` findings at or above `--fail-on`, `2` the server cou
 ```
 
 With `--format github`, each finding shows up as an annotation on the workflow run.
+
+### Token budget
+
+A client sends your whole tool list to the model with every request, so it's worth knowing when it grows. Lint warns at about 10,000 tokens. With a budget of your own, going over it is an error, so CI fails and each new tool becomes a decision rather than something that just happens:
+
+```bash
+npx mcp-master-tester lint --max-tokens 6000 --max-tool-tokens 800 -- node dist/index.js
+```
+
+```text
+  error  search_mail  all 14 tool definitions add up to ~6,420 tokens, over the budget of 6,000; largest: search_mail ~910, …
+```
+
+The summary under the findings says where the size comes from (descriptions, input schemas, output schemas) and names the largest tools, so you know what to trim first. Tokens are estimated as the characters of each tool definition, as compact JSON, divided by four; real tokenizers usually count somewhat fewer. In the GitHub Action, set `max-tokens` and `max-tool-tokens`.
 
 ## Smoke test in CI
 

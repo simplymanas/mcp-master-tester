@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent, outputSchemaProblems, lintMarkdown,
+  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent, outputSchemaProblems, lintMarkdown, toolListSize, sizeLines,
   BIG_RESULT_CHARS,
 } from '../public/lint.js';
 
@@ -299,4 +299,49 @@ test('findings are sorted by severity, then by tool order', () => {
   ]);
   assert.deepEqual(f.map((x) => x.sev), [...f.map((x) => x.sev)].sort((x, y) => ['error', 'warn', 'info'].indexOf(x) - ['error', 'warn', 'info'].indexOf(y)));
   assert.equal(f[0].target, 'a_tool');
+});
+
+test('toolListSize: where the size comes from, the largest tools first, and parameters without a description', () => {
+  const big = clean({ name: 'search_notes', description: 'Search notes by text. '.repeat(20), outputSchema: { type: 'object', properties: { hits: { type: 'array' } } },
+    inputSchema: { type: 'object', properties: { q: { type: 'string' }, limit: { type: 'integer', description: 'Most results, e.g. 10' } } } });
+  const tools = [clean(), big];
+  const size = toolListSize(tools);
+  const tok = (v) => Math.round(JSON.stringify(v).length / 4);
+  assert.equal(size.tokens, Math.round((JSON.stringify(tools[0]).length + JSON.stringify(big).length) / 4));
+  assert.equal(size.outputSchemas, tok(big.outputSchema));
+  assert.equal(size.descriptions, Math.round((JSON.stringify(tools[0].description).length + JSON.stringify(big.description).length) / 4));
+  assert.ok(Math.abs(size.descriptions + size.inputSchemas + size.outputSchemas + size.other - size.tokens) <= 2, 'the parts add up');
+  assert.deepEqual(size.tools.map((t) => t.name), ['search_notes', 'read_note']);
+  assert.deepEqual([size.params, size.paramsNoDescription], [3, 1]);
+  const lines = sizeLines(size);
+  assert.match(lines.size, /^Tool list: ~[\d,]+ tokens \(descriptions ~[\d,]+, input schemas ~[\d,]+, output schemas ~[\d,]+, other ~[\d,]+\)$/);
+  assert.match(lines.largest, /^Largest: search_notes ~[\d,]+, read_note ~[\d,]+$/);
+  assert.equal(lines.params, 'Parameters: 1 of 3 have no description');
+  const one = sizeLines(toolListSize([clean()]));
+  assert.equal(one.largest, undefined, 'no "largest" line for a single tool');
+  assert.doesNotMatch(one.size, /output schemas/, 'output schemas are mentioned only when there are some');
+  assert.deepEqual(toolListSize([]), { tokens: 0, descriptions: 0, inputSchemas: 0, outputSchemas: 0, other: 0, tools: [], params: 0, paramsNoDescription: 0 });
+});
+
+test('token budgets: over the whole-list or per-tool budget is an error, and a list budget replaces the ~10k warning', () => {
+  const huge = Array.from({ length: 40 }, (_, i) => clean({ name: `tool_${i}`, description: `Tool ${i}. ${'Long text. '.repeat(100)}` }));
+  const size = toolListSize(huge);
+  assert.ok(size.tokens > 10000);
+  assert.equal(lintTools(huge).find((f) => /add up to/.test(f.msg))?.sev, 'warn', 'the fixed warning without a budget');
+  const over = lintTools(huge, {}, { maxTokens: 8000 });
+  const err = over.find((f) => /over the budget of 8,000/.test(f.msg));
+  assert.equal(err.sev, 'error');
+  assert.match(err.msg, new RegExp(`all 40 tool definitions add up to ~${size.tokens.toLocaleString('en-US')} tokens, over the budget of 8,000; largest: `));
+  assert.equal(over.filter((f) => /add up to/.test(f.msg)).length, 1, 'the budget replaces the warning, not adds to it');
+  assert.ok(!lintTools(huge, {}, { maxTokens: 50000 }).some((f) => /add up to/.test(f.msg)), 'under a budget the user set: no warning either');
+
+  const perTool = lintTools([clean(), clean({ name: 'long_one', description: 'x'.repeat(2000) })], {}, { maxToolTokens: 300 });
+  assert.equal(sevOf(perTool, 'long_one', /over the per-tool budget of 300/), 'error');
+  assert.ok(!has(perTool, 'read_note', /per-tool budget/));
+});
+
+test('lintMarkdown adds the size lines when given', () => {
+  const md = lintMarkdown([], { tools: 1, size: toolListSize([clean()]) });
+  assert.match(md, /\n- Tool list: ~\d+ tokens \(descriptions/);
+  assert.match(md, /\n- Parameters: 0 of 1 have no description/);
 });

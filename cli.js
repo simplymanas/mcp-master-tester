@@ -15,7 +15,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { lintTools } from './public/lint.js';
+import { lintTools, toolListSize, sizeLines } from './public/lint.js';
 import { planSmoke, runSmoke, countSmoke, smokeFailed, untestedTools, NOT_READ_ONLY } from './public/smoke.js';
 import { snapshotTools, lockfileText, parseLockfile, diffTools, DEFAULT_LOCKFILE, DIFF_LEVELS } from './public/diff.js';
 import { parseCases, unknownTools, toApiTools, judgeCase, countEval, passRate, mixUps, caseLabel, shortText, DEFAULT_CASES, DEFAULT_MODEL, EVAL_SYSTEM } from './public/evals.js';
@@ -49,6 +49,10 @@ lint options:
   --fail-on <level>     Exit 1 when there are findings at this level or worse:
                         error (default), warn, info, or never
   --show-info           Also list info findings in text output (they are counted either way)
+  --max-tokens <n>      Token budget for the whole tool list: going over it is an error, so CI
+                        fails when the list grows past it. Replaces the warning at ~10,000.
+  --max-tool-tokens <n> Token budget for any one tool definition
+                        (Tokens are estimated as characters of compact JSON / 4.)
 
 smoke options:
   --all                 Also run tools that aren't clearly read-only. They may change data.
@@ -237,20 +241,35 @@ const lintSummary = (counts) => `${plural(counts.error, 'error')}, ${plural(coun
 
 const runLint = (argv) => runCommand('lint', argv, {
   failLevels: ['error', 'warn', 'info', 'never'],
-  options: { 'show-info': { type: 'boolean', default: false } },
+  options: {
+    'show-info': { type: 'boolean', default: false },
+    'max-tokens': { type: 'string' },
+    'max-tool-tokens': { type: 'string' },
+  },
 }, async ({ values, config, failOn, format, timeout }) => {
+  const budget = {};
+  for (const [flag, key] of [['max-tokens', 'maxTokens'], ['max-tool-tokens', 'maxToolTokens']]) {
+    if (values[flag] === undefined) continue;
+    const n = Number(values[flag]);
+    if (!Number.isInteger(n) || n <= 0) throw new UsageError(`--${flag} must be a whole number of tokens above 0 (got "${values[flag]}")`);
+    budget[key] = n;
+  }
   const { tools, server, hasTools } = await withServer(config, timeout, (s) => s);
-  const findings = lintTools(tools);
+  const findings = lintTools(tools, {}, budget);
+  const size = toolListSize(tools);
+  const lines = sizeLines(size);
   const counts = { error: 0, warn: 0, info: 0 };
   for (const f of findings) counts[f.sev]++;
   const worst = failOn === 'never' ? -1 : SEVERITIES.indexOf(failOn);
   const failed = findings.some((f) => SEVERITIES.indexOf(f.sev) <= worst);
 
   if (format === 'json') {
-    console.log(JSON.stringify({ server: serverJson(server), transport: config.transport, tools: tools.length, counts, failOn, passed: !failed, findings }, null, 2));
+    console.log(JSON.stringify({ server: serverJson(server), transport: config.transport, tools: tools.length, counts, failOn, passed: !failed,
+      size, ...(Object.keys(budget).length ? { budget } : {}), findings }, null, 2));
   } else if (format === 'github') {
     const kind = { error: 'error', warn: 'warning', info: 'notice' };
     for (const f of findings) console.log(ghAnnotation(kind[f.sev], `MCP lint: ${f.target}`, f.msg));
+    console.log(`MCP lint: ${lines.size}.${lines.params ? ` ${lines.params}.` : ''}`);
     console.log(`MCP lint: ${lintSummary(counts)}. Failing on: ${failOn}.`);
   } else {
     console.log(header('lint', server, tools.length, config));
@@ -259,6 +278,12 @@ const runLint = (argv) => runCommand('lint', argv, {
     const width = Math.min(40, Math.max(0, ...shown.map((f) => f.target.length)));
     for (const f of shown) console.log(`  ${LINT_LABEL[f.sev]}  ${f.target.padEnd(width)}  ${f.msg}`);
     if (shown.length) console.log('');
+    if (tools.length) {
+      const budgetNote = budget.maxTokens ? `, budget ${budget.maxTokens.toLocaleString('en-US')}` : '';
+      console.log(`${lines.size.replace(/ tokens \(/, ` tokens${budgetNote} (`)}`);
+      for (const key of ['largest', 'params']) if (lines[key]) console.log(lines[key]);
+      console.log('');
+    }
     const hidden = counts.info && !showInfo ? ' (add --show-info to list the info findings)' : '';
     console.log(`${failed ? paint('31;1', '✖ failed') : paint('32;1', '✔ passed')}: ${lintSummary(counts)}${hidden}. Failing on: ${failOn}.`);
     if (!hasTools) console.log('Note: the server does not declare the "tools" capability.');

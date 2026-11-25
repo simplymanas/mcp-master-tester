@@ -40,6 +40,9 @@ test('planRuns: a stdio server gets lint then smoke, with the command after --',
   assert.deepEqual(runs.map((r) => r.check), ['lint', 'smoke']);
   assert.deepEqual(runs[0].argv, ['lint', '--format', 'github', '--timeout', '30000', '--fail-on', 'error', '--', 'node', 'dist/index.js', '--port', '0']);
   assert.deepEqual(runs[1].argv, ['smoke', '--format', 'github', '--timeout', '30000', '--fail-on', 'fail', '--', 'node', 'dist/index.js', '--port', '0']);
+  const budget = planRuns({ MMT_COMMAND: 'node s.js', MMT_CHECKS: 'lint', MMT_MAX_TOKENS: '8000', MMT_MAX_TOOL_TOKENS: '900' });
+  assert.deepEqual(budget[0].argv, ['lint', '--format', 'github', '--timeout', '30000', '--fail-on', 'error', '--max-tokens', '8000', '--max-tool-tokens', '900', '--', 'node', 's.js']);
+  assert.throws(() => planRuns({ MMT_COMMAND: 'node s.js', MMT_MAX_TOKENS: '10k' }), /max-tokens must be a whole number/);
   const none = { exists: () => false };
   const lockOnDisk = { exists: (f) => f === 'mcp-tools.lock.json' };
   assert.deepEqual(planRuns({ MMT_COMMAND: 'node s.js' }, none).map((r) => r.check), ['lint', 'smoke'], 'lint and smoke by default');

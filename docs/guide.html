@@ -40,6 +40,7 @@
         <ul>
           <li><a href="#lint-checks">What it checks</a></li>
           <li><a href="#lint-cli">From the command line</a></li>
+          <li><a href="#lint-budget">Token budget</a></li>
         </ul>
       </li>
       <li><a href="#smoke">Smoke test</a>
@@ -137,6 +138,7 @@ npx mcp-master-tester lint --url https://example.com/mcp --header "Authorization
             <tr><td><code>--fail-on &lt;level&gt;</code></td><td>Exit 1 at <code>error</code> (default), <code>warn</code> or <code>info</code> findings, or <code>never</code></td></tr>
             <tr><td><code>--format &lt;format&gt;</code></td><td><code>text</code> (default), <code>json</code>, or <code>github</code> for GitHub Actions annotations</td></tr>
             <tr><td><code>--show-info</code></td><td>List info findings too (they're always counted)</td></tr>
+            <tr><td><code>--max-tokens &lt;n&gt;</code>, <code>--max-tool-tokens &lt;n&gt;</code></td><td>A <a href="#lint-budget">token budget</a> for the whole tool list, and for any one tool. Over it is an error.</td></tr>
             <tr><td><code>--env KEY=VALUE</code>, <code>--cwd &lt;dir&gt;</code></td><td>Environment and working directory for a stdio server</td></tr>
             <tr><td><code>--url &lt;url&gt;</code>, <code>--sse</code>, <code>--header "Name: value"</code></td><td>Connect to a remote server</td></tr>
             <tr><td><code>--timeout &lt;ms&gt;</code></td><td>Give up after this long (default 30000)</td></tr>
@@ -144,6 +146,16 @@ npx mcp-master-tester lint --url https://example.com/mcp --header "Authorization
         </table>
       </div>
       <p><strong>Exit codes:</strong> <code>0</code> passed, <code>1</code> findings at or above <code>--fail-on</code>, <code>2</code> the server couldn't be started or reached, or the options were wrong. If a stdio server crashes on start, its stderr is printed.</p>
+      <p>Under the findings, a summary says how big the tool list is and where the size comes from, names the largest tools, and counts the parameters with no description. The Lint tab in the app shows the same lines, and so does the report you copy as Markdown.</p>
+      <pre><code>Tool list: ~3,150 tokens (descriptions ~1,020, input schemas ~1,690, other ~440)
+Largest: send_mail ~610, search_mail ~480, get_user ~350, list_folders ~300, get_thread ~290
+Parameters: 6 of 31 have no description</code></pre>
+
+      <h3 id="lint-budget">Token budget</h3>
+      <p>A client sends the whole tool list to the model with every request. Lint warns at about 10,000 tokens. With a budget of your own, going over it is an error, so CI fails when the list grows and each new tool becomes a decision:</p>
+      <pre><code>npx mcp-master-tester lint --max-tokens 6000 --max-tool-tokens 800 -- node dist/index.js</code></pre>
+      <p><code>--max-tokens</code> covers the whole list and replaces the warning at about 10,000; <code>--max-tool-tokens</code> covers any one tool. The error names the largest tools, so you know what to trim first. In the GitHub Action, set <code>max-tokens</code> and <code>max-tool-tokens</code>.</p>
+      <p>Tokens are estimated as the characters of each tool definition, as compact JSON, divided by four. Real tokenizers usually count somewhat fewer: about 13% fewer with OpenAI's o200k across the servers in the <a href="survey.html">survey</a>. Set the budget with the estimate in mind, or measure your list once and keep a margin.</p>
     </section>
 
     <section id="smoke">
@@ -321,6 +333,7 @@ jobs:
             <tr><td><code>checks</code></td><td>Any of <code>lint</code>, <code>smoke</code>, <code>diff</code>, <code>eval</code>. Left empty: <code>lint</code> and <code>smoke</code>, plus <code>diff</code> when the lockfile exists, plus <code>eval</code> when the cases file exists and <code>anthropic-api-key</code> is set</td></tr>
             <tr><td><code>lockfile</code>, <code>diff-fail-on</code></td><td>For <code>diff</code>: the lockfile (default <code>mcp-tools.lock.json</code>), and <code>breaking</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
             <tr><td><code>lint-fail-on</code></td><td><code>error</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
+            <tr><td><code>max-tokens</code>, <code>max-tool-tokens</code></td><td>A <a href="#lint-budget">token budget</a> for the whole tool list, and for any one tool</td></tr>
             <tr><td><code>smoke-fail-on</code></td><td><code>fail</code> (default), <code>warn</code>, <code>skip</code> or <code>never</code></td></tr>
             <tr><td><code>tools</code>, <code>skip</code>, <code>all</code>, <code>args</code></td><td>Which tools the smoke test calls, and with what arguments, as in <a href="#smoke-args">the smoke test options</a></td></tr>
             <tr><td><code>anthropic-api-key</code>, <code>eval-cases</code></td><td>For <code>eval</code>: a key from the secrets context, passed to the eval run only, and the cases file (default <code>mcp-evals.json</code>). Also <code>eval-model</code>, <code>eval-effort</code>, <code>eval-pass-rate</code> and <code>eval-fail-on</code>, as in <a href="#evals">evals</a>.</td></tr>
@@ -328,7 +341,7 @@ jobs:
           </tbody>
         </table>
       </div>
-      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.9.0</code> or a commit SHA to stay on one version.</p>
+      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.10.0</code> or a commit SHA to stay on one version.</p>
       <p>On another CI system, or to control every flag, run the commands directly. With <code>--format github</code>, findings still show as annotations on GitHub. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
       <pre><code>- run: npm ci &amp;&amp; npm run build
 - run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
