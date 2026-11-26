@@ -260,6 +260,32 @@ npx mcp-master-tester diff -- node dist/index.js</code></pre>
         </table>
       </div>
       <p><code>--fail-on breaking</code> is the default; <code>warn</code>, <code>info</code> and <code>never</code> are the others. <code>--lock &lt;file&gt;</code> reads another lockfile, and <code>snapshot --out &lt;file&gt;</code> writes one. When a change is intended, run <code>snapshot</code> again and commit the new lockfile in the same pull request. The lockfile has no dates or server version, so it only changes when the tools do.</p>
+
+      <h3 id="diff-upstream">Review new tools before they reach your agents</h3>
+      <p>The same check works on servers you use but don't own. A server update can add tools, and with most clients they reach the model on the next request. With a per-agent allowlist they don't, but then nobody hears that they exist. Snapshot the server once, commit the lockfile, and run <code>diff --fail-on info</code> on a schedule. Any new tool, parameter or output field then fails the job and is named in the log.</p>
+      <pre><code># once, then commit the lockfile
+npx mcp-master-tester snapshot --out locks/some-server.lock.json -- npx -y some-mcp-server@latest
+
+# weekly, in CI
+npx mcp-master-tester diff --fail-on info --lock locks/some-server.lock.json -- npx -y some-mcp-server@latest</code></pre>
+      <p>As a scheduled workflow with the GitHub Action:</p>
+      <pre><code>name: Watch MCP servers we depend on
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # Mondays, 07:00 UTC
+  workflow_dispatch:
+jobs:
+  some-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: simplymanas/mcp-master-tester@v1
+        with:
+          command: npx -y some-mcp-server@latest
+          checks: diff
+          lockfile: locks/some-server.lock.json
+          diff-fail-on: info</code></pre>
+      <p>When it fails, read the change, decide which agents should get the new tools, then run <code>snapshot</code> again and commit the lockfile. For a remote server, use <code>url</code> and <code>headers</code> instead of <code>command</code>. A changed description is a <code>warn</code>, so it fails this job too, which is worth reviewing: a description is what the model acts on.</p>
     </section>
 
     <section id="evals">

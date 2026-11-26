@@ -4,9 +4,17 @@ All notable changes to MCP Master Tester. The format follows [Keep a Changelog](
 
 ## [Unreleased]
 
+### Added
+
+- Docs: "Review new tools before they reach your agents", a recipe for running `diff --fail-on info` on a schedule against a server you depend on, so a tool added by a server update is noticed before an agent gets it. From a thread with a reader on r/mcp who keeps a tool allowlist per agent.
+
 ### Changed
 
 - The npm description and keywords cover everything the tool does now (token budget, lockfile diff, tool-selection evals), not just lint and the smoke test. The website home page mentions the token budget and what the GitHub Action runs.
+
+### Fixed
+
+- `snapshot --out` creates the folders in the path when they don't exist yet, so `--out locks/server.lock.json` works in a fresh repo. When the file can't be written, the error now says so instead of "could not list the server's tools".
 
 ## [1.11.0] - 2026-11-26
 
