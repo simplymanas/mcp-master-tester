@@ -1,0 +1,2213 @@
+{
+ "date": "2026-11-26",
+ "topN": 10,
+ "previous": "2026-11-21",
+ "previousKind": "survey",
+ "lintVersion": "1.11.0",
+ "registry": {
+  "servers": 74014,
+  "deprecated": 1127,
+  "publishedLast30Days": 34343,
+  "remoteOnly": 45425,
+  "packageOnly": 22896,
+  "both": 4987,
+  "packageTypes": {
+   "npm": 19530,
+   "pypi": 5539,
+   "oci": 2100,
+   "mcpb": 1939,
+   "cargo": 161,
+   "nuget": 190
+  },
+  "publishers": 45179,
+  "top10PublishersServers": 13068
+ },
+ "method": {
+  "npmSearchDepth": 5000,
+  "notes": []
+ },
+ "summary": {
+  "planned": 39,
+  "measured": 33,
+  "medianTokens": 1708
+ },
+ "servers": [
+  {
+   "id": "playwright",
+   "name": "Playwright MCP",
+   "by": "Microsoft",
+   "rank": 1,
+   "downloads": 45175453,
+   "source": "both",
+   "registryName": "io.github.microsoft/playwright-mcp",
+   "package": {
+    "type": "npm",
+    "identifier": "@playwright/mcp",
+    "version": "0.0.86"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Playwright",
+    "version": "1.66.0-alpha-2026-11-18"
+   },
+   "metrics": {
+    "tools": 25,
+    "tokens": 5293,
+    "tokensWithoutOutputSchemas": 5293,
+    "o200k": 4570,
+    "o200kWithoutOutputSchemas": 4570,
+    "largest": {
+     "name": "browser_take_screenshot",
+     "tokens": 437
+    },
+    "labelled": 25,
+    "readOnly": 7,
+    "destructive": 18,
+    "noDescription": 0,
+    "params": 73,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 3
+    },
+    "toolNames": [
+     "browser_click",
+     "browser_close",
+     "browser_console_messages",
+     "browser_drag",
+     "browser_drop",
+     "browser_emulate_media",
+     "browser_evaluate",
+     "browser_file_upload",
+     "browser_fill_form",
+     "browser_find",
+     "browser_handle_dialog",
+     "browser_hover",
+     "browser_navigate",
+     "browser_navigate_back",
+     "browser_network_request",
+     "browser_network_requests",
+     "browser_press_key",
+     "browser_resize",
+     "browser_run_code_unsafe",
+     "browser_select_option",
+     "browser_snapshot",
+     "browser_tabs",
+     "browser_take_screenshot",
+     "browser_type",
+     "browser_wait_for"
+    ],
+    "hash": "5f561b652be74a14"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "npm-firebase-tools",
+   "name": "firebase-tools",
+   "by": "io.github.firebase",
+   "rank": 2,
+   "downloads": 21512640,
+   "source": "top",
+   "registryName": "io.github.firebase/firebase-mcp",
+   "package": {
+    "type": "npm",
+    "identifier": "firebase-tools",
+    "version": "14.27.0"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "reason": "exited"
+  },
+  {
+   "id": "npm-fallow",
+   "name": "Fallow",
+   "by": "io.github.fallow-rs",
+   "rank": 3,
+   "downloads": 11199093,
+   "source": "top",
+   "registryName": "io.github.fallow-rs/fallow",
+   "package": {
+    "type": "npm",
+    "identifier": "fallow",
+    "version": "3.49.0"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "fallow-mcp",
+    "version": "3.49.0"
+   },
+   "metrics": {
+    "tools": 44,
+    "tokens": 41301,
+    "tokensWithoutOutputSchemas": 41301,
+    "o200k": 37109,
+    "o200kWithoutOutputSchemas": 37109,
+    "largest": {
+     "name": "check_health",
+     "tokens": 4875
+    },
+    "labelled": 44,
+    "readOnly": 39,
+    "destructive": 1,
+    "noDescription": 0,
+    "params": 521,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 12
+    },
+    "toolNames": [
+     "analyze",
+     "audit",
+     "check_architecture",
+     "check_changed",
+     "check_health",
+     "check_runtime_coverage",
+     "code_execute",
+     "decision_surface",
+     "fallow_explain",
+     "feature_flags",
+     "find_dupes",
+     "find_similar_code",
+     "fix_apply",
+     "fix_preview",
+     "get_blast_radius",
+     "get_cleanup_candidates",
+     "get_cloud_deployment_changes",
+     "get_cloud_review_packet",
+     "get_cloud_runtime_context",
+     "get_hot_paths",
+     "get_importance",
+     "get_token_blast_radius",
+     "guard",
+     "impact",
+     "impact_all",
+     "impact_closure",
+     "inspect_similar_code",
+     "inspect_target",
+     "list_boundaries",
+     "list_suppressions",
+     "mutation_inspect",
+     "mutation_plan",
+     "mutation_tasks",
+     "project_info",
+     "recommend",
+     "security_candidates",
+     "symbol_impact",
+     "trace_clone",
+     "trace_dependency",
+     "trace_error",
+     "trace_export",
+     "trace_file",
+     "trace_import_path",
+     "trace_symbol"
+    ],
+    "hash": "4c747f82a7dd12e5"
+   },
+   "change": null
+  },
+  {
+   "id": "chrome-devtools",
+   "name": "Chrome DevTools MCP",
+   "by": "Google",
+   "rank": 4,
+   "downloads": 9977720,
+   "source": "both",
+   "registryName": "io.github.ChromeDevTools/chrome-devtools-mcp",
+   "package": {
+    "type": "npm",
+    "identifier": "chrome-devtools-mcp",
+    "version": "1.13.0"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "chrome_devtools",
+    "version": "1.14.0"
+   },
+   "metrics": {
+    "tools": 33,
+    "tokens": 8093,
+    "tokensWithoutOutputSchemas": 8093,
+    "o200k": 7154,
+    "o200kWithoutOutputSchemas": 7154,
+    "largest": {
+     "name": "emulate",
+     "tokens": 615
+    },
+    "labelled": 33,
+    "readOnly": 8,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 124,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 1
+    },
+    "toolNames": [
+     "click",
+     "close_page",
+     "drag",
+     "emulate",
+     "evaluate_script",
+     "fill",
+     "fill_form",
+     "get_console_message",
+     "get_css_styles",
+     "get_network_request",
+     "handle_dialog",
+     "hover",
+     "lighthouse_audit",
+     "list_console_messages",
+     "list_network_requests",
+     "list_pages",
+     "navigate_page",
+     "new_page",
+     "performance_analyze_insight",
+     "performance_start_trace",
+     "performance_stop_trace",
+     "press_key",
+     "resize_page",
+     "screencast_start",
+     "screencast_stop",
+     "select_page",
+     "set_logpoints",
+     "take_heapsnapshot",
+     "take_screenshot",
+     "take_snapshot",
+     "type_text",
+     "upload_file",
+     "wait_for"
+    ],
+    "hash": "71bd4952ccacf30d"
+   },
+   "change": {
+    "tokens": 171,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": true
+   }
+  },
+  {
+   "id": "pypi-browser-use",
+   "name": "browser-use",
+   "by": "com.browser-use",
+   "rank": 5,
+   "downloads": 7960281,
+   "source": "top",
+   "registryName": "com.browser-use/browser-use",
+   "package": {
+    "type": "pypi",
+    "identifier": "browser-use",
+    "version": "0.13.11"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "browser-use",
+    "version": "0.13.11"
+   },
+   "metrics": {
+    "tools": 2,
+    "tokens": 231,
+    "tokensWithoutOutputSchemas": 231,
+    "o200k": 209,
+    "o200kWithoutOutputSchemas": 209,
+    "largest": {
+     "name": "browser_exec",
+     "tokens": 124
+    },
+    "labelled": 0,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 3,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "browser_exec",
+     "browser_screenshot"
+    ],
+    "hash": "22e1690f2756de3c"
+   },
+   "change": null
+  },
+  {
+   "id": "npm-color-space",
+   "name": "color-space",
+   "by": "io.github.colorjs",
+   "rank": 6,
+   "downloads": 5457555,
+   "source": "top",
+   "registryName": "io.github.colorjs/color-space",
+   "package": {
+    "type": "npm",
+    "identifier": "color-space",
+    "version": "3.5.0"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "color-space",
+    "version": "3.5.0"
+   },
+   "metrics": {
+    "tools": 9,
+    "tokens": 3138,
+    "tokensWithoutOutputSchemas": 2405,
+    "o200k": 3488,
+    "o200kWithoutOutputSchemas": 2751,
+    "largest": {
+     "name": "convert",
+     "tokens": 564
+    },
+    "labelled": 9,
+    "readOnly": 9,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 28,
+    "paramsNoDescription": 2,
+    "outputSchemas": 8,
+    "lint": {
+     "error": 0,
+     "warn": 3
+    },
+    "toolNames": [
+     "code",
+     "convert",
+     "css",
+     "cube",
+     "gamut",
+     "icc",
+     "shader",
+     "space",
+     "spaces"
+    ],
+    "hash": "8c75a1a71cea8ea6"
+   },
+   "change": null
+  },
+  {
+   "id": "npm-e2e",
+   "name": "e2e",
+   "by": "io.github.e2e-inc",
+   "rank": 7,
+   "downloads": 4598153,
+   "source": "top",
+   "registryName": "io.github.e2e-inc/e2e",
+   "package": {
+    "type": "npm",
+    "identifier": "e2e",
+    "version": "0.25.0"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "e2e",
+    "version": "0.25.0"
+   },
+   "metrics": {
+    "tools": 4,
+    "tokens": 1730,
+    "tokensWithoutOutputSchemas": 1730,
+    "o200k": 1655,
+    "o200kWithoutOutputSchemas": 1655,
+    "largest": {
+     "name": "open_session",
+     "tokens": 1064
+    },
+    "labelled": 4,
+    "readOnly": 1,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 14,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "call",
+     "close_session",
+     "open_session",
+     "tools"
+    ],
+    "hash": "40e942f2543c023c"
+   },
+   "change": null
+  },
+  {
+   "id": "desktop-commander",
+   "name": "Desktop Commander",
+   "by": "wonderwhy-er",
+   "rank": 8,
+   "downloads": 4450250,
+   "source": "both",
+   "registryName": "io.github.wonderwhy-er/desktop-commander",
+   "package": {
+    "type": "npm",
+    "identifier": "@wonderwhy-er/desktop-commander",
+    "version": "0.3.4"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "desktop-commander",
+    "version": "0.3.4"
+   },
+   "metrics": {
+    "tools": 25,
+    "tokens": 13488,
+    "tokensWithoutOutputSchemas": 13488,
+    "o200k": 10280,
+    "o200kWithoutOutputSchemas": 10280,
+    "largest": {
+     "name": "start_search",
+     "tokens": 1762
+    },
+    "labelled": 25,
+    "readOnly": 13,
+    "destructive": 9,
+    "noDescription": 0,
+    "params": 72,
+    "paramsNoDescription": 72,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 27
+    },
+    "toolNames": [
+     "create_directory",
+     "edit_block",
+     "force_terminate",
+     "get_config",
+     "get_file_info",
+     "get_more_search_results",
+     "get_recent_tool_calls",
+     "get_usage_stats",
+     "give_feedback_to_desktop_commander",
+     "interact_with_process",
+     "kill_process",
+     "list_directory",
+     "list_processes",
+     "list_searches",
+     "list_sessions",
+     "move_file",
+     "read_file",
+     "read_multiple_files",
+     "read_process_output",
+     "set_config_value",
+     "start_process",
+     "start_search",
+     "stop_search",
+     "write_file",
+     "write_pdf"
+    ],
+    "hash": "1dd850f880d510d3"
+   },
+   "change": {
+    "tokens": 84,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": true
+   }
+  },
+  {
+   "id": "context7-local",
+   "name": "Context7 (npm)",
+   "by": "Upstash",
+   "rank": 9,
+   "downloads": 4404174,
+   "source": "both",
+   "registryName": "io.github.upstash/context7",
+   "package": {
+    "type": "npm",
+    "identifier": "@upstash/context7-mcp",
+    "version": "4.9.0"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Context7",
+    "version": "4.9.0"
+   },
+   "metrics": {
+    "tools": 2,
+    "tokens": 1379,
+    "tokensWithoutOutputSchemas": 1379,
+    "o200k": 1203,
+    "o200kWithoutOutputSchemas": 1203,
+    "largest": {
+     "name": "resolve-library-id",
+     "tokens": 717
+    },
+    "labelled": 2,
+    "readOnly": 2,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 6,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "query-docs",
+     "resolve-library-id"
+    ],
+    "hash": "019fd88e138503d2"
+   },
+   "change": {
+    "tokens": 74,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": true
+   }
+  },
+  {
+   "id": "npm-snyk",
+   "name": "snyk",
+   "by": "io.snyk",
+   "rank": 10,
+   "downloads": 3411966,
+   "source": "top",
+   "registryName": "io.snyk/mcp",
+   "package": {
+    "type": "npm",
+    "identifier": "snyk",
+    "version": "1.1304.2"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Snyk MCP Server",
+    "version": "1.1304.2"
+   },
+   "metrics": {
+    "tools": 12,
+    "tokens": 6162,
+    "tokensWithoutOutputSchemas": 6162,
+    "o200k": 5639,
+    "o200kWithoutOutputSchemas": 5639,
+    "largest": {
+     "name": "snyk_sca_scan",
+     "tokens": 2030
+    },
+    "labelled": 12,
+    "readOnly": 9,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 80,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "snyk_aibom",
+     "snyk_auth",
+     "snyk_code_scan",
+     "snyk_container_scan",
+     "snyk_iac_scan",
+     "snyk_logout",
+     "snyk_package_health_check",
+     "snyk_sbom_scan",
+     "snyk_sca_scan",
+     "snyk_send_feedback",
+     "snyk_trust",
+     "snyk_version"
+    ],
+    "hash": "1c3e21f2df59e9cb"
+   },
+   "change": null
+  },
+  {
+   "id": "everything",
+   "name": "Everything (reference)",
+   "by": "MCP project",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@modelcontextprotocol/server-everything"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "mcp-servers/everything",
+    "version": "1.0.0"
+   },
+   "metrics": {
+    "tools": 13,
+    "tokens": 1910,
+    "tokensWithoutOutputSchemas": 1811,
+    "o200k": 1708,
+    "o200kWithoutOutputSchemas": 1632,
+    "largest": {
+     "name": "gzip-file-as-resource",
+     "tokens": 285
+    },
+    "labelled": 13,
+    "readOnly": 9,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 16,
+    "paramsNoDescription": 1,
+    "outputSchemas": 1,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "echo",
+     "get-annotated-message",
+     "get-env",
+     "get-resource-links",
+     "get-resource-reference",
+     "get-structured-content",
+     "get-sum",
+     "get-tiny-image",
+     "gzip-file-as-resource",
+     "simulate-research-query",
+     "toggle-simulated-logging",
+     "toggle-subscriber-updates",
+     "trigger-long-running-operation"
+    ],
+    "hash": "c972adcbfc9c14b2"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "filesystem",
+   "name": "Filesystem",
+   "by": "MCP project",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@modelcontextprotocol/server-filesystem"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "secure-filesystem-server",
+    "version": "1.0.0"
+   },
+   "metrics": {
+    "tools": 14,
+    "tokens": 3275,
+    "tokensWithoutOutputSchemas": 2493,
+    "o200k": 2849,
+    "o200kWithoutOutputSchemas": 2133,
+    "largest": {
+     "name": "read_media_file",
+     "tokens": 318
+    },
+    "labelled": 14,
+    "readOnly": 10,
+    "destructive": 3,
+    "noDescription": 0,
+    "params": 25,
+    "paramsNoDescription": 18,
+    "outputSchemas": 14,
+    "lint": {
+     "error": 0,
+     "warn": 3
+    },
+    "toolNames": [
+     "create_directory",
+     "directory_tree",
+     "edit_file",
+     "get_file_info",
+     "list_allowed_directories",
+     "list_directory",
+     "list_directory_with_sizes",
+     "move_file",
+     "read_file",
+     "read_media_file",
+     "read_multiple_files",
+     "read_text_file",
+     "search_files",
+     "write_file"
+    ],
+    "hash": "65e3d4fdaf356558"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "memory",
+   "name": "Memory",
+   "by": "MCP project",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@modelcontextprotocol/server-memory"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "memory-server",
+    "version": "1.0.0"
+   },
+   "metrics": {
+    "tools": 9,
+    "tokens": 2764,
+    "tokensWithoutOutputSchemas": 1486,
+    "o200k": 2428,
+    "o200kWithoutOutputSchemas": 1318,
+    "largest": {
+     "name": "create_entities",
+     "tokens": 410
+    },
+    "labelled": 9,
+    "readOnly": 3,
+    "destructive": 3,
+    "noDescription": 0,
+    "params": 8,
+    "paramsNoDescription": 4,
+    "outputSchemas": 9,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "add_observations",
+     "create_entities",
+     "create_relations",
+     "delete_entities",
+     "delete_observations",
+     "delete_relations",
+     "open_nodes",
+     "read_graph",
+     "search_nodes"
+    ],
+    "hash": "087eeac6c2ad4e18"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "sequential-thinking",
+   "name": "Sequential Thinking",
+   "by": "MCP project",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@modelcontextprotocol/server-sequential-thinking"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "sequential-thinking-server",
+    "version": "1.0.0"
+   },
+   "metrics": {
+    "tools": 1,
+    "tokens": 1160,
+    "tokensWithoutOutputSchemas": 1053,
+    "o200k": 999,
+    "o200kWithoutOutputSchemas": 903,
+    "largest": {
+     "name": "sequentialthinking",
+     "tokens": 1160
+    },
+    "labelled": 1,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 9,
+    "paramsNoDescription": 0,
+    "outputSchemas": 1,
+    "lint": {
+     "error": 0,
+     "warn": 1
+    },
+    "toolNames": [
+     "sequentialthinking"
+    ],
+    "hash": "7ad0363f4ba6df99"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "time",
+   "name": "Time",
+   "by": "MCP project",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "pypi",
+    "identifier": "mcp-server-time"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "mcp-time",
+    "version": "2026.11.18"
+   },
+   "metrics": {
+    "tools": 3,
+    "tokens": 1072,
+    "tokensWithoutOutputSchemas": 590,
+    "o200k": 1052,
+    "o200kWithoutOutputSchemas": 584,
+    "largest": {
+     "name": "convert_time",
+     "tokens": 537
+    },
+    "labelled": 3,
+    "readOnly": 3,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 9,
+    "paramsNoDescription": 0,
+    "outputSchemas": 3,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "convert_time",
+     "get_current_time",
+     "get_time_ago"
+    ],
+    "hash": "7fb98ffc0f93f94d"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": true
+   }
+  },
+  {
+   "id": "git",
+   "name": "Git",
+   "by": "MCP project",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "pypi",
+    "identifier": "mcp-server-git"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "mcp-git",
+    "version": "2026.11.18"
+   },
+   "metrics": {
+    "tools": 14,
+    "tokens": 1925,
+    "tokensWithoutOutputSchemas": 1925,
+    "o200k": 1841,
+    "o200kWithoutOutputSchemas": 1841,
+    "largest": {
+     "name": "git_log",
+     "tokens": 272
+    },
+    "labelled": 14,
+    "readOnly": 8,
+    "destructive": 1,
+    "noDescription": 0,
+    "params": 32,
+    "paramsNoDescription": 21,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "git_add",
+     "git_branch",
+     "git_checkout",
+     "git_commit",
+     "git_create_branch",
+     "git_diff",
+     "git_diff_staged",
+     "git_diff_unstaged",
+     "git_log",
+     "git_merge",
+     "git_remote",
+     "git_reset",
+     "git_show",
+     "git_status"
+    ],
+    "hash": "8c6b8fbba17eedf6"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "fetch",
+   "name": "Fetch",
+   "by": "MCP project",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "pypi",
+    "identifier": "mcp-server-fetch"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "mcp-fetch",
+    "version": "2026.11.11"
+   },
+   "metrics": {
+    "tools": 1,
+    "tokens": 362,
+    "tokensWithoutOutputSchemas": 362,
+    "o200k": 324,
+    "o200kWithoutOutputSchemas": 324,
+    "largest": {
+     "name": "fetch",
+     "tokens": 362
+    },
+    "labelled": 1,
+    "readOnly": 1,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 5,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "fetch"
+    ],
+    "hash": "147babed8668127f"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "markitdown",
+   "name": "MarkItDown MCP",
+   "by": "Microsoft",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "pypi",
+    "identifier": "markitdown-mcp"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "markitdown",
+    "version": null
+   },
+   "metrics": {
+    "tools": 1,
+    "tokens": 105,
+    "tokensWithoutOutputSchemas": 68,
+    "o200k": 96,
+    "o200kWithoutOutputSchemas": 62,
+    "largest": {
+     "name": "convert_to_markdown",
+     "tokens": 105
+    },
+    "labelled": 0,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 1,
+    "paramsNoDescription": 1,
+    "outputSchemas": 1,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "convert_to_markdown"
+    ],
+    "hash": "c16c3bb5e79fb7a6"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "azure",
+   "name": "Azure MCP",
+   "by": "Microsoft",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@azure/mcp"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Azure MCP Server",
+    "version": "4.0.0-beta.10"
+   },
+   "metrics": {
+    "tools": 74,
+    "tokens": 19814,
+    "tokensWithoutOutputSchemas": 19814,
+    "o200k": 15635,
+    "o200kWithoutOutputSchemas": 15635,
+    "largest": {
+     "name": "resiliencyagent",
+     "tokens": 530
+    },
+    "labelled": 74,
+    "readOnly": 5,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 285,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 5
+    },
+    "toolNames": [
+     "acr",
+     "adme",
+     "advisor",
+     "aks",
+     "appconfig",
+     "applens",
+     "applicationinsights",
+     "appservice",
+     "arm",
+     "azd",
+     "azurebackup",
+     "azuremigrate",
+     "azureterraform",
+     "azureterraformbestpractices",
+     "bicepschema",
+     "cloudarchitect",
+     "communication",
+     "compute",
+     "confidentialledger",
+     "containerapps",
+     "cosmos",
+     "dashboards",
+     "datadog",
+     "deploy",
+     "deviceprovisioning",
+     "deviceregistry",
+     "documentation",
+     "eventgrid",
+     "eventhubs",
+     "extension_cli_generate",
+     "extension_cli_install",
+     "fileshares",
+     "foundry",
+     "foundryextensions",
+     "functionapp",
+     "functions",
+     "get_azure_bestpractices",
+     "grafana",
+     "group_list",
+     "group_resource_list",
+     "insights",
+     "iothub",
+     "iotoperations",
+     "keyvault",
+     "kusto",
+     "loadtesting",
+     "managedlustre",
+     "marketplace",
+     "monitor",
+     "mysql",
+     "netappfiles",
+     "optimization",
+     "policy",
+     "postgres",
+     "pricing",
+     "quota",
+     "redis",
+     "resiliency",
+     "resiliencyagent",
+     "resourcehealth",
+     "role",
+     "search",
+     "servicebus",
+     "servicefabric",
+     "signalr",
+     "speech",
+     "sql",
+     "sreagent",
+     "storage",
+     "storagesync",
+     "subscription_list",
+     "virtualdesktop",
+     "wellarchitectedframework",
+     "workbooks"
+    ],
+    "hash": "c0058eb7ef11e4b1"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "aws-docs",
+   "name": "AWS Documentation MCP",
+   "by": "AWS Labs",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "pypi",
+    "identifier": "awslabs.aws-documentation-mcp-server"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "awslabs.aws-documentation-mcp-server",
+    "version": null
+   },
+   "metrics": {
+    "tools": 5,
+    "tokens": 5809,
+    "tokensWithoutOutputSchemas": 4082,
+    "o200k": 5213,
+    "o200kWithoutOutputSchemas": 3575,
+    "largest": {
+     "name": "search_documentation",
+     "tokens": 2161
+    },
+    "labelled": 0,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 15,
+    "paramsNoDescription": 0,
+    "outputSchemas": 5,
+    "lint": {
+     "error": 0,
+     "warn": 3
+    },
+    "toolNames": [
+     "read_documentation",
+     "read_sections",
+     "recommend",
+     "search_documentation",
+     "search_table"
+    ],
+    "hash": "1ce798c1ce5cb883"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "notion",
+   "name": "Notion MCP",
+   "by": "Notion",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@notionhq/notion-mcp-server"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Notion API",
+    "version": "1.0.0"
+   },
+   "metrics": {
+    "tools": 24,
+    "tokens": 19048,
+    "tokensWithoutOutputSchemas": 19048,
+    "o200k": 17474,
+    "o200kWithoutOutputSchemas": 17474,
+    "largest": {
+     "name": "API-update-page-markdown",
+     "tokens": 1466
+    },
+    "labelled": 24,
+    "readOnly": 12,
+    "destructive": 12,
+    "noDescription": 0,
+    "params": 71,
+    "paramsNoDescription": 31,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 7
+    },
+    "toolNames": [
+     "API-create-a-comment",
+     "API-create-a-data-source",
+     "API-delete-a-block",
+     "API-get-block-children",
+     "API-get-self",
+     "API-get-user",
+     "API-get-users",
+     "API-list-data-source-templates",
+     "API-move-page",
+     "API-patch-block-children",
+     "API-patch-page",
+     "API-post-page",
+     "API-post-search",
+     "API-query-data-source",
+     "API-retrieve-a-block",
+     "API-retrieve-a-comment",
+     "API-retrieve-a-data-source",
+     "API-retrieve-a-database",
+     "API-retrieve-a-page",
+     "API-retrieve-a-page-property",
+     "API-retrieve-page-markdown",
+     "API-update-a-block",
+     "API-update-a-data-source",
+     "API-update-page-markdown"
+    ],
+    "hash": "20b7ebb354965b0b"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "supabase",
+   "name": "Supabase MCP",
+   "by": "Supabase",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@supabase/mcp-server-supabase"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "reason": "exited"
+  },
+  {
+   "id": "sentry",
+   "name": "Sentry MCP",
+   "by": "Sentry",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@sentry/mcp-server"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "reason": "exited"
+  },
+  {
+   "id": "stripe",
+   "name": "Stripe MCP",
+   "by": "Stripe",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@stripe/mcp"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "reason": "exited"
+  },
+  {
+   "id": "firecrawl",
+   "name": "Firecrawl MCP",
+   "by": "Firecrawl",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "firecrawl-mcp"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "firecrawl-fastmcp",
+    "version": "3.41.0"
+   },
+   "metrics": {
+    "tools": 28,
+    "tokens": 24568,
+    "tokensWithoutOutputSchemas": 15084,
+    "o200k": 22019,
+    "o200kWithoutOutputSchemas": 13901,
+    "largest": {
+     "name": "firecrawl_search",
+     "tokens": 2585
+    },
+    "labelled": 28,
+    "readOnly": 20,
+    "destructive": 3,
+    "noDescription": 0,
+    "params": 171,
+    "paramsNoDescription": 118,
+    "outputSchemas": 28,
+    "lint": {
+     "error": 0,
+     "warn": 8
+    },
+    "toolNames": [
+     "alexandria_library_read",
+     "alexandria_library_search",
+     "firecrawl_agent",
+     "firecrawl_agent_status",
+     "firecrawl_check_crawl_status",
+     "firecrawl_crawl",
+     "firecrawl_credit_usage",
+     "firecrawl_developer_search",
+     "firecrawl_gov_search",
+     "firecrawl_interact",
+     "firecrawl_interact_stop",
+     "firecrawl_map",
+     "firecrawl_monitor_check",
+     "firecrawl_monitor_checks",
+     "firecrawl_monitor_create",
+     "firecrawl_monitor_delete",
+     "firecrawl_monitor_get",
+     "firecrawl_monitor_list",
+     "firecrawl_monitor_run",
+     "firecrawl_monitor_update",
+     "firecrawl_parse",
+     "firecrawl_research_inspect_paper",
+     "firecrawl_research_lookup_protein",
+     "firecrawl_research_read_paper",
+     "firecrawl_research_related_papers",
+     "firecrawl_research_search_papers",
+     "firecrawl_scrape",
+     "firecrawl_search"
+    ],
+    "hash": "26abffa65f786c88"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "exa",
+   "name": "Exa MCP",
+   "by": "Exa",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "exa-mcp-server"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "exa-search-server",
+    "version": "3.5.1"
+   },
+   "metrics": {
+    "tools": 2,
+    "tokens": 545,
+    "tokensWithoutOutputSchemas": 545,
+    "o200k": 495,
+    "o200kWithoutOutputSchemas": 495,
+    "largest": {
+     "name": "web_search_exa",
+     "tokens": 330
+    },
+    "labelled": 2,
+    "readOnly": 2,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 4,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "web_fetch_exa",
+     "web_search_exa"
+    ],
+    "hash": "3ad5805fa2521309"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "tavily",
+   "name": "Tavily MCP",
+   "by": "Tavily",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "tavily-mcp"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "tavily-mcp",
+    "version": "0.2.22"
+   },
+   "metrics": {
+    "tools": 5,
+    "tokens": 1922,
+    "tokensWithoutOutputSchemas": 1922,
+    "o200k": 1651,
+    "o200kWithoutOutputSchemas": 1651,
+    "largest": {
+     "name": "tavily_search",
+     "tokens": 723
+    },
+    "labelled": 0,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 42,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "tavily_crawl",
+     "tavily_extract",
+     "tavily_map",
+     "tavily_research",
+     "tavily_search"
+    ],
+    "hash": "e563a83ef3111abb"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "brave",
+   "name": "Brave Search MCP",
+   "by": "Brave",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@brave/brave-search-mcp-server"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "reason": "exited"
+  },
+  {
+   "id": "browserbase",
+   "name": "Browserbase MCP",
+   "by": "Browserbase",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "@browserbasehq/mcp-server-browserbase"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Browserbase MCP Server",
+    "version": "2.3.0"
+   },
+   "metrics": {
+    "tools": 9,
+    "tokens": 1333,
+    "tokensWithoutOutputSchemas": 1333,
+    "o200k": 1133,
+    "o200kWithoutOutputSchemas": 1133,
+    "largest": {
+     "name": "browserbase_stagehand_observe",
+     "tokens": 308
+    },
+    "labelled": 0,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 8,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "browserbase_screenshot",
+     "browserbase_session_close",
+     "browserbase_session_create",
+     "browserbase_stagehand_act",
+     "browserbase_stagehand_agent",
+     "browserbase_stagehand_extract",
+     "browserbase_stagehand_get_url",
+     "browserbase_stagehand_navigate",
+     "browserbase_stagehand_observe"
+    ],
+    "hash": "141313f7a5e1159e"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "kubernetes",
+   "name": "Kubernetes MCP",
+   "by": "Flux159",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": {
+    "type": "npm",
+    "identifier": "mcp-server-kubernetes"
+   },
+   "url": null,
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "kubernetes",
+    "version": "4.2.3"
+   },
+   "metrics": {
+    "tools": 23,
+    "tokens": 5971,
+    "tokensWithoutOutputSchemas": 5971,
+    "o200k": 5283,
+    "o200kWithoutOutputSchemas": 5283,
+    "largest": {
+     "name": "kubectl_create",
+     "tokens": 971
+    },
+    "labelled": 22,
+    "readOnly": 6,
+    "destructive": 12,
+    "noDescription": 0,
+    "params": 152,
+    "paramsNoDescription": 6,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 6
+    },
+    "toolNames": [
+     "cleanup",
+     "exec_in_pod",
+     "explain_resource",
+     "install_helm_chart",
+     "kubectl_apply",
+     "kubectl_context",
+     "kubectl_create",
+     "kubectl_delete",
+     "kubectl_describe",
+     "kubectl_generic",
+     "kubectl_get",
+     "kubectl_logs",
+     "kubectl_patch",
+     "kubectl_reconnect",
+     "kubectl_rollout",
+     "kubectl_scale",
+     "list_api_resources",
+     "node_management",
+     "ping",
+     "port_forward",
+     "stop_port_forward",
+     "uninstall_helm_chart",
+     "upgrade_helm_chart"
+    ],
+    "hash": "299a3d342d64737a"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "deepwiki",
+   "name": "DeepWiki",
+   "by": "Cognition",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://mcp.deepwiki.com/mcp",
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "DeepWiki",
+    "version": "4.0.2"
+   },
+   "metrics": {
+    "tools": 3,
+    "tokens": 426,
+    "tokensWithoutOutputSchemas": 332,
+    "o200k": 395,
+    "o200kWithoutOutputSchemas": 305,
+    "largest": {
+     "name": "ask_wiki_question",
+     "tokens": 178
+    },
+    "labelled": 0,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 4,
+    "paramsNoDescription": 0,
+    "outputSchemas": 3,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "ask_wiki_question",
+     "read_wiki_contents",
+     "read_wiki_structure"
+    ],
+    "hash": "ef01c7f7897ce763"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "context7-remote",
+   "name": "Context7 (remote)",
+   "by": "Upstash",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://mcp.context7.com/mcp",
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Context7",
+    "version": "4.9.0"
+   },
+   "metrics": {
+    "tools": 2,
+    "tokens": 1379,
+    "tokensWithoutOutputSchemas": 1379,
+    "o200k": 1203,
+    "o200kWithoutOutputSchemas": 1203,
+    "largest": {
+     "name": "resolve-library-id",
+     "tokens": 717
+    },
+    "labelled": 2,
+    "readOnly": 2,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 6,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "query-docs",
+     "resolve-library-id"
+    ],
+    "hash": "019fd88e138503d2"
+   },
+   "change": {
+    "tokens": 74,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": true
+   }
+  },
+  {
+   "id": "cloudflare-docs",
+   "name": "Cloudflare Docs",
+   "by": "Cloudflare",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://docs.mcp.cloudflare.com/mcp",
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "docs-ai-search",
+    "version": "0.5.0"
+   },
+   "metrics": {
+    "tools": 2,
+    "tokens": 433,
+    "tokensWithoutOutputSchemas": 285,
+    "o200k": 404,
+    "o200kWithoutOutputSchemas": 281,
+    "largest": {
+     "name": "search_cloudflare_documentation",
+     "tokens": 358
+    },
+    "labelled": 2,
+    "readOnly": 2,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 1,
+    "paramsNoDescription": 1,
+    "outputSchemas": 1,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "migrate_pages_to_workers_guide",
+     "search_cloudflare_documentation"
+    ],
+    "hash": "2887f1944f655625"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "ms-learn",
+   "name": "Microsoft Learn",
+   "by": "Microsoft",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://learn.microsoft.com/api/mcp",
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Microsoft Learn MCP Server",
+    "version": "1.0.0"
+   },
+   "metrics": {
+    "tools": 3,
+    "tokens": 1214,
+    "tokensWithoutOutputSchemas": 1063,
+    "o200k": 970,
+    "o200kWithoutOutputSchemas": 825,
+    "largest": {
+     "name": "microsoft_code_sample_search",
+     "tokens": 495
+    },
+    "labelled": 3,
+    "readOnly": 3,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 4,
+    "paramsNoDescription": 0,
+    "outputSchemas": 2,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "microsoft_code_sample_search",
+     "microsoft_docs_fetch",
+     "microsoft_docs_search"
+    ],
+    "hash": "69a9d1086efe71ee"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "aws-knowledge",
+   "name": "AWS Knowledge",
+   "by": "AWS",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://knowledge-mcp.global.api.aws",
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "AWSKnowledgeMCP",
+    "version": "1.0.0"
+   },
+   "metrics": {
+    "tools": 5,
+    "tokens": 1976,
+    "tokensWithoutOutputSchemas": 1976,
+    "o200k": 1938,
+    "o200kWithoutOutputSchemas": 1938,
+    "largest": {
+     "name": "aws___read_documentation",
+     "tokens": 702
+    },
+    "labelled": 5,
+    "readOnly": 5,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 11,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 1
+    },
+    "toolNames": [
+     "aws___get_regional_availability",
+     "aws___list_regions",
+     "aws___read_documentation",
+     "aws___retrieve_skill",
+     "aws___search_documentation"
+    ],
+    "hash": "f20646eb4b7ff3ef"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "huggingface",
+   "name": "Hugging Face",
+   "by": "Hugging Face",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://huggingface.co/mcp",
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "huggingface.co/mcp",
+    "version": "0.5.0"
+   },
+   "metrics": {
+    "tools": 4,
+    "tokens": 4965,
+    "tokensWithoutOutputSchemas": 2345,
+    "o200k": 5171,
+    "o200kWithoutOutputSchemas": 2282,
+    "largest": {
+     "name": "hf_fs",
+     "tokens": 2336
+    },
+    "labelled": 4,
+    "readOnly": 4,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 14,
+    "paramsNoDescription": 1,
+    "outputSchemas": 2,
+    "lint": {
+     "error": 0,
+     "warn": 1
+    },
+    "toolNames": [
+     "hf_fs",
+     "hf_whoami",
+     "hub_repo_details",
+     "hub_repo_search"
+    ],
+    "hash": "3914c0d3dfd92506"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "semgrep",
+   "name": "Semgrep",
+   "by": "Semgrep",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://mcp.semgrep.ai/mcp",
+   "needs": [],
+   "previousRank": null,
+   "reason": "key"
+  },
+  {
+   "id": "gitmcp",
+   "name": "GitMCP",
+   "by": "GitMCP",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://gitmcp.io/modelcontextprotocol/typescript-sdk",
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "GitMCP",
+    "version": "1.1.0"
+   },
+   "metrics": {
+    "tools": 4,
+    "tokens": 451,
+    "tokensWithoutOutputSchemas": 451,
+    "o200k": 369,
+    "o200kWithoutOutputSchemas": 369,
+    "largest": {
+     "name": "search_typescript_sdk_code",
+     "tokens": 149
+    },
+    "labelled": 0,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 4,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "fetch_generic_url_content",
+     "fetch_typescript_sdk_docs",
+     "search_typescript_sdk_code",
+     "search_typescript_sdk_docs"
+    ],
+    "hash": "47b67aaf9e0062cd"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  },
+  {
+   "id": "astro-docs",
+   "name": "Astro Docs",
+   "by": "Astro",
+   "rank": null,
+   "downloads": null,
+   "source": "baseline",
+   "registryName": null,
+   "package": null,
+   "url": "https://mcp.docs.astro.build/mcp",
+   "needs": [],
+   "previousRank": null,
+   "server": {
+    "name": "Astro Docs server",
+    "version": "1.0.0"
+   },
+   "metrics": {
+    "tools": 1,
+    "tokens": 79,
+    "tokensWithoutOutputSchemas": 79,
+    "o200k": 69,
+    "o200kWithoutOutputSchemas": 69,
+    "largest": {
+     "name": "search_astro_docs",
+     "tokens": 79
+    },
+    "labelled": 0,
+    "readOnly": 0,
+    "destructive": 0,
+    "noDescription": 0,
+    "params": 1,
+    "paramsNoDescription": 0,
+    "outputSchemas": 0,
+    "lint": {
+     "error": 0,
+     "warn": 0
+    },
+    "toolNames": [
+     "search_astro_docs"
+    ],
+    "hash": "21f746970d8b1d27"
+   },
+   "change": {
+    "tokens": 0,
+    "tools": 0,
+    "added": [],
+    "removed": [],
+    "changed": false
+   }
+  }
+ ]
+}

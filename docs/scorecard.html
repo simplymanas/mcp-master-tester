@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <title>MCP server scorecard · MCP Master Tester</title>
+  <meta name="description" content="Every month: the tool lists of the most downloaded servers in the official MCP Registry, measured. How much each sends to the model, and how well its tools are labelled. Updated 26 November 2026.">
+  <link rel="canonical" href="https://simplymanas.github.io/mcp-master-tester/scorecard.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="MCP server scorecard, 26 November 2026">
+  <meta property="og:description" content="The tool lists of the most downloaded MCP servers, measured every month.">
+  <meta property="og:url" content="https://simplymanas.github.io/mcp-master-tester/scorecard.html">
+  <meta property="og:image" content="https://simplymanas.github.io/mcp-master-tester/screenshot-lint.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M8 1l7 7-7 7-7-7z%27 fill=%27%234f9cf9%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l7 7-7 7-7-7z"/></svg>MCP Master Tester</a>
+    <nav class="site-nav" aria-label="Site">
+      <a href="./" class="hide-sm">Home</a>
+      <a href="guide.html">Docs</a>
+      <a href="survey.html" class="hide-sm">Survey</a>
+      <a href="scorecard.html" aria-current="page">Scorecard</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester" target="_blank" rel="noopener" class="hide-sm">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap article">
+  <p class="kicker">Scorecard · 26 November 2026</p>
+  <h1>MCP server scorecard</h1>
+  <p class="lede">Every month I list the tools of the 10 most downloaded servers in the official MCP Registry, and of the servers from the <a href="survey.html">first survey</a>, and measure what each sends to the model on every request. Only the tool list is read: no tool is called.</p>
+
+  <ul class="stats">
+    <li><strong>33</strong><span>servers measured, 406 tools</span></li>
+    <li><strong>5</strong><span>over 10,000 tokens</span></li>
+    <li><strong>1,708</strong><span>tokens for the median server</span></li>
+    <li><strong>92%</strong><span>of tools have safety labels</span></li>
+  </ul>
+
+  <h2>Since the first survey</h2>
+  <p>Compared with the first survey of 21 November 2026: 5 servers changed their tool list, adding 0 tools and removing 0.</p>
+
+  <h2>What the numbers say</h2>
+  <ul>
+    <li><strong>Size:</strong> 5 servers send over 10,000 tokens with every request: Fallow (37,109), Firecrawl MCP (22,019), Notion MCP (17,474), Azure MCP (15,635), Desktop Commander (10,280). Lint warns at about the same point, by its own estimate.</li>
+    <li><strong>Safety labels:</strong> 375 of 406 tools have annotations such as <code>readOnlyHint</code>. 8 servers label none of their tools.</li>
+    <li><strong>Parameters:</strong> 276 of 1,819 parameters have no description of their own.</li>
+    <li><strong>Spec errors:</strong> no server has a lint error, such as an input schema that isn't an object or a duplicate tool name.</li>
+  </ul>
+
+  <h2>The registry as a whole</h2>
+  <p>The official registry lists 74,014 servers (latest versions, not counting 1,127 deprecated), 34,343 of them published or updated in the last 30 days. 45,425 are remote only, 22,896 are packages only and 4,987 are both. They come from 45,179 publishers, and the 10 largest account for 13,068 servers (18%), which is why the scorecard ranks by downloads instead of measuring the whole list.</p>
+
+  <h2 id="data">All 33 servers measured</h2>
+  <p>Largest first. Rank is by downloads in the last 30 days, shown under it; "survey" marks a server from the first survey that isn't in the top 10. Change is in tokens since the last scorecard.</p>
+  <div class="table-wrap">
+<table class="data wide">
+<thead><tr><th>Server and package</th><th class="num">Rank</th><th class="num">Tools</th><th class="num">Tokens</th><th class="num">Change</th><th class="num">Labelled</th><th class="num">Params with no description</th><th class="num">Lint errors / warnings</th></tr></thead>
+<tbody>
+<tr><td>Fallow<span class="pkg">fallow 3.49.0</span></td><td class="num">3<span class="pkg">11,199,093</span></td><td class="num">44</td><td class="num">37,109</td><td class="num muted">new</td><td class="num">44 of 44</td><td class="num">0 of 521</td><td class="num">0 / 12</td></tr>
+<tr><td>Firecrawl MCP<span class="pkg">firecrawl-mcp 3.41.0</span></td><td class="num"><span class="muted">survey</span></td><td class="num">28</td><td class="num">22,019<span class="pkg wrap">13,901 without output schemas</span></td><td class="num muted">same</td><td class="num">28 of 28</td><td class="num">118 of 171</td><td class="num">0 / 8</td></tr>
+<tr><td>Notion MCP<span class="pkg">@notionhq/notion-mcp-server 1.0.0</span></td><td class="num"><span class="muted">survey</span></td><td class="num">24</td><td class="num">17,474</td><td class="num muted">same</td><td class="num">24 of 24</td><td class="num">31 of 71</td><td class="num">0 / 7</td></tr>
+<tr><td>Azure MCP<span class="pkg">@azure/mcp 4.0.0-beta.10</span></td><td class="num"><span class="muted">survey</span></td><td class="num">74</td><td class="num">15,635</td><td class="num muted">same</td><td class="num">74 of 74</td><td class="num">0 of 285</td><td class="num">0 / 5</td></tr>
+<tr><td>Desktop Commander<span class="pkg">@wonderwhy-er/desktop-commander 0.3.4</span></td><td class="num">8<span class="pkg">4,450,250</span></td><td class="num">25</td><td class="num">10,280</td><td class="num">+84</td><td class="num">25 of 25</td><td class="num">72 of 72</td><td class="num">0 / 27</td></tr>
+<tr><td>Chrome DevTools MCP<span class="pkg">chrome-devtools-mcp 1.14.0</span></td><td class="num">4<span class="pkg">9,977,720</span></td><td class="num">33</td><td class="num">7,154</td><td class="num">+171</td><td class="num">33 of 33</td><td class="num">0 of 124</td><td class="num">0 / 1</td></tr>
+<tr><td>snyk<span class="pkg">snyk 1.1304.2</span></td><td class="num">10<span class="pkg">3,411,966</span></td><td class="num">12</td><td class="num">5,639</td><td class="num muted">new</td><td class="num">12 of 12</td><td class="num">0 of 80</td><td class="num">0 / 0</td></tr>
+<tr><td>Kubernetes MCP<span class="pkg">mcp-server-kubernetes 4.2.3</span></td><td class="num"><span class="muted">survey</span></td><td class="num">23</td><td class="num">5,283</td><td class="num muted">same</td><td class="num">22 of 23</td><td class="num">6 of 152</td><td class="num">0 / 6</td></tr>
+<tr><td>AWS Documentation MCP<span class="pkg">awslabs.aws-documentation-mcp-server (PyPI)</span></td><td class="num"><span class="muted">survey</span></td><td class="num">5</td><td class="num">5,213<span class="pkg wrap">3,575 without output schemas</span></td><td class="num muted">same</td><td class="num">0 of 5</td><td class="num">0 of 15</td><td class="num">0 / 3</td></tr>
+<tr><td>Hugging Face<span class="pkg">remote: huggingface.co/mcp</span></td><td class="num"><span class="muted">survey</span></td><td class="num">4</td><td class="num">5,171<span class="pkg wrap">2,282 without output schemas</span></td><td class="num muted">same</td><td class="num">4 of 4</td><td class="num">1 of 14</td><td class="num">0 / 1</td></tr>
+<tr><td>Playwright MCP<span class="pkg">@playwright/mcp 1.66.0-alpha-2026-11-18</span></td><td class="num">1<span class="pkg">45,175,453</span></td><td class="num">25</td><td class="num">4,570</td><td class="num muted">same</td><td class="num">25 of 25</td><td class="num">0 of 73</td><td class="num">0 / 3</td></tr>
+<tr><td>color-space<span class="pkg">color-space 3.5.0</span></td><td class="num">6<span class="pkg">5,457,555</span></td><td class="num">9</td><td class="num">3,488<span class="pkg wrap">2,751 without output schemas</span></td><td class="num muted">new</td><td class="num">9 of 9</td><td class="num">2 of 28</td><td class="num">0 / 3</td></tr>
+<tr><td>Filesystem<span class="pkg">@modelcontextprotocol/server-filesystem 1.0.0</span></td><td class="num"><span class="muted">survey</span></td><td class="num">14</td><td class="num">2,849<span class="pkg wrap">2,133 without output schemas</span></td><td class="num muted">same</td><td class="num">14 of 14</td><td class="num">18 of 25</td><td class="num">0 / 3</td></tr>
+<tr><td>Memory<span class="pkg">@modelcontextprotocol/server-memory 1.0.0</span></td><td class="num"><span class="muted">survey</span></td><td class="num">9</td><td class="num">2,428<span class="pkg wrap">1,318 without output schemas</span></td><td class="num muted">same</td><td class="num">9 of 9</td><td class="num">4 of 8</td><td class="num">0 / 0</td></tr>
+<tr><td>AWS Knowledge<span class="pkg">remote: knowledge-mcp.global.api.aws</span></td><td class="num"><span class="muted">survey</span></td><td class="num">5</td><td class="num">1,938</td><td class="num muted">same</td><td class="num">5 of 5</td><td class="num">0 of 11</td><td class="num">0 / 1</td></tr>
+<tr><td>Git<span class="pkg">mcp-server-git 2026.11.18 (PyPI)</span></td><td class="num"><span class="muted">survey</span></td><td class="num">14</td><td class="num">1,841</td><td class="num muted">same</td><td class="num">14 of 14</td><td class="num">21 of 32</td><td class="num">0 / 0</td></tr>
+<tr><td>Everything (reference)<span class="pkg">@modelcontextprotocol/server-everything 1.0.0</span></td><td class="num"><span class="muted">survey</span></td><td class="num">13</td><td class="num">1,708<span class="pkg wrap">1,632 without output schemas</span></td><td class="num muted">same</td><td class="num">13 of 13</td><td class="num">1 of 16</td><td class="num">0 / 0</td></tr>
+<tr><td>e2e<span class="pkg">e2e 0.25.0</span></td><td class="num">7<span class="pkg">4,598,153</span></td><td class="num">4</td><td class="num">1,655</td><td class="num muted">new</td><td class="num">4 of 4</td><td class="num">0 of 14</td><td class="num">0 / 0</td></tr>
+<tr><td>Tavily MCP<span class="pkg">tavily-mcp 0.2.22</span></td><td class="num"><span class="muted">survey</span></td><td class="num">5</td><td class="num">1,651</td><td class="num muted">same</td><td class="num">0 of 5</td><td class="num">0 of 42</td><td class="num">0 / 0</td></tr>
+<tr><td>Context7 (npm)<span class="pkg">@upstash/context7-mcp 4.9.0</span></td><td class="num">9<span class="pkg">4,404,174</span></td><td class="num">2</td><td class="num">1,203</td><td class="num">+74</td><td class="num">2 of 2</td><td class="num">0 of 6</td><td class="num">0 / 0</td></tr>
+<tr><td>Context7 (remote)<span class="pkg">remote: mcp.context7.com/mcp</span></td><td class="num"><span class="muted">survey</span></td><td class="num">2</td><td class="num">1,203</td><td class="num">+74</td><td class="num">2 of 2</td><td class="num">0 of 6</td><td class="num">0 / 0</td></tr>
+<tr><td>Browserbase MCP<span class="pkg">@browserbasehq/mcp-server-browserbase 2.3.0</span></td><td class="num"><span class="muted">survey</span></td><td class="num">9</td><td class="num">1,133</td><td class="num muted">same</td><td class="num">0 of 9</td><td class="num">0 of 8</td><td class="num">0 / 0</td></tr>
+<tr><td>Time<span class="pkg">mcp-server-time 2026.11.18 (PyPI)</span></td><td class="num"><span class="muted">survey</span></td><td class="num">3</td><td class="num">1,052<span class="pkg wrap">584 without output schemas</span></td><td class="num">0</td><td class="num">3 of 3</td><td class="num">0 of 9</td><td class="num">0 / 0</td></tr>
+<tr><td>Sequential Thinking<span class="pkg">@modelcontextprotocol/server-sequential-thinking 1.0.0</span></td><td class="num"><span class="muted">survey</span></td><td class="num">1</td><td class="num">999<span class="pkg wrap">903 without output schemas</span></td><td class="num muted">same</td><td class="num">1 of 1</td><td class="num">0 of 9</td><td class="num">0 / 1</td></tr>
+<tr><td>Microsoft Learn<span class="pkg">remote: learn.microsoft.com/api/mcp</span></td><td class="num"><span class="muted">survey</span></td><td class="num">3</td><td class="num">970<span class="pkg wrap">825 without output schemas</span></td><td class="num muted">same</td><td class="num">3 of 3</td><td class="num">0 of 4</td><td class="num">0 / 0</td></tr>
+<tr><td>Exa MCP<span class="pkg">exa-mcp-server 3.5.1</span></td><td class="num"><span class="muted">survey</span></td><td class="num">2</td><td class="num">495</td><td class="num muted">same</td><td class="num">2 of 2</td><td class="num">0 of 4</td><td class="num">0 / 0</td></tr>
+<tr><td>Cloudflare Docs<span class="pkg">remote: docs.mcp.cloudflare.com/mcp</span></td><td class="num"><span class="muted">survey</span></td><td class="num">2</td><td class="num">404<span class="pkg wrap">281 without output schemas</span></td><td class="num muted">same</td><td class="num">2 of 2</td><td class="num">1 of 1</td><td class="num">0 / 0</td></tr>
+<tr><td>DeepWiki<span class="pkg">remote: mcp.deepwiki.com/mcp</span></td><td class="num"><span class="muted">survey</span></td><td class="num">3</td><td class="num">395<span class="pkg wrap">305 without output schemas</span></td><td class="num muted">same</td><td class="num">0 of 3</td><td class="num">0 of 4</td><td class="num">0 / 0</td></tr>
+<tr><td>GitMCP<span class="pkg">remote: gitmcp.io/modelcontextprotocol/typescript-sdk</span></td><td class="num"><span class="muted">survey</span></td><td class="num">4</td><td class="num">369</td><td class="num muted">same</td><td class="num">0 of 4</td><td class="num">0 of 4</td><td class="num">0 / 0</td></tr>
+<tr><td>Fetch<span class="pkg">mcp-server-fetch 2026.11.11 (PyPI)</span></td><td class="num"><span class="muted">survey</span></td><td class="num">1</td><td class="num">324</td><td class="num muted">same</td><td class="num">1 of 1</td><td class="num">0 of 5</td><td class="num">0 / 0</td></tr>
+<tr><td>browser-use<span class="pkg">browser-use 0.13.11 (PyPI)</span></td><td class="num">5<span class="pkg">7,960,281</span></td><td class="num">2</td><td class="num">209</td><td class="num muted">new</td><td class="num">0 of 2</td><td class="num">0 of 3</td><td class="num">0 / 0</td></tr>
+<tr><td>MarkItDown MCP<span class="pkg">markitdown-mcp (PyPI)</span></td><td class="num"><span class="muted">survey</span></td><td class="num">1</td><td class="num">96<span class="pkg wrap">62 without output schemas</span></td><td class="num muted">same</td><td class="num">0 of 1</td><td class="num">1 of 1</td><td class="num">0 / 0</td></tr>
+<tr><td>Astro Docs<span class="pkg">remote: mcp.docs.astro.build/mcp</span></td><td class="num"><span class="muted">survey</span></td><td class="num">1</td><td class="num">69</td><td class="num muted">same</td><td class="num">0 of 1</td><td class="num">0 of 1</td><td class="num">0 / 0</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="not-measured">Not measured this month</h2>
+  <p>6 servers couldn't be listed without an account, a key or a setting. Most servers that need a key still list their tools without one; these didn't.</p>
+  <ul>
+    <li><strong>firebase-tools</strong> <span class="muted">firebase-tools 14.27.0</span>: didn&#39;t start with the command in its registry entry (rank 2)</li>
+    <li><strong>Supabase MCP</strong> <span class="muted">@supabase/mcp-server-supabase</span>: didn&#39;t start with the command in its registry entry</li>
+    <li><strong>Sentry MCP</strong> <span class="muted">@sentry/mcp-server</span>: didn&#39;t start with the command in its registry entry</li>
+    <li><strong>Stripe MCP</strong> <span class="muted">@stripe/mcp</span>: didn&#39;t start with the command in its registry entry</li>
+    <li><strong>Brave Search MCP</strong> <span class="muted">@brave/brave-search-mcp-server</span>: didn&#39;t start with the command in its registry entry</li>
+    <li><strong>Semgrep</strong> <span class="muted">remote: mcp.semgrep.ai/mcp</span>: needs a key or sign-in</li>
+  </ul>
+
+  <h2 id="method">Method</h2>
+  <ul>
+    <li><strong>When:</strong> 26 November 2026, by a scheduled GitHub Actions workflow in this project's repository. The results arrive as a pull request, which I review before it's published.</li>
+    <li><strong>Which servers:</strong> the 10 registry servers whose npm or PyPI package had the most downloads in the last 30 days, run over stdio, plus the servers from the first survey. Download counts come from npm's public API (for scoped packages, from npm's search results, which cover the 5,000 most relevant "mcp" packages) and from the public PyPI download dataset. Downloads count every install of a package, so a large tool that also includes an MCP server, such as a cloud provider's command line, ranks by all its users. Remote-only servers have no download counts, so only the survey's remote servers are included.</li>
+    <li><strong>How:</strong> each package is the version the registry lists, run with <code>npx</code> or <code>uvx</code> and only the arguments and environment defaults its registry entry gives, read the way the registry's schema defines them. A server whose entry doesn't give a working command is listed as not started; its publisher can fix the entry. No key or token is supplied. Each runs inside a container with no access to the repository's credentials, and its output is checked before use.</li>
+    <li><strong>Only tool lists were read.</strong> Each server got <code>initialize</code> and <code>tools/list</code>, nothing else. The lists were checked with MCP Master Tester 1.11.0's lint.</li>
+    <li><strong>Tokens are counted</strong> with OpenAI's o200k tokenizer (the one GPT-4o and later use), over each tool definition as compact JSON. Claude's tokenizer isn't published, and other models count differently, so compare servers with each other rather than reading a figure as exact for every model. Clients also wrap tool lists in their own format, which adds a little. The counts include output schemas, which not every client passes to the model; where a server declares them, the table also gives the count without them.</li>
+    <li><strong>Earlier figures were estimates.</strong> The first survey, and lint, estimate tokens as characters divided by four, which comes out about 13% higher than o200k across the survey's servers. The data files keep both. Thanks to a reader on LinkedIn whose question led to the real counts.</li>
+    <li><strong>Settings change the numbers.</strong> Several servers can expose fewer tools through their options. These figures are for the defaults.</li>
+    <li><strong>The data:</strong> every month's numbers are in <a href="https://github.com/simplymanas/mcp-master-tester/tree/main/docs/scorecard" target="_blank" rel="noopener">docs/scorecard</a> as JSON.</li>
+  </ul>
+  <div class="note">
+    <p>I make MCP Master Tester, the tool used for these checks. If a number here is wrong, or your server needs a setting to start, please <a href="https://github.com/simplymanas/mcp-master-tester/issues" target="_blank" rel="noopener">open an issue</a>.</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>MCP Master Tester · MIT licence · by <a href="https://github.com/simplymanas" target="_blank" rel="noopener">@simplymanas</a></span>
+    <nav aria-label="Footer">
+      <a href="./">Home</a>
+      <a href="guide.html">Docs</a>
+      <a href="https://github.com/simplymanas/mcp-master-tester" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.npmjs.com/package/mcp-master-tester" target="_blank" rel="noopener">npm</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
