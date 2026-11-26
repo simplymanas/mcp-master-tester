@@ -15,10 +15,19 @@ export const REASONS = {
   key: 'needs a key or sign-in',
   timeout: 'no answer within 3 minutes',
   exited: "didn't start with the command in its registry entry",
+  stopped: 'stopped before listing its tools, with no key or setting given',
   refused: 'refused the connection',
   error: 'failed to list its tools',
   missing: 'no result from the scan',
 };
+
+// Why a server wasn't measured. "exited" blames the registry entry, so it applies only to servers
+// that have one; a survey server with no entry that exits most likely wanted a key.
+export function notMeasuredReason(r) {
+  if (r.needs?.length && r.reason !== 'setup') return `needs ${r.needs.join(', ')}`;
+  if (r.reason === 'exited' && !r.registryName) return REASONS.stopped;
+  return REASONS[r.reason] ?? REASONS.error;
+}
 
 function pkgLine(r) {
   if (r.url) { try { const u = new URL(r.url); return `remote: ${u.host}${u.pathname === '/' ? '' : u.pathname}`; } catch { return 'remote'; } }
@@ -93,7 +102,7 @@ function changes(d) {
   const entered = d.previousKind === 'survey' ? [] : d.servers.filter((r) => r.rank && !r.previousRank);
   const what = d.previousKind === 'survey' ? 'the first survey' : 'the scorecard';
   const out = [changed.length
-    ? `  <p>Compared with ${what} of ${esc(day(d.previous))}: ${plural(changed.length, 'server')} changed ${changed.length === 1 ? 'its' : 'their'} tool list, adding ${plural(added, 'tool')} and removing ${n(removed)}.</p>`
+    ? `  <p>Compared with ${what} of ${esc(day(d.previous))}: ${plural(changed.length, 'server')} changed ${changed.length === 1 ? 'its' : 'their'} tool list, ${added || removed ? `adding ${plural(added, 'tool')} and removing ${n(removed)}` : 'all in descriptions or schemas: no tool was added or removed'}.</p>`
     : `  <p>Compared with ${what} of ${esc(day(d.previous))}: no server changed its tool list.</p>`];
   if (moved.length) {
     out.push('  <ul>');
@@ -131,7 +140,7 @@ export function renderPage(d) {
       + `<td class="num">${m.lint.error ? `<strong>${n(m.lint.error)}</strong>` : '0'} / ${n(m.lint.warn)}</td></tr>`;
   }).join('\n');
 
-  const failed = notMeasured.map((r) => `    <li><strong>${esc(r.name)}</strong> <span class="muted">${esc(pkgLine(r))}</span>: ${esc(r.needs?.length && r.reason !== 'setup' ? `needs ${r.needs.join(', ')}` : REASONS[r.reason] ?? REASONS.error)}${r.rank ? ` (rank ${n(r.rank)})` : ''}</li>`).join('\n');
+  const failed = notMeasured.map((r) => `    <li><strong>${esc(r.name)}</strong> <span class="muted">${esc(pkgLine(r))}</span>: ${esc(notMeasuredReason(r))}${r.rank ? ` (rank ${n(r.rank)})` : ''}</li>`).join('\n');
 
   return `${head(d)}
 <main class="wrap article">
@@ -170,7 +179,7 @@ ${table}
   </div>
 ${notMeasured.length ? `
   <h2 id="not-measured">Not measured this month</h2>
-  <p>${plural(notMeasured.length, 'server')} couldn't be listed without an account, a key or a setting. Most servers that need a key still list their tools without one; these didn't.</p>
+  <p>${plural(notMeasured.length, 'server')} couldn't be listed. Most servers that need a key still list their tools without one; these didn't${notMeasured.some((r) => r.reason === 'exited' && r.registryName) ? ", or their registry entry doesn't give a command that starts them" : ''}.</p>
   <ul>
 ${failed}
   </ul>

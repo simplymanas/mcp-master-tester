@@ -14,7 +14,7 @@ import {
 } from '../scorecard/lib.mjs';
 import { countTokens } from 'gpt-tokenizer/encoding/o200k_base';
 import { reasonFor, buildScorecard } from '../scorecard/build.mjs';
-import { renderPage, REASONS } from '../scorecard/page.mjs';
+import { renderPage, REASONS, notMeasuredReason } from '../scorecard/page.mjs';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OFFICIAL = 'io.modelcontextprotocol.registry/official';
@@ -250,4 +250,14 @@ test('end to end: scan the fixture servers, then build the data and the page', a
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+test('page: "didn\'t start with its registry entry" only for servers that have one', () => {
+  assert.equal(notMeasuredReason({ reason: 'exited', registryName: 'io.github.x/y' }), REASONS.exited);
+  assert.equal(notMeasuredReason({ reason: 'exited', registryName: null }), REASONS.stopped);
+  assert.doesNotMatch(REASONS.stopped, /registry/);
+  assert.equal(notMeasuredReason({ reason: 'key', needs: [] }), REASONS.key);
+  assert.equal(notMeasuredReason({ reason: 'exited', needs: ['STRIPE_API_KEY'] }), 'needs STRIPE_API_KEY');
+  assert.equal(notMeasuredReason({ reason: 'setup', needs: ['X'] }), REASONS.setup);
+  assert.equal(notMeasuredReason({ reason: 'odd' }), REASONS.error);
 });
