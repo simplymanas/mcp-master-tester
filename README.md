@@ -66,6 +66,7 @@ Open source and looking for collaborators: see [Contributing](#contributing), fi
     - free-form strings that list fixed values (should be an enum)
     - strings that should be typed (booleans, numbers, dates, URLs, emails)
     - enums and strings that give no example
+    - the same long description pasted into many tools (it's sent once per tool, on every request)
   - **Naming:** non-snake_case names, and names that break the server's own convention
   - **Annotations:** missing readOnly/destructive hints, and tools marked read-only whose name says they change something (`cancel_booking`) or that are marked destructive too
   - **Output size:** list/search tools with no limit or pagination parameter
@@ -196,7 +197,7 @@ The outputs `lint`, `smoke`, `diff` and `eval` are `passed`, `failed`, `error` (
 
 By default the smoke test only calls tools marked read-only, with made-up arguments. If the server in CI holds anything you care about, list the tools to run in `tools`.
 
-`@v1` follows the latest 1.x release. To stay on one version, use `@v1.11.0` or a commit SHA.
+`@v1` follows the latest 1.x release. To stay on one version, use `@v1.12.0` or a commit SHA.
 
 ## Lint in CI
 

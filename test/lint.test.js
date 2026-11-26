@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent, outputSchemaProblems, lintMarkdown, toolListSize, sizeLines,
+  lintTools, resultChars, unhelpfulError, wrapsTextOnly, fixedValues, betterType, nameStyle, isListish, confusablePairs, writeVerb, readOnlyDoubt, descriptionIndent, outputSchemaProblems, lintMarkdown, toolListSize, sizeLines, repeatedParamDescriptions,
   BIG_RESULT_CHARS,
 } from '../public/lint.js';
 
@@ -365,4 +365,35 @@ test('lintMarkdown adds the size lines when given', () => {
   const md = lintMarkdown([], { tools: 1, size: toolListSize([clean()]) });
   assert.match(md, /\n- Tool list: ~\d+ tokens \(descriptions/);
   assert.match(md, /\n- Parameters: 0 of 1 have no description/);
+});
+
+test('repeated parameter descriptions: long ones on 3+ tools, nested too; short or rare ones are left alone', () => {
+  const long = 'Cursor from the previous page of results. Leave it out for the first page; pass the value from next_cursor to get the next one. Cursors expire after ten minutes, so start again if one is rejected.';
+  const t = (name, props) => ({ name, description: 'Lists things for the user, with paging.', inputSchema: { type: 'object', properties: props, required: [] }, annotations: { readOnlyHint: true } });
+  const tools = [
+    t('list_a', { cursor: { type: 'string', description: long } }),
+    t('list_b', { cursor: { type: 'string', description: `  ${long.replace('. ', '.\n   ')}` } }), // whitespace doesn't count
+    t('list_c', { page: { type: 'object', properties: { after: { type: 'string', description: long } } } }), // nested
+    t('list_d', { opts: { type: 'array', items: { anyOf: [{ type: 'object', properties: { cursor: { type: 'string', description: long } } }] } } }),
+    t('list_e', { id: { type: 'string', description: 'The user ID' } }),
+  ];
+  const [r, ...rest] = repeatedParamDescriptions(tools);
+  assert.equal(rest.length, 0);
+  assert.equal(r.tools, 4);
+  assert.deepEqual(r.params.map((p) => p.param), ['cursor', 'cursor', 'page.after', 'opts.cursor']);
+  assert.equal(r.extraChars, long.length * 3);
+  const f = lintTools(tools).filter((x) => /same ~/.test(x.msg));
+  assert.equal(f.length, 1);
+  assert.equal(f[0].sev, 'info');
+  assert.equal(f[0].target, 'list_a');
+  assert.match(f[0].msg, /parameters "cursor", "page\.after", "opts\.cursor" have the same ~\d+-token description in 4 tools, ~\d+ tokens of repeats/);
+
+  // On two tools, or short, it isn't reported.
+  assert.equal(repeatedParamDescriptions(tools.slice(0, 2)).length, 0);
+  const short = ['a', 'b', 'c', 'd'].map((n) => t(`get_${n}`, { id: { type: 'string', description: 'The ID of the user to read. It looks like u_123 and comes from list_users.' } }));
+  assert.equal(repeatedParamDescriptions(short).length, 0, 'under 80 characters');
+
+  // Enough copies make it a warning.
+  const many = Array.from({ length: 12 }, (_, i) => t(`tool_${i}`, { cursor: { type: 'string', description: long.repeat(2) } }));
+  assert.equal(lintTools(many).find((x) => /same ~/.test(x.msg)).sev, 'warn');
 });

@@ -9,6 +9,10 @@ export const BIG_DESCRIPTION_CHARS = 2000;  // ≈500 tokens for a single tool d
 export const BIG_CATALOG_CHARS = 40000;     // ≈10k tokens for all tool definitions, sent on every model request
 export const INDENT_MIN_CHARS = 200;        // ≈50 tokens of indentation a dedent would remove from one description…
 export const INDENT_MIN_SHARE = 0.15;       // …that is also at least this share of the description
+export const REPEAT_MIN_CHARS = 80;         // ≈20 tokens: a parameter description long enough that repeating it costs something…
+export const REPEAT_MIN_TOOLS = 3;          // …on at least this many tools…
+export const REPEAT_MIN_EXTRA_CHARS = 400;  // …whose copies beyond the first add up to ≈100 tokens; ≈500 tokens makes it a warning
+export const REPEAT_WARN_EXTRA_CHARS = 2000;
 export const approxTokens = (chars) => Math.round(chars / 4).toLocaleString('en-US');
 
 /**
@@ -103,6 +107,14 @@ export function lintTools(tools, runtime = {}, budget = {}) {
     for (const t of sized.tools) {
       if (t.tokens > budget.maxToolTokens) add('error', t.name, `definition is ${k(t.tokens)} ${unit}, over the per-tool budget of ${budget.maxToolTokens.toLocaleString('en-US')}`);
     }
+  }
+
+  // The same long parameter description pasted into many tools is sent once per tool, on every request.
+  for (const r of repeatedParamDescriptions(tools)) {
+    const names = [...new Set(r.params.map((p) => `"${p.param}"`))];
+    const where = names.length === 1 ? `parameter ${names[0]}` : `parameters ${names.slice(0, 3).join(', ')}${names.length > 3 ? ', …' : ''}`;
+    add(r.extraChars >= REPEAT_WARN_EXTRA_CHARS ? 'warn' : 'info', r.params[0].tool,
+      `${where} ${names.length === 1 ? 'has' : 'have'} the same ~${approxTokens(r.chars)}-token description in ${r.tools} tools, ~${approxTokens(r.extraChars)} tokens of repeats on every request — say it in full once and keep the other copies to a short line`);
   }
 
   // Tools a model could mix up.
@@ -382,6 +394,43 @@ export function betterType(name, p) {
   if (last === 'email')
     return { sev: 'info', what: 'an email address', fix: 'add "format": "email"' };
   return null;
+}
+
+// Parameter descriptions repeated word for word across tools, at any depth of the input schemas.
+// Whitespace differences don't count. Only long descriptions on several tools are reported, and only
+// when the copies beyond the first add up to enough to matter, so a short "The user ID" is left alone.
+// @returns {{ text: string, chars: number, tools: number, extraChars: number, params: { tool: string, param: string }[] }[]}
+//   largest extraChars first
+export function repeatedParamDescriptions(tools) {
+  const groups = new Map();
+  const visit = (tool, node, path, depth) => {
+    if (!node || typeof node !== 'object' || depth > 20) return;
+    if (node.properties && typeof node.properties === 'object') {
+      for (const [n, p] of Object.entries(node.properties)) {
+        if (!p || typeof p !== 'object') continue;
+        const param = path ? `${path}.${n}` : n;
+        if (typeof p.description === 'string') {
+          const text = p.description.trim().replace(/\s+/g, ' ');
+          if (text.length >= REPEAT_MIN_CHARS) {
+            if (!groups.has(text)) groups.set(text, []);
+            groups.get(text).push({ tool: String(tool), param });
+          }
+        }
+        visit(tool, p, param, depth + 1);
+      }
+    }
+    for (const k of ['items', 'additionalProperties']) if (node[k] && typeof node[k] === 'object') visit(tool, node[k], path, depth + 1);
+    for (const k of ['anyOf', 'oneOf', 'allOf']) if (Array.isArray(node[k])) for (const x of node[k]) visit(tool, x, path, depth + 1);
+    for (const k of ['$defs', 'definitions']) if (node[k] && typeof node[k] === 'object') for (const x of Object.values(node[k])) visit(tool, x, path, depth + 1);
+  };
+  for (const t of tools) visit(t.name, t.inputSchema, '', 0);
+  const out = [];
+  for (const [text, params] of groups) {
+    const toolCount = new Set(params.map((p) => p.tool)).size;
+    const extraChars = text.length * (params.length - 1);
+    if (toolCount >= REPEAT_MIN_TOOLS && extraChars >= REPEAT_MIN_EXTRA_CHARS) out.push({ text, chars: text.length, tools: toolCount, extraChars, params });
+  }
+  return out.sort((a, b) => b.extraChars - a.extraChars);
 }
 
 // Pairs of tools a model could mix up:

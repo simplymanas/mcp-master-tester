@@ -2,10 +2,11 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.12.0] - 2026-11-26
 
 ### Added
 
+- **Lint: the same long parameter description in many tools.** A description of about 20 tokens or more, pasted word for word into three or more tools, is sent once per tool on every request. Lint now names the parameters and how many tokens the copies add up to, and suggests saying it in full once. It looks at nested parameters too, and ignores whitespace differences. It's info, and a warning once the copies reach about 500 tokens. Short repeats such as "The user ID" are left alone. Of the 28 servers in the survey, only Playwright's tool list has any. Suggested by McFly_1984 on r/mcp.
 - Docs: "Review new tools before they reach your agents", a recipe for running `diff --fail-on info` on a schedule against a server you depend on, so a tool added by a server update is noticed before an agent gets it. From a thread with a reader on r/mcp who keeps a tool allowlist per agent.
 
 ### Changed
