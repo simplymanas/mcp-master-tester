@@ -340,6 +340,27 @@ test('token budgets: over the whole-list or per-tool budget is an error, and a l
   assert.ok(!has(perTool, 'read_note', /per-tool budget/));
 });
 
+test('a tokenizer counts the size and the budgets instead of characters / 4', async () => {
+  const { countTokens } = await import('gpt-tokenizer/encoding/o200k_base');
+  const o200k = { name: 'o200k', count: countTokens };
+  const big = clean({ name: 'search_notes', description: 'Search notes by text. '.repeat(20), outputSchema: { type: 'object', properties: { hits: { type: 'array' } } } });
+  const tools = [clean(), big];
+  const size = toolListSize(tools, o200k);
+  assert.equal(size.tokenizer, 'o200k');
+  assert.equal(size.tokens, countTokens(tools.map((t) => JSON.stringify(t)).join('')), 'the total is counted the way the scorecard counts it');
+  assert.equal(size.tools.find((t) => t.name === 'search_notes').tokens, countTokens(JSON.stringify(big)));
+  assert.equal(size.outputSchemas, countTokens(JSON.stringify(big.outputSchema)));
+  assert.notEqual(size.tokens, toolListSize(tools).tokens, 'a real count, not the estimate');
+  const lines = sizeLines(size);
+  assert.match(lines.size, /^Tool list: [\d,]+ o200k tokens \(descriptions [\d,]+, input schemas [\d,]+, output schemas [\d,]+, other [\d,]+\)$/);
+  assert.match(lines.largest, /^Largest: search_notes [\d,]+, read_note [\d,]+$/);
+  assert.ok(!('tokenizer' in toolListSize(tools)), 'no tokenizer field for an estimate');
+
+  const over = lintTools(tools, {}, { maxTokens: 50, maxToolTokens: 60, tokenizer: o200k });
+  assert.match(over.find((f) => /over the budget of 50/.test(f.msg)).msg, new RegExp(`add up to ${size.tokens} o200k tokens, over the budget of 50; largest: search_notes \\d+`));
+  assert.equal(sevOf(over, 'search_notes', /^definition is \d+ o200k tokens, over the per-tool budget of 60$/), 'error');
+});
+
 test('lintMarkdown adds the size lines when given', () => {
   const md = lintMarkdown([], { tools: 1, size: toolListSize([clean()]) });
   assert.match(md, /\n- Tool list: ~\d+ tokens \(descriptions/);

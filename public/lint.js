@@ -20,6 +20,7 @@ export const approxTokens = (chars) => Math.round(chars / 4).toLocaleString('en-
  * @param {object} [budget]  token budgets the user set; going over one is an error:
  *   maxTokens:     the whole tool list (replaces the fixed ~10k warning)
  *   maxToolTokens: any one tool definition
+ *   tokenizer:     { name, count(text) } to count the budgets with a real tokenizer instead of characters / 4
  * @returns {{sev: 'error'|'warn'|'info', target: string, msg: string}[]}
  */
 export function lintTools(tools, runtime = {}, budget = {}) {
@@ -85,11 +86,13 @@ export function lintTools(tools, runtime = {}, budget = {}) {
 
   // The whole catalog is sent to the model on every request. A budget the user set replaces the fixed warning.
   const catalog = tools.reduce((n, t) => n + JSON.stringify(t).length, 0);
+  const sized = budget.maxTokens !== undefined || budget.maxToolTokens !== undefined ? toolListSize(tools, budget.tokenizer) : undefined;
+  const k = (n) => `${sized?.tokenizer ? '' : '~'}${n.toLocaleString('en-US')}`;
+  const unit = sized?.tokenizer ? `${sized.tokenizer} tokens` : 'tokens';
   if (budget.maxTokens !== undefined && tools.length) {
-    const size = toolListSize(tools);
-    if (size.tokens > budget.maxTokens) {
-      const top = size.tools.slice(0, 3).map((t) => `${t.name} ~${t.tokens.toLocaleString('en-US')}`).join(', ');
-      add('error', size.tools[0].name, `all ${tools.length} tool definitions add up to ~${size.tokens.toLocaleString('en-US')} tokens, over the budget of ${budget.maxTokens.toLocaleString('en-US')}; largest: ${top}`);
+    if (sized.tokens > budget.maxTokens) {
+      const top = sized.tools.slice(0, 3).map((t) => `${t.name} ${k(t.tokens)}`).join(', ');
+      add('error', sized.tools[0].name, `all ${tools.length} tool definitions add up to ${k(sized.tokens)} ${unit}, over the budget of ${budget.maxTokens.toLocaleString('en-US')}; largest: ${top}`);
     }
   } else if (catalog > BIG_CATALOG_CHARS && tools.length) {
     const largest = tools.reduce((a, b) => (JSON.stringify(b).length > JSON.stringify(a).length ? b : a));
@@ -97,8 +100,8 @@ export function lintTools(tools, runtime = {}, budget = {}) {
   }
 
   if (budget.maxToolTokens !== undefined) {
-    for (const t of toolListSize(tools).tools) {
-      if (t.tokens > budget.maxToolTokens) add('error', t.name, `definition is ~${t.tokens.toLocaleString('en-US')} tokens, over the per-tool budget of ${budget.maxToolTokens.toLocaleString('en-US')}`);
+    for (const t of sized.tools) {
+      if (t.tokens > budget.maxToolTokens) add('error', t.name, `definition is ${k(t.tokens)} ${unit}, over the per-tool budget of ${budget.maxToolTokens.toLocaleString('en-US')}`);
     }
   }
 
@@ -154,24 +157,27 @@ export function lintMarkdown(findings, { serverInfo, tools, size } = {}) {
 // ---------------------------------------------------------------- size
 
 /**
- * What a tool list is made of, in estimated tokens (characters of compact JSON / 4, as everywhere in lint).
+ * What a tool list is made of, in tokens. By default they are estimated (characters of compact JSON / 4,
+ * as everywhere in lint). With a tokenizer ({ name, count(text) }) they are counted, and the total is
+ * the count of all definitions together, the way the scorecard counts them.
  * Parameter descriptions count as part of the input schema, since that's where they are sent.
  * @returns {{ tokens: number, descriptions: number, inputSchemas: number, outputSchemas: number, other: number,
- *   tools: { name: string, tokens: number }[], params: number, paramsNoDescription: number }}
- *   tools is largest first.
+ *   tools: { name: string, tokens: number }[], params: number, paramsNoDescription: number, tokenizer?: string }}
+ *   tools is largest first; tokenizer is the tokenizer's name when one counted.
  */
-export function toolListSize(tools) {
-  const len = (v) => (v === undefined ? 0 : JSON.stringify(v).length);
-  const tok = (chars) => Math.round(chars / 4);
-  let all = 0, desc = 0, input = 0, output = 0, params = 0, paramsNoDescription = 0;
+export function toolListSize(tools, tokenizer) {
+  const json = (v) => (v === undefined ? '' : JSON.stringify(v));
+  const tok = tokenizer ? (text) => (text ? tokenizer.count(text) : 0) : (text) => Math.round(text.length / 4);
+  const parts = { all: [], desc: [], input: [], output: [] };
+  let params = 0, paramsNoDescription = 0;
   const each = [];
   for (const t of tools) {
-    const total = len(t);
-    all += total;
-    desc += typeof t.description === 'string' ? len(t.description) : 0;
-    input += len(t.inputSchema);
-    output += len(t.outputSchema);
-    each.push({ name: String(t.name), tokens: tok(total) });
+    const whole = json(t);
+    parts.all.push(whole);
+    parts.desc.push(typeof t.description === 'string' ? json(t.description) : '');
+    parts.input.push(json(t.inputSchema));
+    parts.output.push(json(t.outputSchema));
+    each.push({ name: String(t.name), tokens: tok(whole) });
     const props = t.inputSchema?.properties;
     if (props && typeof props === 'object') {
       for (const p of Object.values(props)) {
@@ -181,20 +187,21 @@ export function toolListSize(tools) {
     }
   }
   each.sort((a, b) => b.tokens - a.tokens || a.name.localeCompare(b.name));
-  const [tokens, descriptions, inputSchemas, outputSchemas] = [all, desc, input, output].map(tok);
+  const [tokens, descriptions, inputSchemas, outputSchemas] = [parts.all, parts.desc, parts.input, parts.output].map((l) => tok(l.join('')));
   return { tokens, descriptions, inputSchemas, outputSchemas, other: Math.max(0, tokens - descriptions - inputSchemas - outputSchemas),
-    tools: each, params, paramsNoDescription };
+    tools: each, params, paramsNoDescription, ...(tokenizer ? { tokenizer: tokenizer.name } : {}) };
 }
 
 // One line each for the size, the largest tools and the parameters, shared by the CLI and the web UI.
+// Estimates carry a "~"; counts from a tokenizer name it instead.
 export function sizeLines(size, { largest = 5 } = {}) {
-  const k = (n) => n.toLocaleString('en-US');
-  const parts = [`descriptions ~${k(size.descriptions)}`, `input schemas ~${k(size.inputSchemas)}`];
-  if (size.outputSchemas) parts.push(`output schemas ~${k(size.outputSchemas)}`);
-  parts.push(`other ~${k(size.other)}`);
-  const lines = { size: `Tool list: ~${k(size.tokens)} tokens (${parts.join(', ')})` };
-  if (size.tools.length > 1) lines.largest = `Largest: ${size.tools.slice(0, largest).map((t) => `${t.name} ~${k(t.tokens)}`).join(', ')}`;
-  if (size.params) lines.params = `Parameters: ${k(size.paramsNoDescription)} of ${k(size.params)} have no description`;
+  const k = (n) => `${size.tokenizer ? '' : '~'}${n.toLocaleString('en-US')}`;
+  const parts = [`descriptions ${k(size.descriptions)}`, `input schemas ${k(size.inputSchemas)}`];
+  if (size.outputSchemas) parts.push(`output schemas ${k(size.outputSchemas)}`);
+  parts.push(`other ${k(size.other)}`);
+  const lines = { size: `Tool list: ${k(size.tokens)} ${size.tokenizer ? `${size.tokenizer} ` : ''}tokens (${parts.join(', ')})` };
+  if (size.tools.length > 1) lines.largest = `Largest: ${size.tools.slice(0, largest).map((t) => `${t.name} ${k(t.tokens)}`).join(', ')}`;
+  if (size.params) lines.params = `Parameters: ${size.paramsNoDescription.toLocaleString('en-US')} of ${size.params.toLocaleString('en-US')} have no description`;
   return lines;
 }
 

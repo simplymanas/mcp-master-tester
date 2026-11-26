@@ -139,6 +139,7 @@ npx mcp-master-tester lint --url https://example.com/mcp --header "Authorization
             <tr><td><code>--format &lt;format&gt;</code></td><td><code>text</code> (default), <code>json</code>, or <code>github</code> for GitHub Actions annotations</td></tr>
             <tr><td><code>--show-info</code></td><td>List info findings too (they're always counted)</td></tr>
             <tr><td><code>--max-tokens &lt;n&gt;</code>, <code>--max-tool-tokens &lt;n&gt;</code></td><td>A <a href="#lint-budget">token budget</a> for the whole tool list, and for any one tool. Over it is an error.</td></tr>
+            <tr><td><code>--tokenizer &lt;name&gt;</code></td><td><code>estimate</code> (default) or <code>o200k</code>: how to count tokens for the size and the budgets.</td></tr>
             <tr><td><code>--env KEY=VALUE</code>, <code>--cwd &lt;dir&gt;</code></td><td>Environment and working directory for a stdio server</td></tr>
             <tr><td><code>--url &lt;url&gt;</code>, <code>--sse</code>, <code>--header "Name: value"</code></td><td>Connect to a remote server</td></tr>
             <tr><td><code>--timeout &lt;ms&gt;</code></td><td>Give up after this long (default 30000)</td></tr>
@@ -155,7 +156,9 @@ Parameters: 6 of 31 have no description</code></pre>
       <p>A client sends the whole tool list to the model with every request. Lint warns at about 10,000 tokens. With a budget of your own, going over it is an error, so CI fails when the list grows and each new tool becomes a decision:</p>
       <pre><code>npx mcp-master-tester lint --max-tokens 6000 --max-tool-tokens 800 -- node dist/index.js</code></pre>
       <p><code>--max-tokens</code> covers the whole list and replaces the warning at about 10,000; <code>--max-tool-tokens</code> covers any one tool. The error names the largest tools, so you know what to trim first. In the GitHub Action, set <code>max-tokens</code> and <code>max-tool-tokens</code>.</p>
-      <p>Tokens are estimated as the characters of each tool definition, as compact JSON, divided by four. Real tokenizers usually count somewhat fewer: about 13% fewer with OpenAI's o200k across the servers in the <a href="survey.html">survey</a>. Set the budget with the estimate in mind, or measure your list once and keep a margin.</p>
+      <p>By default tokens are estimated as the characters of each tool definition, as compact JSON, divided by four. Real tokenizers usually count somewhat fewer: about 13% fewer with OpenAI's o200k across the servers in the <a href="survey.html">survey</a>. For exact counts, add <code>--tokenizer o200k</code>, the tokenizer the monthly <a href="scorecard.html">scorecard</a> uses, so your CI budget and the scorecard agree. It needs the <code>gpt-tokenizer</code> package, which isn't installed with MCP Master Tester:</p>
+      <pre><code>npx -p mcp-master-tester -p gpt-tokenizer mcp-master-tester lint --tokenizer o200k --max-tokens 6000 -- node dist/index.js</code></pre>
+      <p>Or add it to your project with <code>npm install --save-dev gpt-tokenizer</code>. In the GitHub Action, set <code>tokenizer: o200k</code> and the action installs it. Anthropic doesn't publish a tokenizer for current Claude models, so Claude's count will differ a little from either.</p>
     </section>
 
     <section id="smoke">
@@ -334,6 +337,7 @@ jobs:
             <tr><td><code>lockfile</code>, <code>diff-fail-on</code></td><td>For <code>diff</code>: the lockfile (default <code>mcp-tools.lock.json</code>), and <code>breaking</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
             <tr><td><code>lint-fail-on</code></td><td><code>error</code> (default), <code>warn</code>, <code>info</code> or <code>never</code></td></tr>
             <tr><td><code>max-tokens</code>, <code>max-tool-tokens</code></td><td>A <a href="#lint-budget">token budget</a> for the whole tool list, and for any one tool</td></tr>
+            <tr><td><code>tokenizer</code></td><td><code>estimate</code> (default) or <code>o200k</code>: how lint counts tokens</td></tr>
             <tr><td><code>smoke-fail-on</code></td><td><code>fail</code> (default), <code>warn</code>, <code>skip</code> or <code>never</code></td></tr>
             <tr><td><code>tools</code>, <code>skip</code>, <code>all</code>, <code>args</code></td><td>Which tools the smoke test calls, and with what arguments, as in <a href="#smoke-args">the smoke test options</a></td></tr>
             <tr><td><code>anthropic-api-key</code>, <code>eval-cases</code></td><td>For <code>eval</code>: a key from the secrets context, passed to the eval run only, and the cases file (default <code>mcp-evals.json</code>). Also <code>eval-model</code>, <code>eval-effort</code>, <code>eval-pass-rate</code> and <code>eval-fail-on</code>, as in <a href="#evals">evals</a>.</td></tr>
@@ -341,7 +345,7 @@ jobs:
           </tbody>
         </table>
       </div>
-      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.10.0</code> or a commit SHA to stay on one version.</p>
+      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.11.0</code> or a commit SHA to stay on one version.</p>
       <p>On another CI system, or to control every flag, run the commands directly. With <code>--format github</code>, findings still show as annotations on GitHub. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
       <pre><code>- run: npm ci &amp;&amp; npm run build
 - run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js

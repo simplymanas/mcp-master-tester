@@ -75,6 +75,8 @@ export function planRuns(env, { exists = existsSync } = {}) {
       if (!/^[1-9]\d*$/.test(v)) throw new InputError(`${name.toLowerCase().replace(/_/g, '-')} must be a whole number of tokens above 0 (got "${v}")`);
       budget.push(flag, v);
     }
+    const tokenizer = oneOf('TOKENIZER', ['estimate', 'o200k'], 'estimate');
+    if (tokenizer !== 'estimate') budget.push('--tokenizer', tokenizer);
     runs.push({ check: 'lint', argv: ['lint', ...common, '--fail-on', oneOf('LINT_FAIL_ON', LINT_FAIL, 'error'), ...budget, ...tail([])] });
   }
   if (wanted.includes('smoke')) {
