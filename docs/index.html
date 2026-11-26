@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
   <title>MCP Master Tester: test any MCP server</title>
-  <meta name="description" content="Debug any MCP server in a local web UI, then guard it in CI with lint and a smoke test. Free and open source. One npx command, two dependencies.">
+  <meta name="description" content="Debug any MCP server in a local web UI, then guard it in CI with lint, a token budget, a smoke test, a breaking-change diff and tool-selection evals. Free and open source. One npx command, two dependencies.">
   <link rel="canonical" href="https://simplymanas.github.io/mcp-master-tester/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="MCP Master Tester: test any MCP server">
@@ -69,7 +69,7 @@
         <div class="card">
           <span class="tag">Lint</span>
           <h3>Check what the model sees</h3>
-          <p>Spec errors, missing descriptions, look-alike tools a model may confuse, missing safety labels, and tool lists so large they eat the context window.</p>
+          <p>Spec errors, missing descriptions, look-alike tools a model may confuse, missing safety labels, and tool lists so large they eat the context window. Set a token budget and CI fails when the list grows past it.</p>
         </div>
         <div class="card">
           <span class="tag">Smoke test</span>
@@ -126,13 +126,15 @@
   <section class="band" id="ci">
     <div class="wrap">
       <h2>Add it to CI in three lines</h2>
-      <p class="intro">The GitHub Action runs lint and the smoke test, shows each finding as an annotation on the workflow run, and fails the job when something is wrong.</p>
+      <p class="intro">The GitHub Action runs lint and the smoke test, plus the diff once a tool lockfile is in the repo and evals once you add cases and an API key. It shows each finding as an annotation on the workflow run, and fails the job when something is wrong.</p>
 <pre><code>- uses: simplymanas/mcp-master-tester@v1
   with:
     command: node dist/index.js</code></pre>
       <p>Without the action, on GitHub or any other CI system, the same checks are two commands that exit non-zero on a problem:</p>
 <pre><code>- run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
 - run: npx -y mcp-master-tester smoke --format github -- node dist/index.js</code></pre>
+      <p>To keep the tool list from creeping up, give lint a budget. Going over it is an error that names the largest tools, so each new tool becomes a decision. Add <code>--tokenizer o200k</code> for exact counts instead of an estimate (<a href="guide.html#lint-budget">how budgets work</a>):</p>
+<pre><code>- run: npx -y mcp-master-tester lint --max-tokens 6000 --max-tool-tokens 800 -- node dist/index.js</code></pre>
 <pre><code>mcp-master-tester lint · my-server v1.4.0 · 12 tools · stdio
 
   error  send_mail    required "subject" is not defined in properties

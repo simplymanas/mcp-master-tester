@@ -1,7 +1,7 @@
 {
   "name": "mcp-master-tester",
   "version": "1.11.0",
-  "description": "Debug any MCP server in a local web UI, then guard it in CI with lint and a smoke test. stdio, Streamable HTTP and SSE; schema-driven tool forms, elicitation, auth prompts and a live JSON-RPC log; a GitHub Action.",
+  "description": "Debug any MCP server in a local web UI, then guard it in CI: lint with a token budget, a smoke test, a lockfile diff that catches breaking changes, and tool-selection evals. stdio, Streamable HTTP and SSE; a GitHub Action.",
   "type": "module",
   "bin": {
     "mcp-master-tester": "cli.js"
@@ -23,7 +23,17 @@
     "inspector",
     "testing",
     "json-rpc",
-    "developer-tools"
+    "developer-tools",
+    "lint",
+    "smoke-test",
+    "ci",
+    "github-action",
+    "lockfile",
+    "breaking-changes",
+    "evals",
+    "tool-selection",
+    "token-budget",
+    "ai-agents"
   ],
   "author": "@simplymanas",
   "license": "MIT",

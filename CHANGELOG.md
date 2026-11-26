@@ -2,6 +2,12 @@
 
 All notable changes to MCP Master Tester. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- The npm description and keywords cover everything the tool does now (token budget, lockfile diff, tool-selection evals), not just lint and the smoke test. The website home page mentions the token budget and what the GitHub Action runs.
+
 ## [1.11.0] - 2026-11-26
 
 ### Added
