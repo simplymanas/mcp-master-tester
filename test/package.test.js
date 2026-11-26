@@ -29,11 +29,15 @@ test('runtime dependencies stay at the MCP SDK and Express', () => {
 
 // eval calls the Anthropic API through its SDK. It is an optional peer: npm doesn't install it, so
 // everyone who never runs eval still gets two dependencies. cli.js loads it only inside eval.
-test('the only peer dependency is the Anthropic SDK, and it is optional', () => {
-  assert.deepEqual(Object.keys(pkg.peerDependencies ?? {}), ['@anthropic-ai/sdk']);
-  assert.equal(pkg.peerDependenciesMeta?.['@anthropic-ai/sdk']?.optional, true, 'without optional, npm 7+ installs peers automatically');
+test('the only peer dependencies are the Anthropic SDK and gpt-tokenizer, and both are optional', () => {
+  assert.deepEqual(Object.keys(pkg.peerDependencies ?? {}), ['@anthropic-ai/sdk', 'gpt-tokenizer']);
   const cli = readFileSync(path.join(root, 'cli.js'), 'utf8');
-  assert.doesNotMatch(cli, /^import .*@anthropic-ai\/sdk/m, 'a static import would break every command for users without the SDK');
+  for (const name of ['@anthropic-ai/sdk', 'gpt-tokenizer']) {
+    assert.equal(pkg.peerDependenciesMeta?.[name]?.optional, true, `${name}: without optional, npm 7+ installs peers automatically`);
+    assert.doesNotMatch(cli, new RegExp(`^import .*${name.replace(/[/.]/g, '\\$&')}`, 'm'), `${name}: a static import would break every command for users without it`);
+  }
+  const lint = readFileSync(path.join(root, 'public', 'lint.js'), 'utf8');
+  assert.doesNotMatch(lint, /gpt-tokenizer/, 'lint.js also runs in the browser, so the tokenizer is passed in, not imported');
 });
 
 test('installing runs no scripts', () => {

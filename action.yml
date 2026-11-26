@@ -42,13 +42,17 @@ inputs:
     required: false
     default: error
   max-tokens:
-    description: Token budget for the whole tool list. lint fails when the list grows past it. Estimated as characters / 4.
+    description: Token budget for the whole tool list. lint fails when the list grows past it. Counted as the tokenizer input says.
     required: false
     default: ''
   max-tool-tokens:
     description: Token budget for any one tool definition. lint fails when a tool grows past it.
     required: false
     default: ''
+  tokenizer:
+    description: How lint counts tokens for the size and the budgets. estimate (characters / 4) or o200k (OpenAI's tokenizer, exact).
+    required: false
+    default: estimate
   smoke-fail-on:
     description: >-
       Fail the smoke test on fail, warn, skip (a tool went untested and you didn't leave it out
@@ -128,10 +132,11 @@ runs:
     - name: Install MCP Master Tester
       shell: bash
       run: cd "$GITHUB_ACTION_PATH" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error
-    # eval needs the Anthropic SDK, an optional peer that the install above leaves out. The full
-    # install adds it (pinned by the lockfile) along with the test packages; only when eval may run.
-    - name: Install the Anthropic SDK for eval
-      if: contains(inputs.checks, 'eval') || (inputs.checks == '' && inputs.anthropic-api-key != '')
+    # eval needs the Anthropic SDK and the o200k tokenizer needs gpt-tokenizer: optional peers that the
+    # install above leaves out. The full install adds them (pinned by the lockfile) along with the test
+    # packages; only when eval may run or the tokenizer is asked for.
+    - name: Install the optional packages (Anthropic SDK for eval, gpt-tokenizer)
+      if: contains(inputs.checks, 'eval') || (inputs.checks == '' && inputs.anthropic-api-key != '') || inputs.tokenizer == 'o200k'
       shell: bash
       run: cd "$GITHUB_ACTION_PATH" && npm ci --ignore-scripts --no-audit --no-fund --loglevel=error
     - name: Run checks
@@ -149,6 +154,7 @@ runs:
         MMT_LINT_FAIL_ON: ${{ inputs.lint-fail-on }}
         MMT_MAX_TOKENS: ${{ inputs.max-tokens }}
         MMT_MAX_TOOL_TOKENS: ${{ inputs.max-tool-tokens }}
+        MMT_TOKENIZER: ${{ inputs.tokenizer }}
         MMT_SMOKE_FAIL_ON: ${{ inputs.smoke-fail-on }}
         MMT_LOCKFILE: ${{ inputs.lockfile }}
         MMT_DIFF_FAIL_ON: ${{ inputs.diff-fail-on }}

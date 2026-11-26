@@ -98,6 +98,18 @@ test('lint: --max-tokens and --max-tool-tokens fail the run when the list or a t
   assert.match(bad.stderr, /--max-tokens must be a whole number of tokens above 0 \(got "10k"\)/);
 });
 
+test('lint: --tokenizer o200k counts the size and the budgets with a real tokenizer', async () => {
+  const over = await run('lint', '--tokenizer', 'o200k', '--max-tokens', '100', '--', 'node', smokeFixture);
+  assert.equal(over.code, 1);
+  assert.match(over.stdout, /error +get_weather +all 4 tool definitions add up to \d+ o200k tokens, over the budget of 100; largest: get_weather \d+/);
+  assert.match(over.stdout, /^Tool list: \d+ o200k tokens, budget 100 \(descriptions \d+/m);
+  const j = JSON.parse((await run('lint', '--format', 'json', '--tokenizer', 'o200k', '--', 'node', smokeFixture)).stdout);
+  assert.equal(j.size.tokenizer, 'o200k');
+  const bad = await run('lint', '--tokenizer', 'cl100k', '--', 'node', smokeFixture);
+  assert.equal(bad.code, 2);
+  assert.match(bad.stderr, /--tokenizer must be one of estimate, o200k \(got "cl100k"\)/);
+});
+
 test('lint: --format github prints workflow annotations', async () => {
   const r = await run('lint', '--format', 'github', '--', 'node', fixture);
   const lines = r.stdout.trim().split('\n');

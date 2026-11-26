@@ -1,6 +1,6 @@
 {
   "name": "mcp-master-tester",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "Debug any MCP server in a local web UI, then guard it in CI with lint and a smoke test. stdio, Streamable HTTP and SSE; schema-driven tool forms, elicitation, auth prompts and a live JSON-RPC log; a GitHub Action.",
   "type": "module",
   "bin": {
@@ -43,10 +43,14 @@
     "express": "^5.2.1"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^1.13.0"
+    "@anthropic-ai/sdk": "^1.13.0",
+    "gpt-tokenizer": "^4.1.2"
   },
   "peerDependenciesMeta": {
     "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "gpt-tokenizer": {
       "optional": true
     }
   },

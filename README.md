@@ -19,7 +19,7 @@ Point it at a server, either a local command over stdio or a remote URL over Str
 
 **[Website and docs](https://simplymanas.github.io/mcp-master-tester/)** · **[Tutorial](https://medium.com/simplymanas/testing-any-mcp-server-step-by-step-with-mcp-master-tester-5b5cf4c0cc35)** · **[Video](https://www.youtube.com/watch?v=XXQ25jPZsh0)** · **[Survey: how much context 28 MCP servers use](https://simplymanas.github.io/mcp-master-tester/survey.html)**
 
-**New in 1.10:** a [token budget](#token-budget) that fails CI when your tool list grows past it, and lint now shows where the size comes from. 1.9 added [tool-selection evals](#tool-selection-evals), to check that a model picks the right tool, and 1.8 [catching breaking changes](#breaking-changes) with a lockfile, and 1.6 the [GitHub Action](#github-action). Earlier changes are in the [CHANGELOG](CHANGELOG.md).
+**New in 1.11:** `lint --tokenizer o200k` counts the [token budget](#token-budget) with OpenAI's tokenizer instead of estimating. 1.10 added the budget, which fails CI when your tool list grows past it, and shows where the size comes from. 1.9 added [tool-selection evals](#tool-selection-evals), to check that a model picks the right tool, and 1.8 [catching breaking changes](#breaking-changes) with a lockfile, and 1.6 the [GitHub Action](#github-action). Earlier changes are in the [CHANGELOG](CHANGELOG.md).
 
 Open source and looking for collaborators: see [Contributing](#contributing), first-timers welcome. If it's useful to you, a [star on GitHub](https://github.com/simplymanas/mcp-master-tester) helps other people find it.
 
@@ -185,6 +185,7 @@ A remote server, with only lint, failing on warnings:
 | `lockfile`, `diff-fail-on` | For `diff`: the lockfile (default `mcp-tools.lock.json`), and `breaking` (default), `warn`, `info` or `never` |
 | `lint-fail-on` | `error` (default), `warn`, `info` or `never` |
 | `max-tokens`, `max-tool-tokens` | A [token budget](#token-budget) for the whole tool list, and for any one tool. lint fails when either is exceeded. |
+| `tokenizer` | How lint counts tokens: `estimate` (default, characters / 4) or `o200k` (OpenAI's tokenizer, exact). |
 | `smoke-fail-on` | `fail` (default), `warn`, `skip` or `never` |
 | `tools` | Smoke-test only these tools, comma- or newline-separated, read-only or not. The safest way to choose what runs. |
 | `skip`, `all`, `args` | Leave tools out; also run tools that aren't clearly read-only; a JSON file of arguments. As in the [smoke test](#smoke-test-in-ci). |
@@ -195,7 +196,7 @@ The outputs `lint`, `smoke`, `diff` and `eval` are `passed`, `failed`, `error` (
 
 By default the smoke test only calls tools marked read-only, with made-up arguments. If the server in CI holds anything you care about, list the tools to run in `tools`.
 
-`@v1` follows the latest 1.x release. To stay on one version, use `@v1.10.0` or a commit SHA.
+`@v1` follows the latest 1.x release. To stay on one version, use `@v1.11.0` or a commit SHA.
 
 ## Lint in CI
 
@@ -229,6 +230,7 @@ Parameters: 6 of 31 have no description
 | `--format <format>` | `text` (default), `json`, or `github` for GitHub Actions annotations |
 | `--show-info` | List info findings too (they're always counted) |
 | `--max-tokens <n>`, `--max-tool-tokens <n>` | A [token budget](#token-budget) for the whole tool list, and for any one tool. Over it is an error. |
+| `--tokenizer <name>` | `estimate` (default) or `o200k`: how to count tokens for the size and the budgets. See [Token budget](#token-budget). |
 | `--env KEY=VALUE`, `--cwd <dir>` | Environment and working directory for a stdio server |
 | `--url <url>`, `--sse`, `--header "Name: value"` | Connect to a remote server |
 | `--timeout <ms>` | Give up after this long (default 30000) |
@@ -256,7 +258,15 @@ npx mcp-master-tester lint --max-tokens 6000 --max-tool-tokens 800 -- node dist/
   error  search_mail  all 14 tool definitions add up to ~6,420 tokens, over the budget of 6,000; largest: search_mail ~910, …
 ```
 
-The summary under the findings says where the size comes from (descriptions, input schemas, output schemas) and names the largest tools, so you know what to trim first. Tokens are estimated as the characters of each tool definition, as compact JSON, divided by four; real tokenizers usually count somewhat fewer. In the GitHub Action, set `max-tokens` and `max-tool-tokens`.
+The summary under the findings says where the size comes from (descriptions, input schemas, output schemas) and names the largest tools, so you know what to trim first. In the GitHub Action, set `max-tokens` and `max-tool-tokens`.
+
+By default tokens are estimated as the characters of each tool definition, as compact JSON, divided by four. Real tokenizers usually count somewhat fewer: about 13% fewer across the servers in the [survey](https://simplymanas.github.io/mcp-master-tester/survey.html). For exact counts, use `--tokenizer o200k` (OpenAI's tokenizer, the one the monthly [scorecard](https://simplymanas.github.io/mcp-master-tester/scorecard.html) counts with, so the two agree). It needs the `gpt-tokenizer` package, which isn't installed with MCP Master Tester:
+
+```bash
+npx -p mcp-master-tester -p gpt-tokenizer mcp-master-tester lint --tokenizer o200k --max-tokens 6000 -- node dist/index.js
+```
+
+Or add it to your project with `npm install --save-dev gpt-tokenizer`. In the GitHub Action, set `tokenizer: o200k` and the action installs it. Anthropic doesn't publish a tokenizer for current Claude models, so Claude's count will differ a little from either.
 
 ## Smoke test in CI
 

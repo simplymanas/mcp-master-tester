@@ -52,7 +52,9 @@ lint options:
   --max-tokens <n>      Token budget for the whole tool list: going over it is an error, so CI
                         fails when the list grows past it. Replaces the warning at ~10,000.
   --max-tool-tokens <n> Token budget for any one tool definition
-                        (Tokens are estimated as characters of compact JSON / 4.)
+  --tokenizer <name>    How to count tokens for the size and the budgets: estimate (default,
+                        characters of compact JSON / 4) or o200k (OpenAI's tokenizer, exact;
+                        needs the gpt-tokenizer package, see the README)
 
 smoke options:
   --all                 Also run tools that aren't clearly read-only. They may change data.
@@ -239,14 +241,33 @@ const ghAnnotation = (kind, title, msg) => `::${kind} title=${ghEscape(title).re
 const LINT_LABEL = { error: paint('31;1', 'error'), warn: paint('33', 'warn '), info: paint('2', 'info ') };
 const lintSummary = (counts) => `${plural(counts.error, 'error')}, ${plural(counts.warn, 'warning')}, ${counts.info} info`;
 
+const TOKENIZERS = ['estimate', 'o200k'];
+const TOKENIZER_INSTALL = '--tokenizer o200k needs the gpt-tokenizer package, which is not installed with MCP Master Tester. Run it with\n'
+  + '  npx -p mcp-master-tester -p gpt-tokenizer mcp-master-tester lint --tokenizer o200k ...\n'
+  + 'or add it to your project: npm install --save-dev gpt-tokenizer';
+
+// gpt-tokenizer is an optional peer dependency, like the Anthropic SDK for eval: only --tokenizer o200k
+// needs it. Its o200k counts match OpenAI's tiktoken; the scorecard counts with the same encoding.
+async function loadO200k() {
+  try {
+    const { countTokens } = await import('gpt-tokenizer/encoding/o200k_base');
+    return { name: 'o200k', count: countTokens };
+  } catch (err) {
+    if (err.code === 'ERR_MODULE_NOT_FOUND' && /gpt-tokenizer/.test(err.message)) throw new FatalError(TOKENIZER_INSTALL);
+    throw err;
+  }
+}
+
 const runLint = (argv) => runCommand('lint', argv, {
   failLevels: ['error', 'warn', 'info', 'never'],
   options: {
     'show-info': { type: 'boolean', default: false },
     'max-tokens': { type: 'string' },
     'max-tool-tokens': { type: 'string' },
+    tokenizer: { type: 'string', default: 'estimate' },
   },
 }, async ({ values, config, failOn, format, timeout }) => {
+  if (!TOKENIZERS.includes(values.tokenizer)) throw new UsageError(`--tokenizer must be one of ${TOKENIZERS.join(', ')} (got "${values.tokenizer}")`);
   const budget = {};
   for (const [flag, key] of [['max-tokens', 'maxTokens'], ['max-tool-tokens', 'maxToolTokens']]) {
     if (values[flag] === undefined) continue;
@@ -254,9 +275,10 @@ const runLint = (argv) => runCommand('lint', argv, {
     if (!Number.isInteger(n) || n <= 0) throw new UsageError(`--${flag} must be a whole number of tokens above 0 (got "${values[flag]}")`);
     budget[key] = n;
   }
+  const tokenizer = values.tokenizer === 'o200k' ? await loadO200k() : undefined;
   const { tools, server, hasTools } = await withServer(config, timeout, (s) => s);
-  const findings = lintTools(tools, {}, budget);
-  const size = toolListSize(tools);
+  const findings = lintTools(tools, {}, { ...budget, tokenizer });
+  const size = toolListSize(tools, tokenizer);
   const lines = sizeLines(size);
   const counts = { error: 0, warn: 0, info: 0 };
   for (const f of findings) counts[f.sev]++;
