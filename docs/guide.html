@@ -117,7 +117,7 @@ npm start</code></pre>
         <li><strong>Spec:</strong> <code>inputSchema</code> and <code>outputSchema</code> must be of type object, required fields must be defined, and names must be valid and unique.</li>
         <li><strong>Look-alike tools:</strong> names so close a model may pick the wrong one (<code>get_user</code> and <code>getUsers</code>), and near-identical descriptions. A prefix every tool shares, or a description template most of them share, doesn't count.</li>
         <li><strong>Descriptions:</strong> missing, very short, never saying when <em>not</em> to use the tool, so long they eat context, or padded with indentation copied from the source code (a multi-line string indented to match the code around it). It also flags a whole tool list that is too big.</li>
-        <li><strong>Parameters:</strong> missing types or descriptions; no <code>required</code> list when a parameter has no default; free-form strings that list fixed values (should be an enum); strings that should be booleans, numbers, dates, URLs or emails; and values with no example.</li>
+        <li><strong>Parameters:</strong> missing types or descriptions; no <code>required</code> list when a parameter has no default; free-form strings that list fixed values (should be an enum); strings that should be booleans, numbers, dates, URLs or emails; values with no example; and the same long description pasted into three or more tools, which is sent once per tool on every request. That one is info until the copies add up to about 500 tokens, then a warning.</li>
         <li><strong>Naming:</strong> names that aren't snake_case, and names that break the server's own convention.</li>
         <li><strong>Annotations:</strong> missing read-only and destructive hints, and tools marked read-only whose name says they change something (<code>cancel_booking</code>) or that are also marked destructive.</li>
         <li><strong>Output size:</strong> list and search tools with no limit or pagination parameter.</li>
@@ -371,7 +371,7 @@ jobs:
           </tbody>
         </table>
       </div>
-      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.11.0</code> or a commit SHA to stay on one version.</p>
+      <p>The outputs <code>lint</code>, <code>smoke</code>, <code>diff</code> and <code>eval</code> are <code>passed</code>, <code>failed</code>, <code>error</code> or <code>skipped</code>. <code>@v1</code> follows the latest 1.x release; use <code>@v1.12.0</code> or a commit SHA to stay on one version.</p>
       <p>On another CI system, or to control every flag, run the commands directly. With <code>--format github</code>, findings still show as annotations on GitHub. Add <code>--tool</code> for each tool if the server in CI holds anything you care about.</p>
       <pre><code>- run: npm ci &amp;&amp; npm run build
 - run: npx -y mcp-master-tester lint --format github --fail-on warn -- node dist/index.js
