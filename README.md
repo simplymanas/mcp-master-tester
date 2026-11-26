@@ -349,6 +349,8 @@ npx mcp-master-tester diff -- node dist/index.js       # in CI: exit 1 on a brea
 
 The lockfile has no dates or server version, so it only changes when the tools do.
 
+It works on servers you depend on but don't own, too: a scheduled `diff --fail-on info` names any tool a server update adds before it reaches your agents ([recipe](https://simplymanas.github.io/mcp-master-tester/guide.html#diff-upstream)).
+
 ## Tool-selection evals
 
 Lint checks how your tools are written; `eval` checks whether a model actually picks the right one. List requests a user might make and the tool each should lead to, in `mcp-evals.json`:

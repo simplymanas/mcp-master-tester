@@ -385,6 +385,21 @@ test('snapshot writes a lockfile once, and says when it is already up to date', 
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('snapshot --out creates missing folders, and a file it cannot write is named', async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'mmt-lock-'));
+  try {
+    const lock = path.join(dir, 'locks', 'upstream', 'tools.lock.json');
+    const made = await run('snapshot', '--out', lock, '--', 'node', smokeFixture);
+    assert.equal(made.code, 0, made.stderr);
+    assert.ok(JSON.parse(readFileSync(lock, 'utf8')).tools.ping_db);
+    const blocked = path.join(dir, 'locks', 'upstream', 'tools.lock.json', 'inside.json'); // a file where a folder should be
+    const failed = await run('snapshot', '--out', blocked, '--', 'node', smokeFixture);
+    assert.equal(failed.code, 2);
+    assert.match(failed.stderr, /could not write .*inside\.json/);
+    assert.doesNotMatch(failed.stderr, /could not list the server's tools/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('diff: no changes pass; additions pass; removals fail; --fail-on sets the bar', async () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'mmt-lock-'));
   const lock = path.join(dir, 'tools.lock.json');

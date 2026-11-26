@@ -9,7 +9,8 @@
 // lint, smoke, diff and eval exit non-zero on findings, for CI.
 // Author: @simplymanas
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { parseArgs } from 'node:util';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -445,7 +446,12 @@ const runSnapshot = (argv) => runCommand('snapshot', argv, {
   if (before === text) {
     console.log(`${file} is up to date: ${plural(tools.length, 'tool')} from ${server.name ?? 'the server'}.`);
   } else {
-    writeFileSync(file, text);
+    try {
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, text);
+    } catch (err) {
+      throw new FatalError(`could not write ${file}: ${err.message}`);
+    }
     console.log(`${before === null ? 'Wrote' : 'Updated'} ${file}: ${plural(tools.length, 'tool')} from ${server.name ?? 'the server'}. Commit it, and run "mcp-master-tester diff" in CI.`);
   }
   return 0;
